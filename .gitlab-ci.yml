@@ -1,0 +1,62 @@
+image: python:latest
+
+stages:
+  - test
+  - document
+  - publish
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml
+  - template: License-Scanning.gitlab-ci.yml
+  - template: SAST.gitlab-ci.yml
+
+run_tests:
+  stage: test
+  script:
+    - python -V
+    - pip install pytest pytest-cov
+    - pip install -r requirements.txt
+    - pytest -v --junitxml=report.xml --cov=oem --cov-report term tests/
+  artifacts:
+    paths:
+      - .coverage
+    reports:
+      junit: report.xml
+
+enforce_pep8:
+  stage: test
+  allow_failure: true
+  script:
+    - python -V
+    - pip install flake8
+    - flake8 . --count --statistics
+
+
+coverage:
+  stage: document
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  script:
+    - python -V
+    - pip install coveralls
+    - coveralls
+
+code_quality:
+  stage: document
+
+gemnasium-python-dependency_scanning:
+  stage: document
+
+license_scanning:
+  stage: document
+
+sast:
+  stage: document
+
+
+publish_version:
+  stage: publish
+  script:
+    - python -V
+    - python setup.py sdist
