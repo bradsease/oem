@@ -76,6 +76,9 @@ class EphemerisSegment(object):
             epoch <= self.useable_stop_time
         )
 
+    def __iter__(self):
+        return iter(self.states)
+
     @classmethod
     def from_strings(cls, components, version=CURRENT_VERSION):
         """Create EphemerisSegment from OEM segment strings.
