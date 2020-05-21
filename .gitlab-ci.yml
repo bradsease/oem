@@ -65,5 +65,5 @@ publish_version:
     - python -V
     - pip install twine
     - python setup.py sdist bdist_wheel
-    - echo -e "[pypi]\n  username = __token__\n  password = $PYPI_API_TOKEN" > ~/.pypirc
+    - echo -e "[pypi]\n  username = __token__\n  password = $PYPI_API_TOKEN\c" > ~/.pypirc
     - twine upload dist/*
