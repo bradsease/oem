@@ -134,6 +134,15 @@ class MetaDataSection(KeyValueSection):
         }
         return cls(metadata, version=version)
 
+    @classmethod
+    def _from_xml(cls, segment, version):
+        metadata = {
+            entry.tag: entry.text
+            for entry in segment
+            if entry.tag != "COMMENT"
+        }
+        return cls(metadata, version=version)
+
     @property
     def useable_start_time(self):
         """Return epoch of start of useable state data range"""

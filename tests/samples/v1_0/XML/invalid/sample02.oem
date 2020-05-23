@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<oem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sanaregistry.org/r/ndmxml/ndmxml-1.0-master.xsd" id="CCSDS_OEM_VERS" version="2.0">
+<oem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sanaregistry.org/r/ndmxml/ndmxml-1.0-master.xsd" id="CCSDS_OEM_VERS" version="1.0">
     <header>
-        <COMMENT>THIS EXAMPLE CONFORMS TO FIGURE 5-2 IN 502.0-B-2</COMMENT>
-        <COMMENT>OEM WITH OPTIONAL ACCELERATIONS CAN ONLY BE OEM VERSION 2.0</COMMENT>
         <CREATION_DATE>1996-11-04T17:22:31</CREATION_DATE>
         <ORIGINATOR>NASA/JPL</ORIGINATOR>
     </header>
@@ -72,31 +70,6 @@
                     <Y_DDOT>0.000</Y_DDOT>
                     <Z_DDOT>0.000</Z_DDOT>
                 </stateVector>
-                <covarianceMatrix>
-                    <EPOCH>1996-12-18T12:00:00.331</EPOCH>
-                    <COV_REF_FRAME>ITRF-97</COV_REF_FRAME>
-                    <CX_X>0.316</CX_X>
-                    <CY_X>0.722</CY_X>
-                    <CY_Y>0.518</CY_Y>
-                    <CZ_X>0.202</CZ_X>
-                    <CZ_Y>0.715</CZ_Y>
-                    <CZ_Z>0.002</CZ_Z>
-                    <CX_DOT_X>0.912</CX_DOT_X>
-                    <CX_DOT_Y>0.306</CX_DOT_Y>
-                    <CX_DOT_Z>0.276</CX_DOT_Z>
-                    <CX_DOT_X_DOT>0.797</CX_DOT_X_DOT>
-                    <CY_DOT_X>0.562</CY_DOT_X>
-                    <CY_DOT_Y>0.899</CY_DOT_Y>
-                    <CY_DOT_Z>0.022</CY_DOT_Z>
-                    <CY_DOT_X_DOT>0.079</CY_DOT_X_DOT>
-                    <CY_DOT_Y_DOT>0.415</CY_DOT_Y_DOT>
-                    <CZ_DOT_X>0.245</CZ_DOT_X>
-                    <CZ_DOT_Y>0.965</CZ_DOT_Y>
-                    <CZ_DOT_Z>0.950</CZ_DOT_Z>
-                    <CZ_DOT_X_DOT>0.435</CZ_DOT_X_DOT>
-                    <CZ_DOT_Y_DOT>0.621</CZ_DOT_Y_DOT>
-                    <CZ_DOT_Z_DOT>0.991</CZ_DOT_Z_DOT>
-                </covarianceMatrix>
             </data>
         </segment>
     </body>

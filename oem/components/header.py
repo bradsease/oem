@@ -47,6 +47,17 @@ class HeaderSection(KeyValueSection):
         fields = {entry[0].strip(): entry[1].strip() for entry in raw_entries}
         return cls(fields)
 
+    @classmethod
+    def _from_xml(cls, segment):
+        header_segment = list(segment)[0]
+        fields = {
+            entry.tag: entry.text
+            for entry in header_segment
+            if entry.tag != "COMMENT"
+        }
+        fields["CCSDS_OEM_VERS"] = segment.attrib["version"]
+        return cls(fields)
+
     @property
     def version(self):
         return self["CCSDS_OEM_VERS"]

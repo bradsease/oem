@@ -69,6 +69,15 @@ class DataSection(object):
         states = [State.from_string(entry, version) for entry in raw_states]
         return cls(states, version=version)
 
+    @classmethod
+    def _from_xml(cls, segment, version):
+        states = [
+            State._from_xml(entry, version)
+            for entry in segment
+            if entry.tag != "COMMENT"
+        ]
+        return cls(states, version=version)
+
     @property
     def states(self):
         """Return a list of States in this section."""

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<oem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sanaregistry.org/r/ndmxml/ndmxml-1.0-master.xsd" id="CCSDS_OEM_VERS" version="2.0">
+<oem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sanaregistry.org/r/ndmxml/ndmxml-1.0-master.xsd" id="CCSDS_OEM_VERS" version="1.0">
     <header>
-        <COMMENT>THIS EXAMPLE CONFORMS TO FIGURE 5-2 IN 502.0-B-2</COMMENT>
-        <COMMENT>OEM WITH OPTIONAL ACCELERATIONS CAN ONLY BE OEM VERSION 2.0</COMMENT>
         <CREATION_DATE>1996-11-04T17:22:31</CREATION_DATE>
         <ORIGINATOR>NASA/JPL</ORIGINATOR>
     </header>
@@ -32,9 +30,6 @@
                     <X_DOT>4.73</X_DOT>
                     <Y_DOT>-2.50</Y_DOT>
                     <Z_DOT>-1.04</Z_DOT>
-                    <X_DDOT>0.008</X_DDOT>
-                    <Y_DDOT>0.001</Y_DDOT>
-                    <Z_DDOT>-0.159</Z_DDOT>
                 </stateVector>
                 <stateVector>
                     <EPOCH>1996-12-18T12:01:00.331</EPOCH>
@@ -44,9 +39,6 @@
                     <X_DOT>5.19</X_DOT>
                     <Y_DOT>-2.42</Y_DOT>
                     <Z_DOT>-2.00</Z_DOT>
-                    <X_DDOT>0.008</X_DDOT>
-                    <Y_DDOT>0.001</Y_DDOT>
-                    <Z_DDOT>0.001</Z_DDOT>
                 </stateVector>
                 <stateVector>
                     <EPOCH>1996-12-18T12:02:00.331</EPOCH>
@@ -56,9 +48,6 @@
                     <X_DOT>5.64</X_DOT>
                     <Y_DOT>-2.34</Y_DOT>
                     <Z_DOT>-1.95</Z_DOT>
-                    <X_DDOT>0.008</X_DDOT>
-                    <Y_DDOT>0.001</Y_DDOT>
-                    <Z_DDOT>0.159</Z_DDOT>
                 </stateVector>
                 <stateVector>
                     <EPOCH>1996-12-28T21:28:00.331</EPOCH>
@@ -68,9 +57,6 @@
                     <X_DOT>-3.29</X_DOT>
                     <Y_DOT>-3.67</Y_DOT>
                     <Z_DOT>1.64</Z_DOT>
-                    <X_DDOT>-0.003</X_DDOT>
-                    <Y_DDOT>0.000</Y_DDOT>
-                    <Z_DDOT>0.000</Z_DDOT>
                 </stateVector>
                 <covarianceMatrix>
                     <EPOCH>1996-12-18T12:00:00.331</EPOCH>

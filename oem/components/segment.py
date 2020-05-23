@@ -105,6 +105,31 @@ class EphemerisSegment(object):
                 components[2], version)
         return cls(metadata, state_data, covariance_data, version=version)
 
+    @classmethod
+    def _from_xml(cls, segment, version=CURRENT_VERSION):
+        metadata = MetaDataSection._from_xml(segment[0], version)
+        state_data = DataSection._from_xml(
+            [
+                entry for entry in segment[1]
+                if entry.tag == "stateVector"
+            ],
+            version
+        )
+
+        raw_covariances = [
+            entry for entry in segment[1]
+            if entry.tag == "covarianceMatrix"
+        ]
+        if raw_covariances:
+            covariance_data = CovarianceSection._from_xml(
+                raw_covariances,
+                version
+            )
+        else:
+            covariance_data = None
+
+        return cls(metadata, state_data, covariance_data, version=version)
+
     @property
     def states(self):
         """Return list of States in this segment."""
