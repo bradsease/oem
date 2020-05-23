@@ -72,6 +72,23 @@ class State(object):
             version=version
         )
 
+    @classmethod
+    def from_xml(cls, segment, version):
+        epoch = parse_epoch(segment[0].text)
+        position = [float(entry.text) for entry in segment[1:4]]
+        velocity = [float(entry.text) for entry in segment[4:7]]
+        if len(segment) == 10:
+            acceleration = [float(entry.text) for entry in segment[7:]]
+        else:
+            acceleration = None
+        return cls(
+            epoch,
+            position,
+            velocity,
+            acceleration=acceleration,
+            version=version
+        )
+
 
 class Covariance(object):
     """Basic 6x6 covariance.
@@ -123,5 +140,43 @@ class Covariance(object):
             for col_idx, entry in enumerate(row.split()):
                 matrix[row_idx, col_idx] = float(entry)
                 matrix[col_idx, row_idx] = float(entry)
+
+        return cls(epoch, frame, matrix, version=version)
+
+    @classmethod
+    def from_xml(cls, segment, version):
+        parts = [entry for entry in segment if entry.tag != "COMMENT"]
+        entries = {entry.tag: entry.text for entry in parts}
+        if "EPOCH" not in entries:
+            raise ValueError("Covariance entry missing keyword 'EPOCH'")
+        else:
+            epoch = parse_epoch(entries["EPOCH"])
+        frame = entries.get("COV_REF_FRAME")
+
+        matrix = np.zeros((6, 6))
+        matrix[1, 0] = float(entries["CY_X"])
+        matrix[2, 0] = float(entries["CZ_X"])
+        matrix[3, 0] = float(entries["CX_DOT_X"])
+        matrix[4, 0] = float(entries["CY_DOT_X"])
+        matrix[5, 0] = float(entries["CZ_DOT_X"])
+        matrix[2, 1] = float(entries["CZ_Y"])
+        matrix[3, 1] = float(entries["CX_DOT_Y"])
+        matrix[4, 1] = float(entries["CY_DOT_Y"])
+        matrix[5, 1] = float(entries["CZ_DOT_Y"])
+        matrix[3, 2] = float(entries["CX_DOT_Z"])
+        matrix[4, 2] = float(entries["CY_DOT_Z"])
+        matrix[5, 2] = float(entries["CZ_DOT_Z"])
+        matrix[4, 3] = float(entries["CY_DOT_X_DOT"])
+        matrix[5, 3] = float(entries["CZ_DOT_X_DOT"])
+        matrix[5, 4] = float(entries["CZ_DOT_Y_DOT"])
+        matrix += matrix.T
+        matrix += np.diag([
+            float(entries["CX_X"]),
+            float(entries["CY_Y"]),
+            float(entries["CZ_Z"]),
+            float(entries["CX_DOT_X_DOT"]),
+            float(entries["CY_DOT_Y_DOT"]),
+            float(entries["CZ_DOT_Z_DOT"])
+        ])
 
         return cls(epoch, frame, matrix, version=version)

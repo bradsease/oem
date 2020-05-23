@@ -1,5 +1,3 @@
-
-
 <?xml version="1.0" encoding="UTF-8"?>
 <oem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sanaregistry.org/r/ndmxml/ndmxml-1.0-master.xsd" id="CCSDS_OEM_VERS" version="2.0">
     <header>
@@ -75,7 +73,7 @@
                     <Z_DDOT>0.000</Z_DDOT>
                 </stateVector>
                 <covarianceMatrix>
-                    <EPOCH />
+                    <EPOCH>1996-12-18T12:00:00.331</EPOCH>
                     <COV_REF_FRAME>ITRF-97</COV_REF_FRAME>
                     <CX_X>0.316</CX_X>
                     <CY_X>0.722</CY_X>

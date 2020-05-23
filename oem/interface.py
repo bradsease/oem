@@ -1,4 +1,5 @@
 import re
+import xml.etree.ElementTree as ET
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
 from oem.tools import require
@@ -127,6 +128,16 @@ class OrbitalEphemerisMessage(object):
             ]
         else:
             raise ValueError("Failed to parse ephemeris file.")
+        return cls(header, segments)
+
+    @classmethod
+    def from_xml_oem(cls, file_path):
+        parts = ET.parse(file_path).getroot()
+        header = components.HeaderSection.from_xml(parts)
+        segments = [
+            components.EphemerisSegment.from_xml(part, header.version)
+            for part in parts[1]
+        ]
         return cls(header, segments)
 
     @property
