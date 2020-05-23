@@ -45,7 +45,13 @@ class ConstrainEphemerisSegmentStateEpochs(Constraint):
     def func(self, ephemeris_segment):
         for state in ephemeris_segment.states:
             require(
-                state.epoch in ephemeris_segment,
+                (
+                    state.epoch >=
+                    ephemeris_segment.metadata["START_TIME"]
+                    and
+                    state.epoch <=
+                    ephemeris_segment.metadata["STOP_TIME"]
+                ),
                 f"State epoch not within usable range: {state.epoch}"
             )
 
