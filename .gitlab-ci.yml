@@ -55,6 +55,9 @@ license_scanning:
 
 sast:
   stage: document
+  variables:
+    SAST_BANDIT_EXCLUDED_PATHS: tests/*,docs/*
+    SAST_EXCLUDED_PATHS: tests/*,docs/*
 
 
 publish_version:
