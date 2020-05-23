@@ -1,7 +1,6 @@
 """Regex patterns for parsing CCSDS ephemerides
 """
 
-
 HS = r"(?:[ \t]|$)+"
 """Arbitrary Horizontal spacing or EOL"""
 

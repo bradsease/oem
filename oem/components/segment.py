@@ -130,6 +130,13 @@ class EphemerisSegment(object):
 
         return cls(metadata, state_data, covariance_data, version=version)
 
+    def _to_string(self):
+        lines = self.metadata._to_string() + "\n"
+        lines += self._state_data._to_string() + "\n"
+        if self._covariance_data:
+            lines += self._covariance_data._to_string() + "\n"
+        return lines
+
     @property
     def states(self):
         """Return list of States in this segment."""

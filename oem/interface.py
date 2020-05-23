@@ -140,6 +140,28 @@ class OrbitalEphemerisMessage(object):
         ]
         return cls(header, segments)
 
+    def save_as(self, file_path, file_format="KVN"):
+        """Write OEM to file.
+
+        Args:
+            file_path:
+            file_format (str, optional): Type of file to output. Options are
+                'KVN' for ASCII format and 'XML' for the XML format. Default
+                is 'KVN'.
+        """
+        if file_format == "KVN":
+            with open(file_path, "w") as output_file:
+                output_file.write(self._to_ascii_oem())
+        elif file_format == "XML":
+            raise NotImplementedError("")
+        else:
+            raise ValueError(f"Unrecognized file type: '{file_format}'")
+
+    def _to_ascii_oem(self):
+        lines = self.header._to_string() + "\n"
+        lines += "".join(entry._to_string() for entry in self._segments)
+        return lines
+
     @property
     def states(self):
         '''Return a list of states in all segments.'''

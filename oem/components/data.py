@@ -78,6 +78,9 @@ class DataSection(object):
         ]
         return cls(states, version=version)
 
+    def _to_string(self):
+        return "".join(entry._to_string() for entry in self._states)
+
     @property
     def states(self):
         """Return a list of States in this section."""

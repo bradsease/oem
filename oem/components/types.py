@@ -1,7 +1,7 @@
 import re
 import numpy as np
 from oem import patterns, CURRENT_VERSION
-from oem.tools import parse_epoch, require
+from oem.tools import parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
 
 
@@ -88,6 +88,20 @@ class State(object):
             acceleration=acceleration,
             version=version
         )
+
+    def _to_string(self):
+        entries = list(self.position) + list(self.velocity)
+        if self.has_accel:
+            entries += list(self.acceleration)
+        formatted_epoch = format_epoch(self.epoch)
+        formatted_entries = "  ".join(
+            [format_float(entry) for entry in entries]
+        )
+        return f"{formatted_epoch}  {formatted_entries}\n"
+
+    @property
+    def has_accel(self):
+        return True if self.acceleration is not None else False
 
 
 class Covariance(object):
@@ -180,3 +194,16 @@ class Covariance(object):
         ])
 
         return cls(epoch, frame, matrix, version=version)
+
+    def _to_string(self):
+        lines = f"EPOCH = {format_epoch(self.epoch)}\n"
+        if self.frame:
+            lines += f"COV_REF_FRAME = {self.frame}\n"
+
+        idx = 1
+        for row in self.matrix:
+            formatted_entries = [format_float(entry) for entry in row[:idx]]
+            lines += "  ".join(formatted_entries) + "\n"
+            idx += 1
+
+        return lines

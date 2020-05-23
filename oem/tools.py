@@ -40,6 +40,22 @@ def parse_integer(input):
         raise ValueError(f"Invalid integer: '{input}'")
 
 
+def format_float(value):
+    """Convert float to a common string format.
+
+    Args:
+        value: Any input that can be cast as a float.
+
+    Returns:
+        formatted_value (str): Float following standard format.
+    """
+    return f"{value:+.14e}"
+
+
+def format_epoch(epoch):
+    return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+
 def require(boolean, message):
     """Require a boolean condition.
 

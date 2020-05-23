@@ -1,6 +1,6 @@
 import re
 from oem import patterns
-from oem.tools import parse_epoch
+from oem.tools import parse_epoch, format_epoch
 from oem.base import KeyValueSection, HeaderField
 
 
@@ -25,9 +25,9 @@ class HeaderSection(KeyValueSection):
     """
 
     _field_spec = {
-        "CCSDS_OEM_VERS": HeaderField(str, required=True),
-        "CREATION_DATE": HeaderField(parse_epoch, required=True),
-        "ORIGINATOR": HeaderField(str, required=True)
+        "CCSDS_OEM_VERS": HeaderField(str, str, required=True),
+        "CREATION_DATE": HeaderField(parse_epoch, format_epoch, required=True),
+        "ORIGINATOR": HeaderField(str, str, required=True)
     }
 
     def __init__(self, fields):
@@ -57,6 +57,15 @@ class HeaderSection(KeyValueSection):
         }
         fields["CCSDS_OEM_VERS"] = segment.attrib["version"]
         return cls(fields)
+
+    def _to_string(self):
+        lines = f"CCSDS_OEM_VERS = {self.version}\n"
+        lines += "\n".join([
+            entry for entry
+            in self._format_fields()
+            if "CCSDS_OEM_VERS" not in entry
+        ])
+        return lines + "\n"
 
     @property
     def version(self):
