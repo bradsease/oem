@@ -73,7 +73,7 @@ class State(object):
         )
 
     @classmethod
-    def from_xml(cls, segment, version):
+    def _from_xml(cls, segment, version):
         epoch = parse_epoch(segment[0].text)
         position = [float(entry.text) for entry in segment[1:4]]
         velocity = [float(entry.text) for entry in segment[4:7]]
@@ -144,7 +144,7 @@ class Covariance(object):
         return cls(epoch, frame, matrix, version=version)
 
     @classmethod
-    def from_xml(cls, segment, version):
+    def _from_xml(cls, segment, version):
         parts = [entry for entry in segment if entry.tag != "COMMENT"]
         entries = {entry.tag: entry.text for entry in parts}
         if "EPOCH" not in entries:

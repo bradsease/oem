@@ -61,12 +61,12 @@ class CovarianceSection(object):
         return cls(covariances, version=version)
 
     @classmethod
-    def from_xml(cls, segment, version=CURRENT_VERSION):
+    def _from_xml(cls, segment, version=CURRENT_VERSION):
         covariances = [
-            Covariance.from_xml(entry, version)
+            Covariance._from_xml(entry, version)
             for entry in segment
         ]
-        # return cls(covariances, version=version)
+        return cls(covariances, version=version)
 
     @property
     def covariances(self):

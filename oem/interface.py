@@ -133,9 +133,9 @@ class OrbitalEphemerisMessage(object):
     @classmethod
     def from_xml_oem(cls, file_path):
         parts = ET.parse(file_path).getroot()
-        header = components.HeaderSection.from_xml(parts)
+        header = components.HeaderSection._from_xml(parts)
         segments = [
-            components.EphemerisSegment.from_xml(part, header.version)
+            components.EphemerisSegment._from_xml(part, header.version)
             for part in parts[1]
         ]
         return cls(header, segments)

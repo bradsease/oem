@@ -70,9 +70,9 @@ class DataSection(object):
         return cls(states, version=version)
 
     @classmethod
-    def from_xml(cls, segment, version):
+    def _from_xml(cls, segment, version):
         states = [
-            State.from_xml(entry, version)
+            State._from_xml(entry, version)
             for entry in segment
             if entry.tag != "COMMENT"
         ]

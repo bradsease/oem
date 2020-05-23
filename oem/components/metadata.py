@@ -135,7 +135,7 @@ class MetaDataSection(KeyValueSection):
         return cls(metadata, version=version)
 
     @classmethod
-    def from_xml(cls, segment, version):
+    def _from_xml(cls, segment, version):
         metadata = {
             entry.tag: entry.text
             for entry in segment

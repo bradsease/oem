@@ -48,7 +48,7 @@ class HeaderSection(KeyValueSection):
         return cls(fields)
 
     @classmethod
-    def from_xml(cls, segment):
+    def _from_xml(cls, segment):
         header_segment = list(segment)[0]
         fields = {
             entry.tag: entry.text
