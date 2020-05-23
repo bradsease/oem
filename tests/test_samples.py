@@ -82,6 +82,19 @@ def test_invalid_v2_kvn_samples(file_path):
         OrbitalEphemerisMessage.from_ascii_oem(file_path)
 
 
+@pytest.mark.parametrize(
+    "file_path",
+    _get_test_files("v1_0", "XML", "invalid")
+)
+def test_invalid_v1_xml_samples(file_path):
+    """Verify parsing failure for invalid v1.0 XML OEM samples
+
+    This test requires external data.
+    """
+    with pytest.raises(Exception):
+        OrbitalEphemerisMessage.from_xml_oem(file_path)
+
+
 @pytest.mark.parametrize("file_path", _get_test_files("v2_0", "XML", "valid"))
 def test_valid_v2_xml_samples(file_path):
     """Verify parsing of valid v2.0 XML OEM samples
