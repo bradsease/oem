@@ -24,7 +24,7 @@ def test_valid_v1_kvn_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitEphemerisMessage.from_ascii_oem(file_path)
+    oem = OrbitEphemerisMessage.open(file_path)
 
     for segment in oem:
         for state in segment.states:
@@ -35,7 +35,7 @@ def test_valid_v1_kvn_samples(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
         oem.save_as(written_oem_path)
-        written_oem = OrbitEphemerisMessage.from_ascii_oem(written_oem_path)
+        written_oem = OrbitEphemerisMessage.open(written_oem_path)
         assert written_oem.version == oem.version
 
 
@@ -49,7 +49,7 @@ def test_invalid_v1_kvn_samples(file_path):
     This test requires external data.
     """
     with pytest.raises(Exception):
-        OrbitEphemerisMessage.from_ascii_oem(file_path)
+        OrbitEphemerisMessage.open(file_path)
 
 
 @pytest.mark.parametrize("file_path", _get_test_files("v2_0", "KVN", "valid"))
@@ -58,7 +58,7 @@ def test_valid_v2_kvn_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitEphemerisMessage.from_ascii_oem(file_path)
+    oem = OrbitEphemerisMessage.open(file_path)
     assert oem.version == "2.0"
 
     for segment in oem:
@@ -76,7 +76,7 @@ def test_valid_v2_kvn_samples(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
         oem.save_as(written_oem_path)
-        written_oem = OrbitEphemerisMessage.from_ascii_oem(written_oem_path)
+        written_oem = OrbitEphemerisMessage.open(written_oem_path)
         assert written_oem.version == oem.version
 
 
@@ -90,7 +90,7 @@ def test_invalid_v2_kvn_samples(file_path):
     This test requires external data.
     """
     with pytest.raises(Exception):
-        OrbitEphemerisMessage.from_ascii_oem(file_path)
+        OrbitEphemerisMessage.open(file_path)
 
 
 @pytest.mark.parametrize(
@@ -103,7 +103,7 @@ def test_invalid_v1_xml_samples(file_path):
     This test requires external data.
     """
     with pytest.raises(Exception):
-        OrbitEphemerisMessage.from_xml_oem(file_path)
+        OrbitEphemerisMessage.open(file_path)
 
 
 @pytest.mark.parametrize("file_path", _get_test_files("v2_0", "XML", "valid"))
@@ -112,7 +112,7 @@ def test_valid_v2_xml_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitEphemerisMessage.from_xml_oem(file_path)
+    oem = OrbitEphemerisMessage.open(file_path)
     assert oem.version == "2.0"
 
     for segment in oem:
@@ -130,5 +130,27 @@ def test_valid_v2_xml_samples(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
         oem.save_as(written_oem_path, file_format="XML")
-        written_oem = OrbitEphemerisMessage.from_xml_oem(written_oem_path)
+        written_oem = OrbitEphemerisMessage.open(written_oem_path)
         assert written_oem.version == oem.version
+
+
+def test_convert():
+    test_file = _get_test_files("v2_0", "XML", "valid")[0]
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        converted_xml_path = Path(tmp_dir) / "written.oem"
+        OrbitEphemerisMessage.convert(
+            test_file,
+            converted_xml_path,
+            "XML"
+        )
+        converted_xml = OrbitEphemerisMessage.open(converted_xml_path)
+
+        converted_kvn_path = Path(tmp_dir) / "written.oem"
+        OrbitEphemerisMessage.convert(
+            converted_xml_path,
+            converted_kvn_path,
+            "KVN"
+        )
+        converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
+
+        assert converted_xml.version == converted_kvn.version
