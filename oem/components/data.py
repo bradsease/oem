@@ -3,6 +3,7 @@ from oem import patterns, CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
 from oem.tools import require
 from oem.components.types import State
+from lxml.etree import SubElement
 
 
 class ConstrainDataSectionEpochOrder(Constraint):
@@ -83,7 +84,7 @@ class DataSection(object):
 
     def _to_xml(self, parent):
         for entry in self._states:
-            entry._to_xml(parent)
+            entry._to_xml(SubElement(parent, "stateVector"))
 
     @property
     def states(self):

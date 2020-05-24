@@ -139,9 +139,8 @@ class EphemerisSegment(object):
         return lines
 
     def _to_xml(self, parent):
-        segment = SubElement(parent, "segment")
-        self.metadata._to_xml(segment)
-        data = SubElement(segment, "data")
+        self.metadata._to_xml(SubElement(parent, "metadata"))
+        data = SubElement(parent, "data")
         self._state_data._to_xml(data)
         if self._covariance_data:
             self._covariance_data._to_xml(data)

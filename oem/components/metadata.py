@@ -155,9 +155,8 @@ class MetaDataSection(KeyValueSection):
         return lines
 
     def _to_xml(self, parent):
-        metadata = SubElement(parent, "metadata")
         for key, value in self._format_fields().items():
-            SubElement(metadata, key).text = value
+            SubElement(parent, key).text = value
 
     @property
     def useable_start_time(self):

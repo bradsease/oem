@@ -170,10 +170,10 @@ class OrbitEphemerisMessage(object):
 
     def _to_xml_oem(self):
         oem = Element("oem", id="CCSDS_OEM_VERS", version=self.version)
-        self.header._to_xml(oem)
+        self.header._to_xml(SubElement(oem, "header"))
         body = SubElement(oem, "body")
         for entry in self._segments:
-            entry._to_xml(body)
+            entry._to_xml(SubElement(body, "segment"))
         return ElementTree(oem)
 
     @property

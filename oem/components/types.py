@@ -6,6 +6,31 @@ from oem.base import ConstraintSpecification, Constraint
 from lxml.etree import SubElement
 
 
+COV_XML_ENTRY_MAP = {
+    "CX_X": (0, 0),
+    "CY_X": (1, 0),
+    "CZ_X": (2, 0),
+    "CX_DOT_X": (3, 0),
+    "CY_DOT_X": (4, 0),
+    "CZ_DOT_X": (5, 0),
+    "CY_Y": (1, 1),
+    "CZ_Y": (2, 1),
+    "CX_DOT_Y": (3, 1),
+    "CY_DOT_Y": (4, 1),
+    "CZ_DOT_Y": (5, 1),
+    "CZ_Z": (2, 2),
+    "CX_DOT_Z": (3, 2),
+    "CY_DOT_Z": (4, 2),
+    "CZ_DOT_Z": (5, 2),
+    "CX_DOT_X_DOT": (3, 3),
+    "CY_DOT_X_DOT": (4, 3),
+    "CZ_DOT_X_DOT": (5, 3),
+    "CY_DOT_Y_DOT": (4, 4),
+    "CZ_DOT_Y_DOT": (5, 4),
+    "CZ_DOT_Z_DOT": (5, 5)
+}
+
+
 class ConstrainStateSize(Constraint):
 
     versions = ["1.0"]
@@ -101,20 +126,19 @@ class State(object):
         return f"{formatted_epoch}  {formatted_entries}\n"
 
     def _to_xml(self, parent):
-        state_vector = SubElement(parent, "stateVector")
-        SubElement(state_vector, "EPOCH").text = format_epoch(self.epoch)
-        SubElement(state_vector, "X").text = format_float(self.position[0])
-        SubElement(state_vector, "Y").text = format_float(self.position[1])
-        SubElement(state_vector, "Z").text = format_float(self.position[2])
-        SubElement(state_vector, "X_DOT").text = format_float(self.velocity[0])
-        SubElement(state_vector, "Y_DOT").text = format_float(self.velocity[1])
-        SubElement(state_vector, "Z_DOT").text = format_float(self.velocity[2])
+        SubElement(parent, "EPOCH").text = format_epoch(self.epoch)
+        SubElement(parent, "X").text = format_float(self.position[0])
+        SubElement(parent, "Y").text = format_float(self.position[1])
+        SubElement(parent, "Z").text = format_float(self.position[2])
+        SubElement(parent, "X_DOT").text = format_float(self.velocity[0])
+        SubElement(parent, "Y_DOT").text = format_float(self.velocity[1])
+        SubElement(parent, "Z_DOT").text = format_float(self.velocity[2])
         if self.has_accel:
-            SubElement(state_vector, "X_DDOT").text = (
+            SubElement(parent, "X_DDOT").text = (
                 format_float(self.acceleration[0]))
-            SubElement(state_vector, "Y_DDOT").text = (
+            SubElement(parent, "Y_DDOT").text = (
                 format_float(self.acceleration[1]))
-            SubElement(state_vector, "Z_DDOT").text = (
+            SubElement(parent, "Z_DDOT").text = (
                 format_float(self.acceleration[2]))
 
     @property
@@ -186,30 +210,10 @@ class Covariance(object):
         frame = entries.get("COV_REF_FRAME")
 
         matrix = np.zeros((6, 6))
-        matrix[1, 0] = float(entries["CY_X"])
-        matrix[2, 0] = float(entries["CZ_X"])
-        matrix[3, 0] = float(entries["CX_DOT_X"])
-        matrix[4, 0] = float(entries["CY_DOT_X"])
-        matrix[5, 0] = float(entries["CZ_DOT_X"])
-        matrix[2, 1] = float(entries["CZ_Y"])
-        matrix[3, 1] = float(entries["CX_DOT_Y"])
-        matrix[4, 1] = float(entries["CY_DOT_Y"])
-        matrix[5, 1] = float(entries["CZ_DOT_Y"])
-        matrix[3, 2] = float(entries["CX_DOT_Z"])
-        matrix[4, 2] = float(entries["CY_DOT_Z"])
-        matrix[5, 2] = float(entries["CZ_DOT_Z"])
-        matrix[4, 3] = float(entries["CY_DOT_X_DOT"])
-        matrix[5, 3] = float(entries["CZ_DOT_X_DOT"])
-        matrix[5, 4] = float(entries["CZ_DOT_Y_DOT"])
-        matrix += matrix.T
-        matrix += np.diag([
-            float(entries["CX_X"]),
-            float(entries["CY_Y"]),
-            float(entries["CZ_Z"]),
-            float(entries["CX_DOT_X_DOT"]),
-            float(entries["CY_DOT_Y_DOT"]),
-            float(entries["CZ_DOT_Z_DOT"])
-        ])
+        for key, index in COV_XML_ENTRY_MAP.items():
+            matrix[index] = float(entries[key])
+            if index[0] != index[1]:
+                matrix[index[::-1]] = float(entries[key])
 
         return cls(epoch, frame, matrix, version=version)
 
@@ -227,32 +231,8 @@ class Covariance(object):
         return lines
 
     def _to_xml(self, parent):
-        covariance = SubElement(parent, "covarianceMatrix")
-        SubElement(covariance, "EPOCH").text = format_epoch(self.epoch)
+        SubElement(parent, "EPOCH").text = format_epoch(self.epoch)
         if self.frame:
-            SubElement(covariance, "COV_REF_FRAME").text = self.frame
-
-        def sub(parent, name, text):
-            SubElement(parent, name).text = text
-
-        sub(covariance, "CX_X", format_float(self.matrix[0, 0]))
-        sub(covariance, "CY_X", format_float(self.matrix[1, 0]))
-        sub(covariance, "CZ_X", format_float(self.matrix[2, 0]))
-        sub(covariance, "CX_DOT_X", format_float(self.matrix[3, 0]))
-        sub(covariance, "CY_DOT_X", format_float(self.matrix[4, 0]))
-        sub(covariance, "CZ_DOT_X", format_float(self.matrix[5, 0]))
-        sub(covariance, "CY_Y", format_float(self.matrix[1, 1]))
-        sub(covariance, "CZ_Y", format_float(self.matrix[2, 1]))
-        sub(covariance, "CX_DOT_Y", format_float(self.matrix[3, 1]))
-        sub(covariance, "CY_DOT_Y", format_float(self.matrix[4, 1]))
-        sub(covariance, "CZ_DOT_Y", format_float(self.matrix[5, 1]))
-        sub(covariance, "CZ_Z", format_float(self.matrix[2, 2]))
-        sub(covariance, "CX_DOT_Z", format_float(self.matrix[3, 2]))
-        sub(covariance, "CY_DOT_Z", format_float(self.matrix[4, 2]))
-        sub(covariance, "CZ_DOT_Z", format_float(self.matrix[5, 2]))
-        sub(covariance, "CX_DOT_X_DOT", format_float(self.matrix[3, 3]))
-        sub(covariance, "CY_DOT_X_DOT", format_float(self.matrix[4, 3]))
-        sub(covariance, "CZ_DOT_X_DOT", format_float(self.matrix[5, 3]))
-        sub(covariance, "CY_DOT_Y_DOT", format_float(self.matrix[4, 4]))
-        sub(covariance, "CZ_DOT_Y_DOT", format_float(self.matrix[5, 4]))
-        sub(covariance, "CZ_DOT_Z_DOT", format_float(self.matrix[5, 5]))
+            SubElement(parent, "COV_REF_FRAME").text = self.frame
+        for key, index in COV_XML_ENTRY_MAP.items():
+            SubElement(parent, key).text = format_float(self.matrix[index])

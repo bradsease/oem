@@ -69,10 +69,9 @@ class HeaderSection(KeyValueSection):
         return lines + "\n"
 
     def _to_xml(self, parent):
-        header = SubElement(parent, "header")
         for key, value in self._format_fields().items():
             if key != "CCSDS_OEM_VERS":
-                SubElement(header, key).text = value
+                SubElement(parent, key).text = value
 
     @property
     def version(self):
