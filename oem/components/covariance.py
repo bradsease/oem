@@ -41,7 +41,7 @@ class CovarianceSection(object):
         return iter(self.covariances)
 
     @classmethod
-    def from_string(cls, segment, version):
+    def _from_string(cls, segment, version):
         """Create CovarianceSection from OEM-formatted string.
 
         Args:
@@ -56,7 +56,7 @@ class CovarianceSection(object):
             re.MULTILINE
         )
         covariances = [
-            Covariance.from_string(entry, version)
+            Covariance._from_string(entry, version)
             for entry in raw_covariances
         ]
         return cls(covariances, version=version)

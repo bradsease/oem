@@ -35,7 +35,7 @@ class HeaderSection(KeyValueSection):
         self._parse_fields(fields)
 
     @classmethod
-    def from_string(cls, segment):
+    def _from_string(cls, segment):
         """Create Header Section from OEM-formatted string.
 
         Args:
