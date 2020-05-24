@@ -3,7 +3,7 @@
 import pytest
 import tempfile
 from pathlib import Path
-from oem import OrbitalEphemerisMessage
+from oem import OrbitEphemerisMessage
 
 
 THIS_DIR = Path(__file__).parent
@@ -24,7 +24,7 @@ def test_valid_v1_kvn_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitalEphemerisMessage.from_ascii_oem(file_path)
+    oem = OrbitEphemerisMessage.from_ascii_oem(file_path)
 
     for segment in oem:
         for state in segment.states:
@@ -35,7 +35,7 @@ def test_valid_v1_kvn_samples(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
         oem.save_as(written_oem_path)
-        written_oem = OrbitalEphemerisMessage.from_ascii_oem(written_oem_path)
+        written_oem = OrbitEphemerisMessage.from_ascii_oem(written_oem_path)
         assert written_oem.version == oem.version
 
 
@@ -49,7 +49,7 @@ def test_invalid_v1_kvn_samples(file_path):
     This test requires external data.
     """
     with pytest.raises(Exception):
-        OrbitalEphemerisMessage.from_ascii_oem(file_path)
+        OrbitEphemerisMessage.from_ascii_oem(file_path)
 
 
 @pytest.mark.parametrize("file_path", _get_test_files("v2_0", "KVN", "valid"))
@@ -58,7 +58,7 @@ def test_valid_v2_kvn_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitalEphemerisMessage.from_ascii_oem(file_path)
+    oem = OrbitEphemerisMessage.from_ascii_oem(file_path)
     assert oem.version == "2.0"
 
     for segment in oem:
@@ -76,7 +76,7 @@ def test_valid_v2_kvn_samples(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
         oem.save_as(written_oem_path)
-        written_oem = OrbitalEphemerisMessage.from_ascii_oem(written_oem_path)
+        written_oem = OrbitEphemerisMessage.from_ascii_oem(written_oem_path)
         assert written_oem.version == oem.version
 
 
@@ -90,7 +90,7 @@ def test_invalid_v2_kvn_samples(file_path):
     This test requires external data.
     """
     with pytest.raises(Exception):
-        OrbitalEphemerisMessage.from_ascii_oem(file_path)
+        OrbitEphemerisMessage.from_ascii_oem(file_path)
 
 
 @pytest.mark.parametrize(
@@ -103,7 +103,7 @@ def test_invalid_v1_xml_samples(file_path):
     This test requires external data.
     """
     with pytest.raises(Exception):
-        OrbitalEphemerisMessage.from_xml_oem(file_path)
+        OrbitEphemerisMessage.from_xml_oem(file_path)
 
 
 @pytest.mark.parametrize("file_path", _get_test_files("v2_0", "XML", "valid"))
@@ -112,7 +112,7 @@ def test_valid_v2_xml_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitalEphemerisMessage.from_xml_oem(file_path)
+    oem = OrbitEphemerisMessage.from_xml_oem(file_path)
     assert oem.version == "2.0"
 
     for segment in oem:

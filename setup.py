@@ -13,7 +13,7 @@ setuptools.setup(
     version=version,
     author="Brad Sease",
     author_email="bradsease@gmail.com",
-    description="Python Orbital Ephemeris Message (OEM) tools",
+    description="Python Orbit Ephemeris Message (OEM) tools",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/bradsease/oem",

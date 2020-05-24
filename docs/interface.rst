@@ -1,6 +1,6 @@
 .. _interface:
 
-OrbitalEphemerisMessage
+OrbitEphemerisMessage
 =================================
 
 .. seealso::
@@ -10,7 +10,7 @@ OrbitalEphemerisMessage
    Module :ref:`types`
 
 
-.. automodule:: oem.OrbitalEphemerisMessage
+.. automodule:: oem.OrbitEphemerisMessage
     :members:
     :undoc-members:
     :show-inheritance:
