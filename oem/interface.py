@@ -2,7 +2,7 @@ import re
 from lxml.etree import ElementTree, Element, SubElement, parse
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
-from oem.tools import require
+from oem.tools import require, is_kvn
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -66,7 +66,7 @@ class OrbitEphemerisMessage(object):
     Examples:
         The `OrbitEphemerisMessage` class can load directly from a file:
 
-        >>> ephemeris = OrbitEphemerisMessage.from_ascii_oem(file_path)
+        >>> ephemeris = OrbitEphemerisMessage.open(file_path)
 
         An OEM is made up of one or more data segments available through an
         iterator:
@@ -87,6 +87,16 @@ class OrbitEphemerisMessage(object):
 
         >>> epoch in ephemeris
         True
+
+        The `save_as` method enables saving of copies of an OEM in both KVN and
+        XML formats.
+
+        >>> oem.save_as("new.oem", file_format="XML")
+
+        To convert directly between KVN and XML formats, use the `convert`
+        class method. For example, to convert a KVN OEM to XML:
+
+        >>> oem.convert("input.oem", "output.oem", "XML")
     """
 
     _constraint_spec = ConstraintSpecification(
@@ -140,14 +150,46 @@ class OrbitEphemerisMessage(object):
         ]
         return cls(header, segments)
 
+    @classmethod
+    def open(cls, file_path):
+        """Open an Orbit Ephemeris Message file.
+
+        This method supports both KVN and XML formats.
+
+        Args:
+            file_path (str or Path): Path of file to read.
+
+        Returns:
+            oem: OrbitEphemerisMessage instance.
+        """
+        if is_kvn(file_path):
+            oem = cls.from_ascii_oem(file_path)
+        else:
+            oem = cls.from_xml_oem(file_path)
+        return oem
+
+    @classmethod
+    def convert(cls, in_file_path, out_file_path, file_format):
+        """Convert an OEM to a particular file format.
+
+        This method will succeed and produce an output file even if the input
+        file is already in the desired format. Comments are not preserved.
+
+        Args:
+            in_file_path (str or Path): Path to original ephemeris.
+            out_file_path (str or Path): Desired path for converted ephemeris.
+            file_format (str): Desired output format. Options are
+                'KVN' and 'XML'.
+        """
+        cls.open(in_file_path).save_as(out_file_path, file_format=file_format)
+
     def save_as(self, file_path, file_format="KVN"):
         """Write OEM to file.
 
         Args:
-            file_path:
+            file_path (str or Path): Desired path for output ephemeris.
             file_format (str, optional): Type of file to output. Options are
-                'KVN' for ASCII format and 'XML' for the XML format. Default
-                is 'KVN'.
+                'KVN' and 'XML'. Default is 'KVN'.
         """
         if file_format == "KVN":
             with open(file_path, "w") as output_file:

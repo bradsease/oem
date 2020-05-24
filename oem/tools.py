@@ -81,3 +81,20 @@ def require_field(field, metadata):
         ValueError: Missing required header.
     """
     require(field in metadata, f"Missing required header: {field}")
+
+
+def is_kvn(file_path):
+    """Determine if an OEM file is KVN or XML.
+
+    Args:
+        file_path (str or Path): Path of file to check.
+
+    returns:
+        result (bool): True if file is KVN, false if XML.
+    """
+    with open(file_path, "r") as target_file:
+        if "<?xml" in target_file.readline():
+            result = False
+        else:
+            result = True
+    return result
