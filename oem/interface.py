@@ -54,8 +54,8 @@ class ConstrainOemStates(Constraint):
         )
 
 
-class OrbitalEphemerisMessage(object):
-    """Python representation of an Orbital Ephemeris Message.
+class OrbitEphemerisMessage(object):
+    """Python representation of an Orbit Ephemeris Message.
 
     This class provides the primary interface between the OEM module and an
     OEM file.
@@ -64,9 +64,9 @@ class OrbitalEphemerisMessage(object):
         header (HeaderSection): Object containing the OEM header section.
 
     Examples:
-        The `OrbitalEphemerisMessage` class can load directly from a file:
+        The `OrbitEphemerisMessage` class can load directly from a file:
 
-        >>> ephemeris = OrbitalEphemerisMessage.from_ascii_oem(file_path)
+        >>> ephemeris = OrbitEphemerisMessage.from_ascii_oem(file_path)
 
         An OEM is made up of one or more data segments available through an
         iterator:
@@ -95,7 +95,7 @@ class OrbitalEphemerisMessage(object):
     )
 
     def __init__(self, header, segments):
-        '''Create an Orbital Ephemeris Message.
+        '''Create an Orbit Ephemeris Message.
 
         Args:
             header (HeaderSection): Object containing the OEM header section.

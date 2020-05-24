@@ -1,6 +1,6 @@
 
 CURRENT_VERSION = "2.0"
 
-from .interface import OrbitalEphemerisMessage  # noqa
+from .interface import OrbitEphemerisMessage  # noqa
 
-__all__ = ['OrbitalEphemerisMessage']
+__all__ = ['OrbitEphemerisMessage']

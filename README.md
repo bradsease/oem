@@ -1,5 +1,5 @@
-# Python Orbital Ephemeris Message tools
-Python tools for working with Orbital Ephemeris Messages (OEMs).
+# Python Orbit Ephemeris Message tools
+Python tools for working with Orbit Ephemeris Messages (OEMs).
 
 
 ## Development Status
@@ -16,13 +16,13 @@ pip install oem
 ```
 
 ## Usage
-The `OrbitalEphemerisMessage` class is the primary interface for OEM Files.
+The `OrbitEphemerisMessage` class is the primary interface for OEM Files.
 ```python
-from oem import OrbitalEphemerisMessage
+from oem import OrbitEphemerisMessage
 
-ephemeris = OrbitalEphemerisMessage.from_ascii_oem(file_path)
+ephemeris = OrbitEphemerisMessage.from_ascii_oem(file_path)
 ```
-Each OEM is made up of one or more segments of state and optional covariance data. The `OrbitalEphemerisMessage` class provides iterables for both.
+Each OEM is made up of one or more segments of state and optional covariance data. The `OrbitEphemerisMessage` class provides iterables for both.
 ```python
 for segment in ephemeris:
     for state in segment:
