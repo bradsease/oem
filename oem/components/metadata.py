@@ -1,6 +1,7 @@
 import re
 from oem import patterns, CURRENT_VERSION
-from oem.tools import parse_epoch, parse_integer, require, require_field
+from oem.tools import (
+    parse_epoch, parse_integer, require, require_field, format_epoch)
 from oem.base import (
     KeyValueSection, HeaderField, ConstraintSpecification, Constraint)
 
@@ -92,18 +93,18 @@ class MetaDataSection(KeyValueSection):
     """
 
     _field_spec = {
-        "OBJECT_NAME": HeaderField(str, required=True),
-        "OBJECT_ID": HeaderField(str, required=True),
-        "CENTER_NAME": HeaderField(str, required=True),
-        "REF_FRAME": HeaderField(str, required=True),
-        "TIME_SYSTEM": HeaderField(str, required=True),
-        "START_TIME": HeaderField(parse_epoch, required=True),
-        "STOP_TIME": HeaderField(parse_epoch, required=True),
-        "REF_FRAME_EPOCH": HeaderField(parse_epoch),
-        "USEABLE_START_TIME": HeaderField(parse_epoch),
-        "USEABLE_STOP_TIME": HeaderField(parse_epoch),
-        "INTERPOLATION": HeaderField(str),
-        "INTERPOLATION_DEGREE": HeaderField(parse_integer)
+        "OBJECT_NAME": HeaderField(str, str, required=True),
+        "OBJECT_ID": HeaderField(str, str, required=True),
+        "CENTER_NAME": HeaderField(str, str, required=True),
+        "REF_FRAME": HeaderField(str, str, required=True),
+        "TIME_SYSTEM": HeaderField(str, str, required=True),
+        "START_TIME": HeaderField(parse_epoch, format_epoch, required=True),
+        "STOP_TIME": HeaderField(parse_epoch, format_epoch, required=True),
+        "REF_FRAME_EPOCH": HeaderField(parse_epoch, format_epoch),
+        "USEABLE_START_TIME": HeaderField(parse_epoch, format_epoch),
+        "USEABLE_STOP_TIME": HeaderField(parse_epoch, format_epoch),
+        "INTERPOLATION": HeaderField(str, str),
+        "INTERPOLATION_DEGREE": HeaderField(parse_integer, int)
     }
     _constraint_spec = ConstraintSpecification(
         ConstrainMetaDataTime,
@@ -142,6 +143,12 @@ class MetaDataSection(KeyValueSection):
             if entry.tag != "COMMENT"
         }
         return cls(metadata, version=version)
+
+    def _to_string(self):
+        lines = "META_START\n"
+        lines += "\n".join(self._format_fields()) + "\n"
+        lines += "META_STOP\n"
+        return lines
 
     @property
     def useable_start_time(self):

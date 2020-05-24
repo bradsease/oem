@@ -1,6 +1,7 @@
 """Test parsing sample OEMS.
 """
 import pytest
+import tempfile
 from pathlib import Path
 from oem import OrbitalEphemerisMessage
 
@@ -30,6 +31,12 @@ def test_valid_v1_kvn_samples(file_path):
             assert state.acceleration is None
         assert len(oem.states) > 0
         assert len(oem.covariances) == 0
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        written_oem_path = Path(tmp_dir) / "written.oem"
+        oem.save_as(written_oem_path)
+        written_oem = OrbitalEphemerisMessage.from_ascii_oem(written_oem_path)
+        assert written_oem.version == oem.version
 
 
 @pytest.mark.parametrize(
@@ -66,7 +73,11 @@ def test_valid_v2_kvn_samples(file_path):
         assert len(oem.states) > 0
         assert len(oem.covariances) >= 0
 
-    assert "CCSDS_OEM_VERS" in oem.header
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        written_oem_path = Path(tmp_dir) / "written.oem"
+        oem.save_as(written_oem_path)
+        written_oem = OrbitalEphemerisMessage.from_ascii_oem(written_oem_path)
+        assert written_oem.version == oem.version
 
 
 @pytest.mark.parametrize(

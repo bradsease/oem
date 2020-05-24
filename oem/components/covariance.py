@@ -68,6 +68,15 @@ class CovarianceSection(object):
         ]
         return cls(covariances, version=version)
 
+    def _to_string(self):
+        lines = "COVARIANCE_START\n"
+        lines += "\n".join(
+            entry._to_string()
+            for entry in self._covariances
+        )
+        lines += "COVARIANCE_STOP\n"
+        return lines
+
     @property
     def covariances(self):
         """Return a list of covariances in this section."""
