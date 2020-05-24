@@ -189,8 +189,7 @@ class OrbitEphemerisMessage(object):
         Args:
             file_path (str or Path): Desired path for output ephemeris.
             file_format (str, optional): Type of file to output. Options are
-                'KVN' for ASCII format and 'XML' for the XML format. Default
-                is 'KVN'.
+                'KVN' and 'XML'. Default is 'KVN'.
         """
         if file_format == "KVN":
             with open(file_path, "w") as output_file:
