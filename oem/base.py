@@ -12,7 +12,7 @@ class HeaderField(object):
         required (bool): Indication of whether or not this field is required.
     """
 
-    def __init__(self, parser, formatter=None, required=False):
+    def __init__(self, parser, formatter, required=False):
         self.parser = parser
         self.formatter = formatter
         self.required = required
