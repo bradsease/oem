@@ -1,5 +1,4 @@
 import re
-# import xml.etree.ElementTree as ET
 from lxml.etree import ElementTree, Element, SubElement, parse
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
