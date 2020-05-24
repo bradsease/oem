@@ -1,5 +1,5 @@
 import re
-import xml.etree.ElementTree as ET
+from lxml.etree import ElementTree, Element, SubElement, parse
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
 from oem.tools import require
@@ -132,7 +132,7 @@ class OrbitEphemerisMessage(object):
 
     @classmethod
     def from_xml_oem(cls, file_path):
-        parts = ET.parse(file_path).getroot()
+        parts = parse(str(file_path)).getroot()
         header = components.HeaderSection._from_xml(parts)
         segments = [
             components.EphemerisSegment._from_xml(part, header.version)
@@ -153,7 +153,12 @@ class OrbitEphemerisMessage(object):
             with open(file_path, "w") as output_file:
                 output_file.write(self._to_ascii_oem())
         elif file_format == "XML":
-            raise NotImplementedError("")
+            self._to_xml_oem().write(
+                str(file_path),
+                pretty_print=True,
+                encoding="utf-8",
+                xml_declaration=True
+            )
         else:
             raise ValueError(f"Unrecognized file type: '{file_format}'")
 
@@ -161,6 +166,14 @@ class OrbitEphemerisMessage(object):
         lines = self.header._to_string() + "\n"
         lines += "".join(entry._to_string() for entry in self._segments)
         return lines
+
+    def _to_xml_oem(self):
+        oem = Element("oem", id="CCSDS_OEM_VERS", version=self.version)
+        self.header._to_xml(SubElement(oem, "header"))
+        body = SubElement(oem, "body")
+        for entry in self._segments:
+            entry._to_xml(SubElement(body, "segment"))
+        return ElementTree(oem)
 
     @property
     def states(self):

@@ -3,6 +3,32 @@ import numpy as np
 from oem import patterns, CURRENT_VERSION
 from oem.tools import parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
+from lxml.etree import SubElement
+
+
+COV_XML_ENTRY_MAP = {
+    "CX_X": (0, 0),
+    "CY_X": (1, 0),
+    "CZ_X": (2, 0),
+    "CX_DOT_X": (3, 0),
+    "CY_DOT_X": (4, 0),
+    "CZ_DOT_X": (5, 0),
+    "CY_Y": (1, 1),
+    "CZ_Y": (2, 1),
+    "CX_DOT_Y": (3, 1),
+    "CY_DOT_Y": (4, 1),
+    "CZ_DOT_Y": (5, 1),
+    "CZ_Z": (2, 2),
+    "CX_DOT_Z": (3, 2),
+    "CY_DOT_Z": (4, 2),
+    "CZ_DOT_Z": (5, 2),
+    "CX_DOT_X_DOT": (3, 3),
+    "CY_DOT_X_DOT": (4, 3),
+    "CZ_DOT_X_DOT": (5, 3),
+    "CY_DOT_Y_DOT": (4, 4),
+    "CZ_DOT_Y_DOT": (5, 4),
+    "CZ_DOT_Z_DOT": (5, 5)
+}
 
 
 class ConstrainStateSize(Constraint):
@@ -99,6 +125,22 @@ class State(object):
         )
         return f"{formatted_epoch}  {formatted_entries}\n"
 
+    def _to_xml(self, parent):
+        SubElement(parent, "EPOCH").text = format_epoch(self.epoch)
+        SubElement(parent, "X").text = format_float(self.position[0])
+        SubElement(parent, "Y").text = format_float(self.position[1])
+        SubElement(parent, "Z").text = format_float(self.position[2])
+        SubElement(parent, "X_DOT").text = format_float(self.velocity[0])
+        SubElement(parent, "Y_DOT").text = format_float(self.velocity[1])
+        SubElement(parent, "Z_DOT").text = format_float(self.velocity[2])
+        if self.has_accel:
+            SubElement(parent, "X_DDOT").text = (
+                format_float(self.acceleration[0]))
+            SubElement(parent, "Y_DDOT").text = (
+                format_float(self.acceleration[1]))
+            SubElement(parent, "Z_DDOT").text = (
+                format_float(self.acceleration[2]))
+
     @property
     def has_accel(self):
         return True if self.acceleration is not None else False
@@ -168,30 +210,10 @@ class Covariance(object):
         frame = entries.get("COV_REF_FRAME")
 
         matrix = np.zeros((6, 6))
-        matrix[1, 0] = float(entries["CY_X"])
-        matrix[2, 0] = float(entries["CZ_X"])
-        matrix[3, 0] = float(entries["CX_DOT_X"])
-        matrix[4, 0] = float(entries["CY_DOT_X"])
-        matrix[5, 0] = float(entries["CZ_DOT_X"])
-        matrix[2, 1] = float(entries["CZ_Y"])
-        matrix[3, 1] = float(entries["CX_DOT_Y"])
-        matrix[4, 1] = float(entries["CY_DOT_Y"])
-        matrix[5, 1] = float(entries["CZ_DOT_Y"])
-        matrix[3, 2] = float(entries["CX_DOT_Z"])
-        matrix[4, 2] = float(entries["CY_DOT_Z"])
-        matrix[5, 2] = float(entries["CZ_DOT_Z"])
-        matrix[4, 3] = float(entries["CY_DOT_X_DOT"])
-        matrix[5, 3] = float(entries["CZ_DOT_X_DOT"])
-        matrix[5, 4] = float(entries["CZ_DOT_Y_DOT"])
-        matrix += matrix.T
-        matrix += np.diag([
-            float(entries["CX_X"]),
-            float(entries["CY_Y"]),
-            float(entries["CZ_Z"]),
-            float(entries["CX_DOT_X_DOT"]),
-            float(entries["CY_DOT_Y_DOT"]),
-            float(entries["CZ_DOT_Z_DOT"])
-        ])
+        for key, index in COV_XML_ENTRY_MAP.items():
+            matrix[index] = float(entries[key])
+            if index[0] != index[1]:
+                matrix[index[::-1]] = float(entries[key])
 
         return cls(epoch, frame, matrix, version=version)
 
@@ -207,3 +229,10 @@ class Covariance(object):
             idx += 1
 
         return lines
+
+    def _to_xml(self, parent):
+        SubElement(parent, "EPOCH").text = format_epoch(self.epoch)
+        if self.frame:
+            SubElement(parent, "COV_REF_FRAME").text = self.frame
+        for key, index in COV_XML_ENTRY_MAP.items():
+            SubElement(parent, key).text = format_float(self.matrix[index])

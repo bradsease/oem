@@ -2,6 +2,7 @@ import re
 from oem import patterns
 from oem.tools import parse_epoch, format_epoch
 from oem.base import KeyValueSection, HeaderField
+from lxml.etree import SubElement
 
 
 class HeaderSection(KeyValueSection):
@@ -61,11 +62,16 @@ class HeaderSection(KeyValueSection):
     def _to_string(self):
         lines = f"CCSDS_OEM_VERS = {self.version}\n"
         lines += "\n".join([
-            entry for entry
-            in self._format_fields()
-            if "CCSDS_OEM_VERS" not in entry
+            f"{key} = {value}"
+            for key, value in self._format_fields().items()
+            if key != "CCSDS_OEM_VERS"
         ])
         return lines + "\n"
+
+    def _to_xml(self, parent):
+        for key, value in self._format_fields().items():
+            if key != "CCSDS_OEM_VERS":
+                SubElement(parent, key).text = value
 
     @property
     def version(self):

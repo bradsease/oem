@@ -3,6 +3,7 @@ from oem import patterns, CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
 from oem.tools import require
 from oem.components.types import Covariance
+from lxml.etree import SubElement
 
 
 class ConstrainCovarianceSectionEpochOrder(Constraint):
@@ -76,6 +77,10 @@ class CovarianceSection(object):
         )
         lines += "COVARIANCE_STOP\n"
         return lines
+
+    def _to_xml(self, parent):
+        for entry in self._covariances:
+            entry._to_xml(SubElement(parent, "covarianceMatrix"))
 
     @property
     def covariances(self):
