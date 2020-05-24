@@ -2,7 +2,7 @@ import re
 from lxml.etree import ElementTree, Element, SubElement, parse
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
-from oem.tools import require, is_ascii
+from oem.tools import require, is_kvn
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -162,7 +162,7 @@ class OrbitEphemerisMessage(object):
         Returns:
             oem: OrbitEphemerisMessage instance.
         """
-        if is_ascii(file_path):
+        if is_kvn(file_path):
             oem = cls.from_ascii_oem(file_path)
         else:
             oem = cls.from_xml_oem(file_path)
