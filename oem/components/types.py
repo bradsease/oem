@@ -3,7 +3,7 @@ import numpy as np
 from oem import patterns, CURRENT_VERSION
 from oem.tools import parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
-from xml.etree.ElementTree import SubElement
+from lxml.etree import SubElement
 
 
 class ConstrainStateSize(Constraint):
@@ -250,7 +250,7 @@ class Covariance(object):
         sub(covariance, "CX_DOT_Z", format_float(self.matrix[3, 2]))
         sub(covariance, "CY_DOT_Z", format_float(self.matrix[4, 2]))
         sub(covariance, "CZ_DOT_Z", format_float(self.matrix[5, 2]))
-        sub(covariance, "CX_DOT_X_DOt", format_float(self.matrix[3, 3]))
+        sub(covariance, "CX_DOT_X_DOT", format_float(self.matrix[3, 3]))
         sub(covariance, "CY_DOT_X_DOT", format_float(self.matrix[4, 3]))
         sub(covariance, "CZ_DOT_X_DOT", format_float(self.matrix[5, 3]))
         sub(covariance, "CY_DOT_Y_DOT", format_float(self.matrix[4, 4]))

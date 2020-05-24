@@ -4,7 +4,7 @@ from oem.tools import require
 from oem.components.metadata import MetaDataSection
 from oem.components.data import DataSection
 from oem.components.covariance import CovarianceSection
-from xml.etree.ElementTree import SubElement
+from lxml.etree import SubElement
 
 
 class ConstrainEphemerisSegmentCovariance(Constraint):

@@ -113,7 +113,6 @@ def test_valid_v2_xml_samples(file_path):
     This test requires external data.
     """
     oem = OrbitEphemerisMessage.from_xml_oem(file_path)
-    oem._to_xml_oem()
     assert oem.version == "2.0"
 
     for segment in oem:
@@ -127,3 +126,9 @@ def test_valid_v2_xml_samples(file_path):
         assert segment.useable_stop_time in segment
         assert len(oem.states) > 0
         assert len(oem.covariances) >= 0
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        written_oem_path = Path(tmp_dir) / "written.oem"
+        oem.save_as(written_oem_path, file_format="XML")
+        written_oem = OrbitEphemerisMessage.from_xml_oem(written_oem_path)
+        assert written_oem.version == oem.version

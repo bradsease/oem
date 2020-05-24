@@ -4,7 +4,7 @@ from oem.tools import (
     parse_epoch, parse_integer, require, require_field, format_epoch)
 from oem.base import (
     KeyValueSection, HeaderField, ConstraintSpecification, Constraint)
-from xml.etree.ElementTree import SubElement
+from lxml.etree import SubElement
 
 
 class ConstrainMetaDataTime(Constraint):
@@ -105,7 +105,7 @@ class MetaDataSection(KeyValueSection):
         "USEABLE_START_TIME": HeaderField(parse_epoch, format_epoch),
         "USEABLE_STOP_TIME": HeaderField(parse_epoch, format_epoch),
         "INTERPOLATION": HeaderField(str, str),
-        "INTERPOLATION_DEGREE": HeaderField(parse_integer, int)
+        "INTERPOLATION_DEGREE": HeaderField(parse_integer, str)
     }
     _constraint_spec = ConstraintSpecification(
         ConstrainMetaDataTime,

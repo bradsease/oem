@@ -2,7 +2,7 @@ import re
 from oem import patterns
 from oem.tools import parse_epoch, format_epoch
 from oem.base import KeyValueSection, HeaderField
-from xml.etree.ElementTree import SubElement
+from lxml.etree import SubElement
 
 
 class HeaderSection(KeyValueSection):
