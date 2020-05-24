@@ -66,7 +66,7 @@ class OrbitEphemerisMessage(object):
     Examples:
         The `OrbitEphemerisMessage` class can load directly from a file:
 
-        >>> ephemeris = OrbitEphemerisMessage.from_ascii_oem(file_path)
+        >>> ephemeris = OrbitEphemerisMessage.open(file_path)
 
         An OEM is made up of one or more data segments available through an
         iterator:
@@ -87,6 +87,16 @@ class OrbitEphemerisMessage(object):
 
         >>> epoch in ephemeris
         True
+
+        The `save_as` method enables saving of copies of an OEM in both KVN and
+        XML formats.
+
+        >>> oem.save_as("new.oem", file_format="XML")
+
+        To convert directly between KVN and XML formats, use the `convert`
+        class method. For example, to convert a KVN OEM to XML:
+
+        >>> oem.convert("input.oem", "output.oem", "XML")
     """
 
     _constraint_spec = ConstraintSpecification(
@@ -144,7 +154,7 @@ class OrbitEphemerisMessage(object):
     def open(cls, file_path):
         """Open an Orbit Ephemeris Message file.
 
-        The method supports both KVN and XML formats.
+        This method supports both KVN and XML formats.
 
         Args:
             file_path (str or Path): Path of file to read.
