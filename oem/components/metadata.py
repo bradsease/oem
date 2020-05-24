@@ -4,6 +4,7 @@ from oem.tools import (
     parse_epoch, parse_integer, require, require_field, format_epoch)
 from oem.base import (
     KeyValueSection, HeaderField, ConstraintSpecification, Constraint)
+from xml.etree.ElementTree import SubElement
 
 
 class ConstrainMetaDataTime(Constraint):
@@ -146,9 +147,17 @@ class MetaDataSection(KeyValueSection):
 
     def _to_string(self):
         lines = "META_START\n"
-        lines += "\n".join(self._format_fields()) + "\n"
+        lines += "\n".join([
+            f"{key} = {value}"
+            for key, value in self._format_fields().items()
+        ]) + "\n"
         lines += "META_STOP\n"
         return lines
+
+    def _to_xml(self, parent):
+        metadata = SubElement(parent, "metadata")
+        for key, value in self._format_fields().items():
+            SubElement(metadata, key).text = value
 
     @property
     def useable_start_time(self):

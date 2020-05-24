@@ -4,6 +4,7 @@ from oem.tools import require
 from oem.components.metadata import MetaDataSection
 from oem.components.data import DataSection
 from oem.components.covariance import CovarianceSection
+from xml.etree.ElementTree import SubElement
 
 
 class ConstrainEphemerisSegmentCovariance(Constraint):
@@ -136,6 +137,14 @@ class EphemerisSegment(object):
         if self._covariance_data:
             lines += self._covariance_data._to_string() + "\n"
         return lines
+
+    def _to_xml(self, parent):
+        segment = SubElement(parent, "segment")
+        self.metadata._to_xml(segment)
+        data = SubElement(segment, "data")
+        self._state_data._to_xml(data)
+        if self._covariance_data:
+            self._covariance_data._to_xml(data)
 
     @property
     def states(self):

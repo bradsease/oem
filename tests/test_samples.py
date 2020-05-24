@@ -113,6 +113,7 @@ def test_valid_v2_xml_samples(file_path):
     This test requires external data.
     """
     oem = OrbitEphemerisMessage.from_xml_oem(file_path)
+    oem._to_xml_oem()
     assert oem.version == "2.0"
 
     for segment in oem:

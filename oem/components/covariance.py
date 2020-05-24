@@ -77,6 +77,10 @@ class CovarianceSection(object):
         lines += "COVARIANCE_STOP\n"
         return lines
 
+    def _to_xml(self, parent):
+        for entry in self._covariances:
+            entry._to_xml(parent)
+
     @property
     def covariances(self):
         """Return a list of covariances in this section."""

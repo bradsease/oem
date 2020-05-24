@@ -162,6 +162,15 @@ class OrbitEphemerisMessage(object):
         lines += "".join(entry._to_string() for entry in self._segments)
         return lines
 
+    def _to_xml_oem(self):
+        oem = ET.Element("oem")
+        oem.attrib = {'id': 'CCSDS_OEM_VERS', 'version': self.version}
+        self.header._to_xml(oem)
+        body = ET.SubElement(oem, "body")
+        for entry in self._segments:
+            entry._to_xml(body)
+        return oem
+
     @property
     def states(self):
         '''Return a list of states in all segments.'''

@@ -81,6 +81,10 @@ class DataSection(object):
     def _to_string(self):
         return "".join(entry._to_string() for entry in self._states)
 
+    def _to_xml(self, parent):
+        for entry in self._states:
+            entry._to_xml(parent)
+
     @property
     def states(self):
         """Return a list of States in this section."""

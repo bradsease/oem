@@ -3,6 +3,7 @@ import numpy as np
 from oem import patterns, CURRENT_VERSION
 from oem.tools import parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
+from xml.etree.ElementTree import SubElement
 
 
 class ConstrainStateSize(Constraint):
@@ -98,6 +99,23 @@ class State(object):
             [format_float(entry) for entry in entries]
         )
         return f"{formatted_epoch}  {formatted_entries}\n"
+
+    def _to_xml(self, parent):
+        state_vector = SubElement(parent, "stateVector")
+        SubElement(state_vector, "EPOCH").text = format_epoch(self.epoch)
+        SubElement(state_vector, "X").text = format_float(self.position[0])
+        SubElement(state_vector, "Y").text = format_float(self.position[1])
+        SubElement(state_vector, "Z").text = format_float(self.position[2])
+        SubElement(state_vector, "X_DOT").text = format_float(self.velocity[0])
+        SubElement(state_vector, "Y_DOT").text = format_float(self.velocity[1])
+        SubElement(state_vector, "Z_DOT").text = format_float(self.velocity[2])
+        if self.has_accel:
+            SubElement(state_vector, "X_DDOT").text = (
+                format_float(self.acceleration[0]))
+            SubElement(state_vector, "Y_DDOT").text = (
+                format_float(self.acceleration[1]))
+            SubElement(state_vector, "Z_DDOT").text = (
+                format_float(self.acceleration[2]))
 
     @property
     def has_accel(self):
@@ -207,3 +225,34 @@ class Covariance(object):
             idx += 1
 
         return lines
+
+    def _to_xml(self, parent):
+        covariance = SubElement(parent, "covarianceMatrix")
+        SubElement(covariance, "EPOCH").text = format_epoch(self.epoch)
+        if self.frame:
+            SubElement(covariance, "COV_REF_FRAME").text = self.frame
+
+        def sub(parent, name, text):
+            SubElement(parent, name).text = text
+
+        sub(covariance, "CX_X", format_float(self.matrix[0, 0]))
+        sub(covariance, "CY_X", format_float(self.matrix[1, 0]))
+        sub(covariance, "CZ_X", format_float(self.matrix[2, 0]))
+        sub(covariance, "CX_DOT_X", format_float(self.matrix[3, 0]))
+        sub(covariance, "CY_DOT_X", format_float(self.matrix[4, 0]))
+        sub(covariance, "CZ_DOT_X", format_float(self.matrix[5, 0]))
+        sub(covariance, "CY_Y", format_float(self.matrix[1, 1]))
+        sub(covariance, "CZ_Y", format_float(self.matrix[2, 1]))
+        sub(covariance, "CX_DOT_Y", format_float(self.matrix[3, 1]))
+        sub(covariance, "CY_DOT_Y", format_float(self.matrix[4, 1]))
+        sub(covariance, "CZ_DOT_Y", format_float(self.matrix[5, 1]))
+        sub(covariance, "CZ_Z", format_float(self.matrix[2, 2]))
+        sub(covariance, "CX_DOT_Z", format_float(self.matrix[3, 2]))
+        sub(covariance, "CY_DOT_Z", format_float(self.matrix[4, 2]))
+        sub(covariance, "CZ_DOT_Z", format_float(self.matrix[5, 2]))
+        sub(covariance, "CX_DOT_X_DOt", format_float(self.matrix[3, 3]))
+        sub(covariance, "CY_DOT_X_DOT", format_float(self.matrix[4, 3]))
+        sub(covariance, "CZ_DOT_X_DOT", format_float(self.matrix[5, 3]))
+        sub(covariance, "CY_DOT_Y_DOT", format_float(self.matrix[4, 4]))
+        sub(covariance, "CZ_DOT_Y_DOT", format_float(self.matrix[5, 4]))
+        sub(covariance, "CZ_DOT_Z_DOT", format_float(self.matrix[5, 5]))
