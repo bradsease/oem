@@ -1,6 +1,6 @@
 import re
 from oem import patterns
-from oem.tools import parse_epoch, format_epoch
+from oem.tools import parse_utc, parse_str, format_epoch
 from oem.base import KeyValueSection, HeaderField
 from lxml.etree import SubElement
 
@@ -26,16 +26,19 @@ class HeaderSection(KeyValueSection):
     """
 
     _field_spec = {
-        "CCSDS_OEM_VERS": HeaderField(str, str, required=True),
-        "CREATION_DATE": HeaderField(parse_epoch, format_epoch, required=True),
-        "ORIGINATOR": HeaderField(str, str, required=True)
+        "CCSDS_OEM_VERS": HeaderField(parse_str, str, required=True),
+        "CREATION_DATE": HeaderField(parse_utc, format_epoch, required=True),
+        "ORIGINATOR": HeaderField(parse_str, str, required=True)
     }
 
     def __init__(self, fields):
         self._parse_fields(fields)
 
     def __eq__(self, other):
-        return self._fields == other._fields
+        return (
+            self._fields.keys() == other._fields.keys() and
+            all(self[key] == other[key] for key in self)
+        )
 
     @classmethod
     def _from_string(cls, segment):
@@ -65,14 +68,14 @@ class HeaderSection(KeyValueSection):
     def _to_string(self):
         lines = f"CCSDS_OEM_VERS = {self.version}\n"
         lines += "\n".join([
-            f"{key} = {value}"
-            for key, value in self._format_fields().items()
-            if key != "CCSDS_OEM_VERS"
+            entry
+            for entry in self._format_fields()
+            if "CCSDS_OEM_VERS" not in entry
         ])
         return lines + "\n"
 
     def _to_xml(self, parent):
-        for key, value in self._format_fields().items():
+        for key, value in self._fields.items():
             if key != "CCSDS_OEM_VERS":
                 SubElement(parent, key).text = value
 

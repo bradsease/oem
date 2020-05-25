@@ -46,22 +46,13 @@ class KeyValueSection(object):
             fields (dict): Unprocessed field data.
         """
         self._validate_fields(fields)
-        self._fields = {
-            key: self._field_spec[key].parser(value)
-            for key, value
-            in fields.items()
-        }
+        self._fields = fields
 
     def _format_fields(self):
-        fields = {
-            key: self._field_spec[key].formatter(value)
-            for key, value
-            in self._fields.items()
-        }
-        return fields
+        return [f"{key} = {value}" for key, value in self._fields.items()]
 
     def __getitem__(self, key):
-        return self._fields[key]
+        return self._field_spec[key].parser(self._fields[key], self)
 
     def __setitem__(self, key, value):
         if key in self._field_spec:
@@ -74,6 +65,9 @@ class KeyValueSection(object):
 
     def __iter__(self):
         return iter(self._fields)
+
+    def items(self):
+        return [(key, self[key]) for key in self]
 
     @property
     def required_keys(self):

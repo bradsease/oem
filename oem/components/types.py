@@ -79,7 +79,7 @@ class State(object):
         )
 
     @classmethod
-    def _from_string(cls, segment, version):
+    def _from_string(cls, segment, version, metadata):
         """Create State from OEM-formatted string.
 
         Args:
@@ -91,7 +91,7 @@ class State(object):
         raw_state = segment.split()
         has_accel = True if len(raw_state) == 10 else False
 
-        epoch = parse_epoch(raw_state[0])
+        epoch = parse_epoch(raw_state[0], metadata)
         position = [float(entry) for entry in raw_state[1:4]]
         velocity = [float(entry) for entry in raw_state[4:7]]
         if has_accel:
@@ -108,8 +108,8 @@ class State(object):
         )
 
     @classmethod
-    def _from_xml(cls, segment, version):
-        epoch = parse_epoch(segment[0].text)
+    def _from_xml(cls, segment, version, metadata):
+        epoch = parse_epoch(segment[0].text, metadata)
         position = [float(entry.text) for entry in segment[1:4]]
         velocity = [float(entry.text) for entry in segment[4:7]]
         if len(segment) == 10:
@@ -179,7 +179,7 @@ class Covariance(object):
         )
 
     @classmethod
-    def _from_string(cls, segment, version):
+    def _from_string(cls, segment, version, metadata):
         """Create Covariance from OEM-formatted string.
 
         Args:
@@ -195,7 +195,7 @@ class Covariance(object):
         if "EPOCH" not in headers:
             raise ValueError("Covariance entry missing keyword 'EPOCH'")
         else:
-            epoch = parse_epoch(headers["EPOCH"])
+            epoch = parse_epoch(headers["EPOCH"], metadata)
         frame = headers.get("COV_REF_FRAME")
 
         raw_covariance = re.findall(
@@ -217,13 +217,13 @@ class Covariance(object):
         return cls(epoch, frame, matrix, version=version)
 
     @classmethod
-    def _from_xml(cls, segment, version):
+    def _from_xml(cls, segment, version, metadata):
         parts = [entry for entry in segment if entry.tag != "COMMENT"]
         entries = {entry.tag: entry.text for entry in parts}
         if "EPOCH" not in entries:
             raise ValueError("Covariance entry missing keyword 'EPOCH'")
         else:
-            epoch = parse_epoch(entries["EPOCH"])
+            epoch = parse_epoch(entries["EPOCH"], metadata)
         frame = entries.get("COV_REF_FRAME")
 
         matrix = np.zeros((6, 6))

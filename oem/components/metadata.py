@@ -1,7 +1,8 @@
 import re
 from oem import patterns, CURRENT_VERSION
 from oem.tools import (
-    parse_epoch, parse_integer, require, require_field, format_epoch)
+    parse_epoch, parse_integer, parse_str, format_epoch, require,
+    require_field)
 from oem.base import (
     KeyValueSection, HeaderField, ConstraintSpecification, Constraint)
 from lxml.etree import SubElement
@@ -59,6 +60,10 @@ class ConstrainMetaDataInterpolation(Constraint):
     def func(self, metadata):
         if "INTERPOLATION" in metadata:
             require_field("INTERPOLATION_DEGREE", metadata)
+            require(
+                float(metadata["INTERPOLATION_DEGREE"]).is_integer(),
+                "Interpolation degree is not an integer"
+            )
 
 
 class ConstrainMetaDataRefFrameEpoch(Constraint):
@@ -94,17 +99,17 @@ class MetaDataSection(KeyValueSection):
     """
 
     _field_spec = {
-        "OBJECT_NAME": HeaderField(str, str, required=True),
-        "OBJECT_ID": HeaderField(str, str, required=True),
-        "CENTER_NAME": HeaderField(str, str, required=True),
-        "REF_FRAME": HeaderField(str, str, required=True),
-        "TIME_SYSTEM": HeaderField(str, str, required=True),
+        "OBJECT_NAME": HeaderField(parse_str, str, required=True),
+        "OBJECT_ID": HeaderField(parse_str, str, required=True),
+        "CENTER_NAME": HeaderField(parse_str, str, required=True),
+        "REF_FRAME": HeaderField(parse_str, str, required=True),
+        "TIME_SYSTEM": HeaderField(parse_str, str, required=True),
         "START_TIME": HeaderField(parse_epoch, format_epoch, required=True),
         "STOP_TIME": HeaderField(parse_epoch, format_epoch, required=True),
         "REF_FRAME_EPOCH": HeaderField(parse_epoch, format_epoch),
         "USEABLE_START_TIME": HeaderField(parse_epoch, format_epoch),
         "USEABLE_STOP_TIME": HeaderField(parse_epoch, format_epoch),
-        "INTERPOLATION": HeaderField(str, str),
+        "INTERPOLATION": HeaderField(parse_str, str),
         "INTERPOLATION_DEGREE": HeaderField(parse_integer, str)
     }
     _constraint_spec = ConstraintSpecification(
@@ -122,7 +127,8 @@ class MetaDataSection(KeyValueSection):
     def __eq__(self, other):
         return (
             self.version == other.version and
-            self._fields == other._fields
+            self._fields.keys() == other._fields.keys() and
+            all(self[key] == other[key] for key in self)
         )
 
     @classmethod
@@ -153,15 +159,12 @@ class MetaDataSection(KeyValueSection):
 
     def _to_string(self):
         lines = "META_START\n"
-        lines += "\n".join([
-            f"{key} = {value}"
-            for key, value in self._format_fields().items()
-        ]) + "\n"
+        lines += "\n".join(self._format_fields()) + "\n"
         lines += "META_STOP\n"
         return lines
 
     def _to_xml(self, parent):
-        for key, value in self._format_fields().items():
+        for key, value in self._fields.items():
             SubElement(parent, key).text = value
 
     @property
