@@ -16,7 +16,7 @@ def parse_str(input_string, metadata):
     return str(input_string)
 
 
-def _parse_epoch(epoch):
+def parse_datetime(epoch):
     """Convert OEM standard epoch to a DateTime.
 
     Args:
@@ -46,7 +46,7 @@ def parse_utc(epoch, metadata):
     Returns:
         parsed_epoch (Time): UTC epoch.
     """
-    return Time(_parse_epoch(epoch), scale="utc")
+    return Time(epoch, format="isot", scale="utc")
 
 
 def parse_epoch(epoch, metadata):
@@ -64,13 +64,13 @@ def parse_epoch(epoch, metadata):
     """
     time_system = metadata["TIME_SYSTEM"].lower()
     if time_system in Time.SCALES:
-        parsed_epoch = Time(_parse_epoch(epoch), scale=time_system)
+        parsed_epoch = Time(epoch, format="isot", scale=time_system)
     else:
         warnings.warn(
             f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
             f"DateTime. Use caution with time calculations."
         )
-        parsed_epoch = _parse_epoch(epoch)
+        parsed_epoch = parse_datetime(epoch)
     return parsed_epoch
 
 
