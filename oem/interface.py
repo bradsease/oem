@@ -122,6 +122,18 @@ class OrbitEphemerisMessage(object):
     def __contains__(self, epoch):
         return any(epoch in segment for segment in self._segments)
 
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            self.header == other.header and
+            len(self._segments) == len(other._segments) and
+            all(
+                this_segment == other_segment
+                for this_segment, other_segment
+                in zip(self._segments, other._segments)
+            )
+        )
+
     @classmethod
     def from_ascii_oem(cls, file_path):
         with open(file_path, "r") as ephem_file:

@@ -86,6 +86,14 @@ class EphemerisSegment(object):
     def __iter__(self):
         return iter(self.states)
 
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            self.metadata == other.metadata and
+            self._state_data == other._state_data and
+            self._covariance_data == other._covariance_data
+        )
+
     @classmethod
     def from_strings(cls, components, version=CURRENT_VERSION):
         """Create EphemerisSegment from OEM segment strings.

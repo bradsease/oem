@@ -40,6 +40,16 @@ class CovarianceSection(object):
     def __iter__(self):
         return iter(self.covariances)
 
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            all(
+                this_covariance == other_covariance
+                for this_covariance, other_covariance
+                in zip(self._covariances, other._covariances)
+            )
+        )
+
     @classmethod
     def from_string(cls, segment, version):
         """Create CovarianceSection from OEM-formatted string.

@@ -69,6 +69,15 @@ class State(object):
         )
         self._constraint_spec.apply(self)
 
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            self.epoch == other.epoch and
+            (self.position == other.position).all() and
+            (self.velocity == other.velocity).all() and
+            np.array([self.acceleration == other.acceleration]).all()
+        )
+
     @classmethod
     def from_string(cls, segment, version):
         """Create State from OEM-formatted string.
@@ -160,6 +169,14 @@ class Covariance(object):
         self.epoch = epoch
         self.frame = frame
         self.matrix = np.array(matrix)
+
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            self.epoch == other.epoch and
+            self.frame == other.frame and
+            (self.matrix == other.matrix).all()
+        )
 
     @classmethod
     def from_string(cls, segment, version):

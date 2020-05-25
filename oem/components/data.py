@@ -56,6 +56,16 @@ class DataSection(object):
     def __iter__(self):
         return iter(self.states)
 
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            all(
+                this_state == other_state
+                for this_state, other_state
+                in zip(self._states, other._states)
+            )
+        )
+
     @classmethod
     def from_string(cls, segment, version):
         """Create DataSection from OEM-formatted string.
