@@ -95,7 +95,7 @@ class EphemerisSegment(object):
         )
 
     @classmethod
-    def _from_strings(cls, components, version=CURRENT_VERSION):
+    def _from_strings(cls, components, version):
         """Create EphemerisSegment from OEM segment strings.
 
         Args:
@@ -106,23 +106,24 @@ class EphemerisSegment(object):
             new_section (EphemerisSegment): New EphemerisSegment instance.
         """
         metadata = MetaDataSection._from_string(components[0], version)
-        state_data = DataSection._from_string(components[1], version)
+        state_data = DataSection._from_string(components[1], version, metadata)
         if len(components[2]) == 0:
             covariance_data = None
         else:
             covariance_data = CovarianceSection._from_string(
-                components[2], version)
+                components[2], version, metadata)
         return cls(metadata, state_data, covariance_data, version=version)
 
     @classmethod
-    def _from_xml(cls, segment, version=CURRENT_VERSION):
+    def _from_xml(cls, segment, version):
         metadata = MetaDataSection._from_xml(segment[0], version)
         state_data = DataSection._from_xml(
             [
                 entry for entry in segment[1]
                 if entry.tag == "stateVector"
             ],
-            version
+            version,
+            metadata
         )
 
         raw_covariances = [
@@ -132,7 +133,8 @@ class EphemerisSegment(object):
         if raw_covariances:
             covariance_data = CovarianceSection._from_xml(
                 raw_covariances,
-                version
+                version,
+                metadata
             )
         else:
             covariance_data = None

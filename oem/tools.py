@@ -1,7 +1,13 @@
+import warnings
 import datetime as dt
+from astropy.time import Time
 
 
-def parse_epoch(epoch):
+def parse_str(input_string, metadata):
+    return str(input_string)
+
+
+def _parse_epoch(epoch):
     """Parse OEM standard epoch.
 
     Args:
@@ -22,7 +28,40 @@ def parse_epoch(epoch):
         )
 
 
-def parse_integer(input):
+def parse_utc(epoch, metadata):
+    """Parse OEM standard UTC epoch.
+
+    Args:
+        epoch (str): OEM epoch string.
+
+    Returns:
+        parsed_epoch (DateTime): Parsed epoch.
+    """
+    return Time(_parse_epoch(epoch), scale="utc")
+
+
+def parse_epoch(epoch, metadata):
+    """Parse OEM standard epoch.
+
+    Args:
+        epoch (str): OEM epoch string.
+
+    Returns:
+        parsed_epoch (DateTime): Parsed epoch.
+    """
+    time_system = metadata["TIME_SYSTEM"].lower()
+    if time_system in Time.SCALES:
+        parsed_epoch = Time(_parse_epoch(epoch), scale=time_system)
+    else:
+        warnings.warn(
+            f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
+            f"DateTime. Use caution with time calculations."
+        )
+        parsed_epoch = _parse_epoch(epoch)
+    return parsed_epoch
+
+
+def parse_integer(input, metadata):
     """Parse integer value.
 
     Args:

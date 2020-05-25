@@ -67,7 +67,7 @@ class DataSection(object):
         )
 
     @classmethod
-    def _from_string(cls, segment, version):
+    def _from_string(cls, segment, version, metadata):
         """Create DataSection from OEM-formatted string.
 
         Args:
@@ -77,13 +77,16 @@ class DataSection(object):
             new_section (DataSection): New DataSection instance.
         """
         raw_states = re.findall(patterns.DATA_LINE, segment, re.MULTILINE)
-        states = [State._from_string(entry, version) for entry in raw_states]
+        states = [
+            State._from_string(entry, version, metadata)
+            for entry in raw_states
+        ]
         return cls(states, version=version)
 
     @classmethod
-    def _from_xml(cls, segment, version):
+    def _from_xml(cls, segment, version, metadata):
         states = [
-            State._from_xml(entry, version)
+            State._from_xml(entry, version, metadata)
             for entry in segment
             if entry.tag != "COMMENT"
         ]
