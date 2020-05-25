@@ -34,6 +34,9 @@ class HeaderSection(KeyValueSection):
     def __init__(self, fields):
         self._parse_fields(fields)
 
+    def __eq__(self, other):
+        return self._fields == other._fields
+
     @classmethod
     def _from_string(cls, segment):
         """Create Header Section from OEM-formatted string.

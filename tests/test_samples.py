@@ -35,12 +35,10 @@ def test_valid_v1_samples(file_path):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
-        if is_kvn(file_path):
-            oem.save_as(written_oem_path, file_format="XML")
-        else:
-            oem.save_as(written_oem_path, file_format="KVN")
+        fmt = "XML" if is_kvn(file_path) else "KVN"
+        OrbitEphemerisMessage.convert(file_path, written_oem_path, fmt)
         written_oem = OrbitEphemerisMessage.open(written_oem_path)
-        assert written_oem.version == oem.version
+        assert written_oem == oem
 
 
 @pytest.mark.parametrize("file_path", _get_test_files("v1_0", "invalid"))
@@ -76,12 +74,10 @@ def test_valid_v2_samples(file_path):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
-        if is_kvn(file_path):
-            oem.save_as(written_oem_path, file_format="XML")
-        else:
-            oem.save_as(written_oem_path, file_format="KVN")
+        fmt = "XML" if is_kvn(file_path) else "KVN"
+        OrbitEphemerisMessage.convert(file_path, written_oem_path, fmt)
         written_oem = OrbitEphemerisMessage.open(written_oem_path)
-        assert written_oem.version == oem.version
+        assert written_oem == oem
 
 
 @pytest.mark.parametrize("file_path", _get_test_files("v2_0", "invalid"))
@@ -113,4 +109,13 @@ def test_convert():
         )
         converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
 
-        assert converted_xml.version == converted_kvn.version
+        assert converted_xml == converted_kvn
+
+
+def test_compare():
+    test_files = _get_test_files("v2_0", "valid")
+    oem1 = OrbitEphemerisMessage.open(test_files[0])
+    oem2 = OrbitEphemerisMessage.open(test_files[1])
+    assert oem1 == oem1
+    assert oem2 == oem2
+    assert oem1 != oem2

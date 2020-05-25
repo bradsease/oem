@@ -119,6 +119,12 @@ class MetaDataSection(KeyValueSection):
         self._parse_fields(metadata)
         self._constraint_spec.apply(self)
 
+    def __eq__(self, other):
+        return (
+            self.version == other.version and
+            self._fields == other._fields
+        )
+
     @classmethod
     def _from_string(cls, segment, version):
         """Create MetaDataSection from OEM-formatted string.
