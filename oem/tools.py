@@ -105,6 +105,14 @@ def format_float(value):
 
 
 def format_epoch(epoch):
+    """Format an epoch in the standard OEM format.
+
+    Args:
+        epoch (Time, DateTime): Epoch to convert to string.
+
+    Returns:
+        formatted_epoch (str): Epoch in YYYY-MM-DDTHH:MM:SS.sss format.
+    """
     return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
 
