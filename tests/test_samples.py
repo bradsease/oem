@@ -35,7 +35,7 @@ def test_valid_v1_samples(file_path):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
-        fmt = "XML" if is_kvn(file_path) else "KVN"
+        fmt = "xml" if is_kvn(file_path) else "kvn"
         OrbitEphemerisMessage.convert(file_path, written_oem_path, fmt)
         written_oem = OrbitEphemerisMessage.open(written_oem_path)
         assert written_oem == oem
@@ -74,7 +74,7 @@ def test_valid_v2_samples(file_path):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         written_oem_path = Path(tmp_dir) / "written.oem"
-        fmt = "XML" if is_kvn(file_path) else "KVN"
+        fmt = "xml" if is_kvn(file_path) else "kvn"
         OrbitEphemerisMessage.convert(file_path, written_oem_path, fmt)
         written_oem = OrbitEphemerisMessage.open(written_oem_path)
         assert written_oem == oem
@@ -97,7 +97,7 @@ def test_convert():
         OrbitEphemerisMessage.convert(
             test_file,
             converted_xml_path,
-            "KVN"
+            "kvn"
         )
         converted_xml = OrbitEphemerisMessage.open(converted_xml_path)
 
@@ -105,7 +105,7 @@ def test_convert():
         OrbitEphemerisMessage.convert(
             converted_xml_path,
             converted_kvn_path,
-            "XML"
+            "xml"
         )
         converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
 
