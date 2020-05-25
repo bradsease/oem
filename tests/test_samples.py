@@ -110,3 +110,12 @@ def test_convert():
         converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
 
         assert converted_xml == converted_kvn
+
+
+def test_compare():
+    test_files = _get_test_files("v2_0", "valid")
+    oem1 = OrbitEphemerisMessage.open(test_files[0])
+    oem2 = OrbitEphemerisMessage.open(test_files[1])
+    assert oem1 == oem1
+    assert oem2 == oem2
+    assert oem1 != oem2
