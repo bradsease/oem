@@ -135,7 +135,7 @@ class OrbitEphemerisMessage(object):
         )
 
     @classmethod
-    def from_ascii_oem(cls, file_path):
+    def from_kvn_oem(cls, file_path):
         with open(file_path, "r") as ephem_file:
             contents = ephem_file.read()
         contents = re.sub(patterns.COMMENT_LINE, "", contents)
@@ -175,7 +175,7 @@ class OrbitEphemerisMessage(object):
             oem: OrbitEphemerisMessage instance.
         """
         if is_kvn(file_path):
-            oem = cls.from_ascii_oem(file_path)
+            oem = cls.from_kvn_oem(file_path)
         else:
             oem = cls.from_xml_oem(file_path)
         return oem
@@ -205,7 +205,7 @@ class OrbitEphemerisMessage(object):
         """
         if file_format == "kvn":
             with open(file_path, "w") as output_file:
-                output_file.write(self._to_ascii_oem())
+                output_file.write(self._to_kvn_oem())
         elif file_format == "xml":
             self._to_xml_oem().write(
                 str(file_path),
@@ -216,7 +216,7 @@ class OrbitEphemerisMessage(object):
         else:
             raise ValueError(f"Unrecognized file type: '{file_format}'")
 
-    def _to_ascii_oem(self):
+    def _to_kvn_oem(self):
         lines = self.header._to_string() + "\n"
         lines += "".join(entry._to_string() for entry in self._segments)
         return lines
