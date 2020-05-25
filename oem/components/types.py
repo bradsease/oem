@@ -70,7 +70,7 @@ class State(object):
         self._constraint_spec.apply(self)
 
     @classmethod
-    def from_string(cls, segment, version):
+    def _from_string(cls, segment, version):
         """Create State from OEM-formatted string.
 
         Args:
@@ -162,7 +162,7 @@ class Covariance(object):
         self.matrix = np.array(matrix)
 
     @classmethod
-    def from_string(cls, segment, version):
+    def _from_string(cls, segment, version):
         """Create Covariance from OEM-formatted string.
 
         Args:

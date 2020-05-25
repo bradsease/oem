@@ -57,7 +57,7 @@ class DataSection(object):
         return iter(self.states)
 
     @classmethod
-    def from_string(cls, segment, version):
+    def _from_string(cls, segment, version):
         """Create DataSection from OEM-formatted string.
 
         Args:
@@ -67,7 +67,7 @@ class DataSection(object):
             new_section (DataSection): New DataSection instance.
         """
         raw_states = re.findall(patterns.DATA_LINE, segment, re.MULTILINE)
-        states = [State.from_string(entry, version) for entry in raw_states]
+        states = [State._from_string(entry, version) for entry in raw_states]
         return cls(states, version=version)
 
     @classmethod

@@ -120,7 +120,7 @@ class MetaDataSection(KeyValueSection):
         self._constraint_spec.apply(self)
 
     @classmethod
-    def from_string(cls, segment, version):
+    def _from_string(cls, segment, version):
         """Create MetaDataSection from OEM-formatted string.
 
         Args:

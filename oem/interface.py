@@ -129,10 +129,10 @@ class OrbitEphemerisMessage(object):
         contents = re.sub(patterns.COMMENT_LINE, "", contents)
         match = re.match(patterns.CCSDS_EPHEMERIS, contents, re.MULTILINE)
         if match:
-            header = components.HeaderSection.from_string(match.group(1))
+            header = components.HeaderSection._from_string(match.group(1))
             version = header["CCSDS_OEM_VERS"]
             segments = [
-                components.EphemerisSegment.from_strings(raw_segment, version)
+                components.EphemerisSegment._from_strings(raw_segment, version)
                 for raw_segment
                 in re.findall(patterns.DATA_BLOCK, contents, re.MULTILINE)
             ]

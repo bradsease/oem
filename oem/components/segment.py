@@ -87,7 +87,7 @@ class EphemerisSegment(object):
         return iter(self.states)
 
     @classmethod
-    def from_strings(cls, components, version=CURRENT_VERSION):
+    def _from_strings(cls, components, version=CURRENT_VERSION):
         """Create EphemerisSegment from OEM segment strings.
 
         Args:
@@ -97,12 +97,12 @@ class EphemerisSegment(object):
         Returns:
             new_section (EphemerisSegment): New EphemerisSegment instance.
         """
-        metadata = MetaDataSection.from_string(components[0], version)
-        state_data = DataSection.from_string(components[1], version)
+        metadata = MetaDataSection._from_string(components[0], version)
+        state_data = DataSection._from_string(components[1], version)
         if len(components[2]) == 0:
             covariance_data = None
         else:
-            covariance_data = CovarianceSection.from_string(
+            covariance_data = CovarianceSection._from_string(
                 components[2], version)
         return cls(metadata, state_data, covariance_data, version=version)
 
