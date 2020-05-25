@@ -158,15 +158,12 @@ class MetaDataSection(KeyValueSection):
 
     def _to_string(self):
         lines = "META_START\n"
-        lines += "\n".join([
-            f"{key} = {value}"
-            for key, value in self._format_fields().items()
-        ]) + "\n"
+        lines += "\n".join(self._format_fields()) + "\n"
         lines += "META_STOP\n"
         return lines
 
     def _to_xml(self, parent):
-        for key, value in self._format_fields().items():
+        for key, value in self._fields.items():
             SubElement(parent, key).text = value
 
     @property

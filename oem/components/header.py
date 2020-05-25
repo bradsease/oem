@@ -68,14 +68,14 @@ class HeaderSection(KeyValueSection):
     def _to_string(self):
         lines = f"CCSDS_OEM_VERS = {self.version}\n"
         lines += "\n".join([
-            f"{key} = {value}"
-            for key, value in self._format_fields().items()
-            if key != "CCSDS_OEM_VERS"
+            entry
+            for entry in self._format_fields()
+            if "CCSDS_OEM_VERS" not in entry
         ])
         return lines + "\n"
 
     def _to_xml(self, parent):
-        for key, value in self._format_fields().items():
+        for key, value in self._fields.items():
             if key != "CCSDS_OEM_VERS":
                 SubElement(parent, key).text = value
 

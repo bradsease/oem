@@ -49,11 +49,12 @@ class KeyValueSection(object):
         self._fields = fields
 
     def _format_fields(self):
-        fields = {
-            key: self._field_spec[key].formatter(value)
-            for key, value
-            in self.items()
-        }
+        fields = [f"{key} = {value}" for key, value in self._fields.items()]
+        # fields = {
+        #     key: value
+        #     for key, value
+        #     in self.items()
+        # }
         return fields
 
     def __getitem__(self, key):
