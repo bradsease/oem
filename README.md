@@ -20,13 +20,13 @@ The `OrbitEphemerisMessage` class is the primary interface for OEM Files.
 ```python
 from oem import OrbitEphemerisMessage
 
-ephemeris = OrbitEphemerisMessage.from_ascii_oem(file_path)
+ephemeris = OrbitEphemerisMessage.open("input_file.oem")
 ```
 Each OEM is made up of one or more segments of state and optional covariance data. The `OrbitEphemerisMessage` class provides iterables for both.
 ```python
 for segment in ephemeris:
     for state in segment:
-        print(state.epoch, state.position, state.velocity)
+        print(state.epoch, state.position, state.velocity, state.acceleration)
 
     for covariance in segment.covariances:
         print(covariance.epoch, covariance.matrix)
@@ -39,6 +39,15 @@ for state in ephemeris.states:
     print(state.epoch, state.position, state.velocity)
 for covariance in ephemeris.covariances:
     print(covariance.epoch, covariance.matrix)
+```
+
+The `OrbitEphemerisObject` also facilitates writing of OEMs. To save an already-open OEM, use `.save_as`:
+```python
+ephemeris.save_as("output.oem", file_format="xml")
+```
+To convert an ephemeris from one type to another, use the `.convert` class method.
+```python
+OrbitEphemerisMessage.convert("input_file.oem", "output_file.oem", "kvn")
 ```
 
 

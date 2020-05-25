@@ -91,12 +91,12 @@ class OrbitEphemerisMessage(object):
         The `save_as` method enables saving of copies of an OEM in both KVN and
         XML formats.
 
-        >>> oem.save_as("new.oem", file_format="XML")
+        >>> oem.save_as("new.oem", file_format="xml")
 
         To convert directly between KVN and XML formats, use the `convert`
         class method. For example, to convert a KVN OEM to XML:
 
-        >>> oem.convert("input.oem", "output.oem", "XML")
+        >>> oem.convert("input.oem", "output.oem", "xml")
     """
 
     _constraint_spec = ConstraintSpecification(
@@ -191,22 +191,22 @@ class OrbitEphemerisMessage(object):
             in_file_path (str or Path): Path to original ephemeris.
             out_file_path (str or Path): Desired path for converted ephemeris.
             file_format (str): Desired output format. Options are
-                'KVN' and 'XML'.
+                'kvn' and 'xml'.
         """
         cls.open(in_file_path).save_as(out_file_path, file_format=file_format)
 
-    def save_as(self, file_path, file_format="KVN"):
+    def save_as(self, file_path, file_format="kvn"):
         """Write OEM to file.
 
         Args:
             file_path (str or Path): Desired path for output ephemeris.
             file_format (str, optional): Type of file to output. Options are
-                'KVN' and 'XML'. Default is 'KVN'.
+                'kvn' and 'xml'. Default is 'kvn'.
         """
-        if file_format == "KVN":
+        if file_format == "kvn":
             with open(file_path, "w") as output_file:
                 output_file.write(self._to_ascii_oem())
-        elif file_format == "XML":
+        elif file_format == "xml":
             self._to_xml_oem().write(
                 str(file_path),
                 pretty_print=True,
