@@ -4,17 +4,26 @@ from astropy.time import Time
 
 
 def parse_str(input_string, metadata):
+    """Parse string input.
+
+    Args:
+        input_string (str): String to parse.
+        metadata (MetaDataSection): Metadata corresponding to this string.
+
+    Returns:
+        parsed_str (str): Parsed string.
+    """
     return str(input_string)
 
 
 def _parse_epoch(epoch):
-    """Parse OEM standard epoch.
+    """Convert OEM standard epoch to a DateTime.
 
     Args:
         epoch (str): OEM epoch string.
 
     Returns:
-        parsed_epoch (DateTime): Parsed epoch.
+        parsed_epoch (DateTime):  Parsed epoch.
     """
     if "." in epoch:
         return dt.datetime.strptime(
@@ -35,19 +44,23 @@ def parse_utc(epoch, metadata):
         epoch (str): OEM epoch string.
 
     Returns:
-        parsed_epoch (DateTime): Parsed epoch.
+        parsed_epoch (Time): UTC epoch.
     """
     return Time(_parse_epoch(epoch), scale="utc")
 
 
 def parse_epoch(epoch, metadata):
-    """Parse OEM standard epoch.
+    """Parse OEM standard epoch using metadata TIME_SYSTEM.
 
     Args:
         epoch (str): OEM epoch string.
+        metadata (MetaDataSection): Metadata corresponding to this epoch.
 
     Returns:
-        parsed_epoch (DateTime): Parsed epoch.
+        parsed_epoch (Time): Parsed epoch with assigned time scale. If the
+            timescale indicated by TIME_SYSTEM is not supported by astropy,
+            then parsed_epoch will warn the user and fall back to DateTime. In
+            this case, time calculations may be inaccurate.
     """
     time_system = metadata["TIME_SYSTEM"].lower()
     if time_system in Time.SCALES:
