@@ -1,5 +1,7 @@
 import re
+
 from lxml.etree import ElementTree, Element, SubElement, parse
+
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
 from oem.tools import require, is_kvn

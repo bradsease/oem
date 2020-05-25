@@ -1,10 +1,12 @@
 import re
+
+from lxml.etree import SubElement
+
 from oem import patterns, CURRENT_VERSION
 from oem.tools import (
     parse_epoch, parse_integer, require, require_field, format_epoch)
 from oem.base import (
     KeyValueSection, HeaderField, ConstraintSpecification, Constraint)
-from lxml.etree import SubElement
 
 
 class ConstrainMetaDataTime(Constraint):
