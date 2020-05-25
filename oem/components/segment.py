@@ -1,10 +1,11 @@
+from lxml.etree import SubElement
+
 from oem import CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
 from oem.tools import require
 from oem.components.metadata import MetaDataSection
 from oem.components.data import DataSection
 from oem.components.covariance import CovarianceSection
-from lxml.etree import SubElement
 
 
 class ConstrainEphemerisSegmentCovariance(Constraint):

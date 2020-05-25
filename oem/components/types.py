@@ -1,9 +1,11 @@
 import re
+
 import numpy as np
+from lxml.etree import SubElement
+
 from oem import patterns, CURRENT_VERSION
 from oem.tools import parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
-from lxml.etree import SubElement
 
 
 COV_XML_ENTRY_MAP = {

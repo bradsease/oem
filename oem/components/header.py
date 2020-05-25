@@ -1,8 +1,10 @@
 import re
+
+from lxml.etree import SubElement
+
 from oem import patterns
 from oem.tools import parse_utc, parse_str, format_epoch
 from oem.base import KeyValueSection, HeaderField
-from lxml.etree import SubElement
 
 
 class HeaderSection(KeyValueSection):

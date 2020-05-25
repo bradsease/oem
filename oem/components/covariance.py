@@ -1,9 +1,11 @@
 import re
+
+from lxml.etree import SubElement
+
 from oem import patterns, CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
 from oem.tools import require
 from oem.components.types import Covariance
-from lxml.etree import SubElement
 
 
 class ConstrainCovarianceSectionEpochOrder(Constraint):
