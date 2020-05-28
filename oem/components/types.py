@@ -33,7 +33,7 @@ COV_XML_ENTRY_MAP = {
 }
 
 
-class ConstrainStateSize(Constraint):
+class ConstrainStateType(Constraint):
 
     versions = ["1.0"]
 
@@ -42,6 +42,20 @@ class ConstrainStateSize(Constraint):
             state.acceleration is None,
             "State in v1.0 OEM cannot have acceleration entries"
         )
+
+
+class ConstrainStateDimension(Constraint):
+
+    versions = ["1.0", "2.0"]
+
+    def func(self, state):
+        require(state.position.size == 3, "State position size != 3")
+        require(state.velocity.size == 3, "State velocity size != 3")
+        if state.acceleration is not None:
+            require(
+                state.acceleration.size == 3,
+                "State acceleration size != 3"
+            )
 
 
 class State(object):
@@ -56,7 +70,8 @@ class State(object):
     """
 
     _constraint_spec = ConstraintSpecification(
-        ConstrainStateSize
+        ConstrainStateType,
+        ConstrainStateDimension
     )
 
     def __init__(self, epoch, position, velocity, acceleration=None,
@@ -67,7 +82,7 @@ class State(object):
         self.velocity = np.array(velocity)
         self.acceleration = (
             np.array(acceleration)
-            if acceleration else None
+            if acceleration is not None else None
         )
         self._constraint_spec.apply(self)
 
