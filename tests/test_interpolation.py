@@ -1,6 +1,6 @@
 import numpy as np
 import datetime as dt
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
 
 from oem.components import State
 from oem import interp
@@ -43,10 +43,32 @@ def _make_test_states(poly, t_step, count, accel=True):
 
 
 def test_lagrange_interpolator():
-    states = _make_test_states(np.poly1d([.1, .1, .1, .1]), 60, 7, accel=True)
+    position_poly = np.poly1d([1, 1, 1])
+    velocity_poly = position_poly.deriv()
+    acceleration_poly = velocity_poly.deriv()
+
+    states = _make_test_states(position_poly, 60, 7, accel=True)
     interpolator = interp.LagrangeStateInterpolator(states)
-    for state in states:
-        predicted = interpolator(state.epoch)
-        assert np.allclose(state.position, predicted.position)
-        assert np.allclose(state.velocity, predicted.velocity)
-        assert np.allclose(state.acceleration, predicted.acceleration)
+
+    for elapsed in np.arange(0, 7*60, 1):
+        test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
+        predicted = interpolator(test_epoch)
+        assert np.allclose(predicted.position, position_poly(elapsed))
+        assert np.allclose(predicted.velocity, velocity_poly(elapsed))
+        assert np.allclose(predicted.acceleration, acceleration_poly(elapsed))
+
+
+def test_hermite_interpolator():
+    position_poly = np.poly1d([1, 1, 1])
+    velocity_poly = position_poly.deriv()
+    acceleration_poly = velocity_poly.deriv()
+
+    states = _make_test_states(position_poly, 60, 7, accel=True)
+    interpolator = interp.HermiteStateInterpolator(states)
+
+    for elapsed in np.arange(0, 7*60, 1):
+        test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
+        predicted = interpolator(test_epoch)
+        assert np.allclose(predicted.position, position_poly(elapsed))
+        assert np.allclose(predicted.velocity, velocity_poly(elapsed))
+        assert np.allclose(predicted.acceleration, acceleration_poly(elapsed))

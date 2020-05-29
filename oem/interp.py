@@ -19,7 +19,7 @@ def lagrange(x, y):
     order = x.size - 1
     A = np.power(
         np.tile(x, (order + 1, 1)).T,
-        np.arange(0, order + 1)
+        np.arange(order + 1)
     )
     a = np.linalg.solve(A, y)[::-1]
     return np.poly1d(a)
@@ -50,10 +50,7 @@ def hermite(x, y, dy):
             tiled_x,
             np.tile(np.arange(order+1), (x.size, 1))
         ),
-        np.hstack((
-            np.array([0]),
-            np.arange(order)
-        ))
+        np.hstack(([1], np.arange(order)))
     )
     A = np.vstack((Au, Al))
     b = np.hstack((y, dy))
@@ -94,10 +91,10 @@ class Interpolator(object):
         return self.states[0].has_accel
 
     def _get_positions(self):
-        return (
+        return [
             np.array([entry.position[idx] for entry in self.states])
             for idx in range(3)
-        )
+        ]
 
     def _get_velocities(self):
         return [
@@ -121,13 +118,37 @@ class LagrangeStateInterpolator(Interpolator):
             *(lagrange(t, entry) for entry in self._get_velocities())
         ]
         if self.has_accel:
-            self._state_polynomials += (
+            self._state_polynomials += [
                 lagrange(t, entry) for entry in self._get_accelerations()
-            )
+            ]
 
 
 class HermiteStateInterpolator(Interpolator):
-    pass
+
+    def _setup(self):
+        t = self.elapsed_times
+        positions = self._get_positions()
+        velocities = self._get_velocities()
+        self._state_polynomials = [
+            hermite(t, pos, vel) for pos, vel in zip(positions, velocities)
+        ]
+
+        if self.has_accel:
+            accelerations = self._get_accelerations()
+            self._state_polynomials += [
+                *(
+                    hermite(t, pos, vel)
+                    for pos, vel in zip(velocities, accelerations)
+                )
+            ]
+            self._state_polynomials += [
+                entry.deriv() for entry in self._state_polynomials[3:]
+            ]
+
+        else:
+            self._state_polynomials += [
+                entry.deriv() for entry in self._state_polynomials
+            ]
 
 
 class EphemerisInterpolator(Interpolator):
