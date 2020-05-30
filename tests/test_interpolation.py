@@ -1,9 +1,10 @@
+import pytest
 import numpy as np
 import datetime as dt
 from astropy.time import Time, TimeDelta
 
 from oem.components import State
-from oem import interp
+from oem.interp import LagrangeStateInterpolator, HermiteStateInterpolator
 
 
 def _make_test_states(poly, t_step, count, accel=True):
@@ -42,33 +43,24 @@ def _make_test_states(poly, t_step, count, accel=True):
     ]
 
 
-def test_lagrange_interpolator():
-    position_poly = np.poly1d([1, 1, 1])
-    velocity_poly = position_poly.deriv()
-    acceleration_poly = velocity_poly.deriv()
+@pytest.mark.parametrize("has_accel", (True, False))
+@pytest.mark.parametrize(
+    "Interpolator", (LagrangeStateInterpolator, HermiteStateInterpolator)
+)
+def test_interpolators(Interpolator, has_accel):
+    position = np.poly1d([1, 1, 1])
+    velocity = position.deriv()
+    acceleration = velocity.deriv()
+    count = 7
+    time_step = 60
 
-    states = _make_test_states(position_poly, 60, 7, accel=True)
-    interpolator = interp.LagrangeStateInterpolator(states)
+    states = _make_test_states(position, time_step, count, accel=has_accel)
+    interpolator = Interpolator(states)
 
-    for elapsed in np.arange(0, 7*60, 1):
+    for elapsed in np.arange(0, count*time_step, 1):
         test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
         predicted = interpolator(test_epoch)
-        assert np.allclose(predicted.position, position_poly(elapsed))
-        assert np.allclose(predicted.velocity, velocity_poly(elapsed))
-        assert np.allclose(predicted.acceleration, acceleration_poly(elapsed))
-
-
-def test_hermite_interpolator():
-    position_poly = np.poly1d([1, 1, 1])
-    velocity_poly = position_poly.deriv()
-    acceleration_poly = velocity_poly.deriv()
-
-    states = _make_test_states(position_poly, 60, 7, accel=True)
-    interpolator = interp.HermiteStateInterpolator(states)
-
-    for elapsed in np.arange(0, 7*60, 1):
-        test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
-        predicted = interpolator(test_epoch)
-        assert np.allclose(predicted.position, position_poly(elapsed))
-        assert np.allclose(predicted.velocity, velocity_poly(elapsed))
-        assert np.allclose(predicted.acceleration, acceleration_poly(elapsed))
+        assert np.allclose(predicted.position, position(elapsed))
+        assert np.allclose(predicted.velocity, velocity(elapsed))
+        if has_accel:
+            assert np.allclose(predicted.acceleration, acceleration(elapsed))

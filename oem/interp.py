@@ -62,84 +62,56 @@ class Interpolator(object):
     """Base interpolation type."""
 
     def __init__(self, states):
-        self.states = states
-        self._setup()
+        self._start_time = states[0].epoch
+        self._setup(states)
 
     def __call__(self, epoch):
-        t = (epoch - self.epochs[0]).sec
+        t = (epoch - self.start_time).sec
         raw_state = np.array([poly(t) for poly in self._state_polynomials])
         position = raw_state[:3]
         velocity = raw_state[3:6]
-        if self.has_accel:
+        if len(raw_state) == 9:
             acceleration = raw_state[6:]
         else:
             acceleration = None
         return State(epoch, position, velocity, acceleration=acceleration)
 
-    @property
-    def epochs(self):
-        return np.array([entry.epoch for entry in self.states])
-
-    @property
-    def elapsed_times(self):
+    def _elapsed_times(self, states):
         return np.array(
-            [(entry - self.epochs[0]).sec for entry in self.epochs]
+            [(entry.epoch - self.start_time).sec for entry in states]
         )
 
     @property
-    def has_accel(self):
-        return self.states[0].has_accel
-
-    def _get_positions(self):
-        return [
-            np.array([entry.position[idx] for entry in self.states])
-            for idx in range(3)
-        ]
-
-    def _get_velocities(self):
-        return [
-            np.array([entry.velocity[idx] for entry in self.states])
-            for idx in range(3)
-        ]
-
-    def _get_accelerations(self):
-        return [
-            np.array([entry.acceleration[idx] for entry in self.states])
-            for idx in range(3)
-        ]
+    def start_time(self):
+        """Interpolator reference epoch."""
+        return self._start_time
 
 
 class LagrangeStateInterpolator(Interpolator):
 
-    def _setup(self):
-        t = self.elapsed_times
+    def _setup(self, states):
+        t = self._elapsed_times(states)
+        state_vectors = np.vstack((entry.vector for entry in states))
         self._state_polynomials = [
-            *(lagrange(t, entry) for entry in self._get_positions()),
-            *(lagrange(t, entry) for entry in self._get_velocities())
+            lagrange(t, state_vectors[:, idx])
+            for idx in range(state_vectors.shape[1])
         ]
-        if self.has_accel:
-            self._state_polynomials += [
-                lagrange(t, entry) for entry in self._get_accelerations()
-            ]
 
 
 class HermiteStateInterpolator(Interpolator):
 
-    def _setup(self):
-        t = self.elapsed_times
-        positions = self._get_positions()
-        velocities = self._get_velocities()
+    def _setup(self, states):
+        t = self._elapsed_times(states)
+        state_vectors = np.vstack((entry.vector for entry in states))
         self._state_polynomials = [
-            hermite(t, pos, vel) for pos, vel in zip(positions, velocities)
+            hermite(t, state_vectors[:, idx], state_vectors[:, idx+3])
+            for idx in range(3)
         ]
 
-        if self.has_accel:
-            accelerations = self._get_accelerations()
+        if state_vectors.shape[1] == 9:
             self._state_polynomials += [
-                *(
-                    hermite(t, pos, vel)
-                    for pos, vel in zip(velocities, accelerations)
-                )
+                hermite(t, state_vectors[:, idx+3], state_vectors[:, idx+6])
+                for idx in range(3)
             ]
             self._state_polynomials += [
                 entry.deriv() for entry in self._state_polynomials[3:]
