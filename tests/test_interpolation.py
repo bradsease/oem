@@ -45,22 +45,25 @@ def _make_test_states(poly, t_step, count, accel=True):
 
 @pytest.mark.parametrize("has_accel", (True, False))
 @pytest.mark.parametrize(
-    "Interpolator", (LagrangeStateInterpolator, HermiteStateInterpolator)
+    "Interpolator, samples",
+    ((LagrangeStateInterpolator, 8), (HermiteStateInterpolator, 4))
 )
-def test_interpolators(Interpolator, has_accel):
+def test_interpolators(Interpolator, samples, has_accel):
     position = np.poly1d([1, 1, 1])
     velocity = position.deriv()
     acceleration = velocity.deriv()
-    count = 7
     time_step = 60
 
-    states = _make_test_states(position, time_step, count, accel=has_accel)
+    states = _make_test_states(position, time_step, samples, accel=has_accel)
     interpolator = Interpolator(states)
 
-    for elapsed in np.arange(0, count*time_step, 1):
+    for elapsed in np.arange(0, (samples-1)*time_step, 1):
         test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
         predicted = interpolator(test_epoch)
-        assert np.allclose(predicted.position, position(elapsed))
-        assert np.allclose(predicted.velocity, velocity(elapsed))
+        np.testing.assert_almost_equal(predicted.position, position(elapsed))
+        np.testing.assert_almost_equal(predicted.velocity, velocity(elapsed))
         if has_accel:
-            assert np.allclose(predicted.acceleration, acceleration(elapsed))
+            np.testing.assert_almost_equal(
+                predicted.acceleration,
+                acceleration(elapsed)
+            )
