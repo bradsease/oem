@@ -171,6 +171,14 @@ class State(object):
     def has_accel(self):
         return True if self.acceleration is not None else False
 
+    @property
+    def vector(self):
+        if self.has_accel:
+            vec = np.hstack((self.position, self.velocity, self.acceleration))
+        else:
+            vec = np.hstack((self.position, self.velocity))
+        return vec
+
 
 class Covariance(object):
     """Basic 6x6 covariance.
