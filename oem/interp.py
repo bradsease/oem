@@ -183,14 +183,15 @@ class EphemerisInterpolator(object):
         )
         self._nodes = np.array([
             np.mean(elapsed_times[idx:(idx + samples)])
-            for idx in range(len(elapsed_times) - samples)
+            for idx in range(len(elapsed_times) - samples + 1)
         ])
 
     def _get_best_interpolator(self, epoch):
         elapsed_time = (epoch - self.reference_epoch).sec
         best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
+        samples = self.base_interpolator.samples_required(self.order)
         return self.base_interpolator(
-            self._states[best_idx:best_idx+self.order]
+            self._states[best_idx:best_idx+samples]
         )
 
     @property

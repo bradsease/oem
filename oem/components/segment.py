@@ -6,6 +6,7 @@ from oem.tools import require
 from oem.components.metadata import MetaDataSection
 from oem.components.data import DataSection
 from oem.components.covariance import CovarianceSection
+from oem.interp import EphemerisInterpolator
 
 
 class ConstrainEphemerisSegmentCovariance(Constraint):
@@ -77,6 +78,21 @@ class EphemerisSegment(object):
         self._state_data = state_data
         self._covariance_data = covariance_data
         self._constraint_spec.apply(self)
+
+        if "INTERPOLATION" in self.metadata:
+            method = self.metadata["INTERPOLATION"]
+            order = self.metadata["INTERPOLATION_DEGREE"]
+        else:
+            method = "LAGRANGE"
+            order = 5
+        self._interpolator = EphemerisInterpolator(
+            self.states,
+            method,
+            order
+        )
+
+    def __call__(self, epoch):
+        return self._interpolator(epoch)
 
     def __contains__(self, epoch):
         return (
