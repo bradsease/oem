@@ -16,7 +16,7 @@ USEABLE_START_TIME   = 2020-06-01T12:00:00.000000
 USEABLE_STOP_TIME    = 2020-06-01T13:00:00.000000
 STOP_TIME            = 2020-06-01T13:00:00.000000
 INTERPOLATION        = Lagrange
-INTERPOLATION_DEGREE = 5
+INTERPOLATION_DEGREE = 7
 META_STOP
 
 COMMENT Vehicle's position at any requested time was actually computed using an algorithm, not an interpolation of a table of ephemeris.

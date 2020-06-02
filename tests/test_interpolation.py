@@ -114,9 +114,8 @@ def test_ephemeris_accuracy(coarse_file, fine_file):
     coarse_oem = OrbitEphemerisMessage.open(coarse_sample)
 
     for state in fine_oem.states:
-        # print(state.epoch)
         predict = coarse_oem(state.epoch)
-        np.testing.assert_almost_equal(predict.position, state.position, 3)
+        np.testing.assert_almost_equal(predict.position, state.position, 6)
         np.testing.assert_almost_equal(predict.velocity, state.velocity, 6)
         if state.has_accel:
             np.testing.assert_almost_equal(

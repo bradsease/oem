@@ -91,15 +91,7 @@ class Interpolator(object):
 class LagrangeStateInterpolator(Interpolator):
 
     @classmethod
-    def samples_required(cls, order):
-        """Evaluate the sample count required for a given order.
-
-        Args:
-            order (int): Desired interpolator order.
-
-        Returns:
-            count (int): Samples required to for the desired interpolator.s
-        """
+    def _samples_required(cls, order):
         count = order + 1
         if count % 1 != 0:
             raise ValueError("Unachievable order: {order}")
@@ -118,15 +110,7 @@ class LagrangeStateInterpolator(Interpolator):
 class HermiteStateInterpolator(Interpolator):
 
     @classmethod
-    def samples_required(cls, order):
-        """Evaluate the sample count required for a given order.
-
-        Args:
-            order (int): Desired interpolator order.
-
-        Returns:
-            count (int): Samples required to for the desired interpolator.s
-        """
+    def _samples_required(cls, order):
         count = (order + 1)/2
         if count % 1 != 0:
             raise ValueError("Unachievable order: {order}")
@@ -177,7 +161,7 @@ class EphemerisInterpolator(object):
         return interpolator(epoch)
 
     def _populate_interpolator_nodes(self, epochs, order):
-        samples = self.base_interpolator.samples_required(order)
+        samples = self.base_interpolator._samples_required(order)
         elapsed_times = np.array([
             (entry - self.reference_epoch).sec for entry in epochs]
         )
@@ -189,18 +173,14 @@ class EphemerisInterpolator(object):
     def _get_best_interpolator(self, epoch):
         elapsed_time = (epoch - self.reference_epoch).sec
         best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
-        samples = self.base_interpolator.samples_required(self.order)
+        samples = self.base_interpolator._samples_required(self.order)
         return self.base_interpolator(
             self._states[best_idx:best_idx+samples]
         )
 
     @property
     def reference_epoch(self):
-        return self.states[0].epoch
-
-    @property
-    def states(self):
-        return self._states
+        return self._states[0].epoch
 
     @property
     def order(self):
