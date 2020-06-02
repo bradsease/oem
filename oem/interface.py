@@ -118,6 +118,13 @@ class OrbitEphemerisMessage(object):
         self._segments = segments
         self._constraint_spec.apply(self)
 
+    def __call__(self, epoch):
+        for segment in self:
+            if epoch in segment:
+                return segment(epoch)
+        else:
+            raise ValueError(f"Epoch {epoch} not contained in this ephemeris.")
+
     def __iter__(self):
         return iter(self._segments)
 

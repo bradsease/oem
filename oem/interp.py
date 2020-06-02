@@ -90,6 +90,14 @@ class Interpolator(object):
 
 class LagrangeStateInterpolator(Interpolator):
 
+    @classmethod
+    def _samples_required(cls, order):
+        count = order + 1
+        if count % 1 != 0:
+            raise ValueError("Unachievable order: {order}")
+        else:
+            return int(count)
+
     def _setup(self, states):
         t = self._elapsed_times(states)
         state_vectors = np.vstack((entry.vector for entry in states))
@@ -100,6 +108,14 @@ class LagrangeStateInterpolator(Interpolator):
 
 
 class HermiteStateInterpolator(Interpolator):
+
+    @classmethod
+    def _samples_required(cls, order):
+        count = (order + 1)/2
+        if count % 1 != 0:
+            raise ValueError("Unachievable order: {order}")
+        else:
+            return int(count)
 
     def _setup(self, states):
         t = self._elapsed_times(states)
@@ -124,7 +140,48 @@ class HermiteStateInterpolator(Interpolator):
             ]
 
 
-class EphemerisInterpolator(Interpolator):
+class EphemerisInterpolator(object):
 
-    def __init__(self, times, states, order, method):
-        pass
+    method_map = {
+        "lagrange": LagrangeStateInterpolator,
+        "hermite": HermiteStateInterpolator
+    }
+
+    def __init__(self, states, method, order):
+        self.base_interpolator = self.method_map[method.lower()]
+        self._states = states
+        self._order = order
+        self._populate_interpolator_nodes(
+            [entry.epoch for entry in states],
+            order
+        )
+
+    def __call__(self, epoch):
+        interpolator = self._get_best_interpolator(epoch)
+        return interpolator(epoch)
+
+    def _populate_interpolator_nodes(self, epochs, order):
+        samples = self.base_interpolator._samples_required(order)
+        elapsed_times = np.array([
+            (entry - self.reference_epoch).sec for entry in epochs]
+        )
+        self._nodes = np.array([
+            np.mean(elapsed_times[idx:(idx + samples)])
+            for idx in range(len(elapsed_times) - samples + 1)
+        ])
+
+    def _get_best_interpolator(self, epoch):
+        elapsed_time = (epoch - self.reference_epoch).sec
+        best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
+        samples = self.base_interpolator._samples_required(self.order)
+        return self.base_interpolator(
+            self._states[best_idx:best_idx+samples]
+        )
+
+    @property
+    def reference_epoch(self):
+        return self._states[0].epoch
+
+    @property
+    def order(self):
+        return self._order
