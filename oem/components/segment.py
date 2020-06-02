@@ -78,20 +78,11 @@ class EphemerisSegment(object):
         self._state_data = state_data
         self._covariance_data = covariance_data
         self._constraint_spec.apply(self)
-
-        if "INTERPOLATION" in self.metadata:
-            method = self.metadata["INTERPOLATION"]
-            order = self.metadata["INTERPOLATION_DEGREE"]
-        else:
-            method = "LAGRANGE"
-            order = 5
-        self._interpolator = EphemerisInterpolator(
-            self.states,
-            method,
-            order
-        )
+        self._interpolator = None
 
     def __call__(self, epoch):
+        if not self._interpolator:
+            self._init_interpolator()
         return self._interpolator(epoch)
 
     def __contains__(self, epoch):
@@ -171,6 +162,19 @@ class EphemerisSegment(object):
         self._state_data._to_xml(data)
         if self._covariance_data:
             self._covariance_data._to_xml(data)
+
+    def _init_interpolator(self):
+        if "INTERPOLATION" in self.metadata:
+            method = self.metadata["INTERPOLATION"]
+            order = self.metadata["INTERPOLATION_DEGREE"]
+        else:
+            method = "LAGRANGE"
+            order = 5
+        self._interpolator = EphemerisInterpolator(
+            self.states,
+            method,
+            order
+        )
 
     @property
     def states(self):
