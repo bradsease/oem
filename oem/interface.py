@@ -24,6 +24,25 @@ class ConstrainOemTimeSystem(Constraint):
                 )
 
 
+class ConstrainOemObject(Constraint):
+    """Apply constraint to OEM OBJECT_NAME and OBJECT_ID."""
+
+    versions = ["1.0", "2.0"]
+
+    def func(self, oem):
+        object_name = oem._segments[0].metadata["OBJECT_NAME"]
+        object_id = oem._segments[0].metadata["OBJECT_ID"]
+        for segment in oem:
+            require(
+                segment.metadata["OBJECT_NAME"] == object_name,
+                "OBJECT_NAME not fixed in OEM"
+            )
+            require(
+                segment.metadata["OBJECT_ID"] == object_id,
+                "OBJECT_ID not fixed in OEM"
+            )
+
+
 class ConstrainOemStates(Constraint):
     '''Apply constraints to OEM data sections'''
 
@@ -103,6 +122,7 @@ class OrbitEphemerisMessage(object):
 
     _constraint_spec = ConstraintSpecification(
         ConstrainOemTimeSystem,
+        ConstrainOemObject,
         ConstrainOemStates
     )
 
