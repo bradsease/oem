@@ -109,6 +109,16 @@ class OrbitEphemerisMessage(object):
         >>> epoch in ephemeris
         True
 
+        To sample a state at an arbitrary epoch, simply call the ephemeris with
+        an astropy Time object
+
+        >>> epoch = Time("2020-01-01T00:00:00", scale="utc")
+        >>> ephemeris(epoch)
+        State(2020-01-01T00:00:00.000)
+
+        Note that this type of sampling is only supported if the time system of
+        the target ephemeris is supported by astropy Time objects.
+
         The `save_as` method enables saving of copies of an OEM in both KVN and
         XML formats.
 
@@ -162,6 +172,9 @@ class OrbitEphemerisMessage(object):
                 in zip(self._segments, other._segments)
             )
         )
+
+    def __repr__(self):
+        return f"OribtEphemerisMessage(v{self.version})"
 
     @classmethod
     def from_kvn_oem(cls, file_path):

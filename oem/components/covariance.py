@@ -52,6 +52,9 @@ class CovarianceSection(object):
             )
         )
 
+    def __repr__(self):
+        return f"DataSection(v{self.version})"
+
     @classmethod
     def _from_string(cls, segment, version, metadata):
         """Create CovarianceSection from OEM-formatted string.

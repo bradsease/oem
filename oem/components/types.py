@@ -95,6 +95,9 @@ class State(object):
             np.array([self.acceleration == other.acceleration]).all()
         )
 
+    def __repr__(self):
+        return f"State({str(self.epoch)})"
+
     @classmethod
     def _from_string(cls, segment, version, metadata):
         """Create State from OEM-formatted string.
@@ -202,6 +205,9 @@ class Covariance(object):
             self.frame == other.frame and
             (self.matrix == other.matrix).all()
         )
+
+    def __repr__(self):
+        return f"Covariance({str(self.epoch)})"
 
     @classmethod
     def _from_string(cls, segment, version, metadata):

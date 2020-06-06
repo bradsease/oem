@@ -42,6 +42,9 @@ class HeaderSection(KeyValueSection):
             all(self[key] == other[key] for key in self)
         )
 
+    def __repr__(self):
+        return f"HeaderSection(v{self.version})"
+
     @classmethod
     def _from_string(cls, segment):
         """Create Header Section from OEM-formatted string.

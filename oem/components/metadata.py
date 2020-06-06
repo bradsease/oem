@@ -133,6 +133,11 @@ class MetaDataSection(KeyValueSection):
             all(self[key] == other[key] for key in self)
         )
 
+    def __repr__(self):
+        start = str(self.useable_start_time)
+        stop = str(self.useable_stop_time)
+        return f"MetaDataSection({start}, {stop})"
+
     @classmethod
     def _from_string(cls, segment, version):
         """Create MetaDataSection from OEM-formatted string.
