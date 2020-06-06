@@ -173,16 +173,16 @@ class MetaDataSection(KeyValueSection):
     def useable_start_time(self):
         """Return epoch of start of useable state data range"""
         return (
-            self._fields["USEABLE_START_TIME"]
-            if "USEABLE_START_TIME" in self._fields
-            else self._fields["START_TIME"]
+            self["USEABLE_START_TIME"]
+            if "USEABLE_START_TIME" in self
+            else self["START_TIME"]
         )
 
     @property
     def useable_stop_time(self):
         """Return epoch of end of useable state data range"""
         return (
-            self._fields["USEABLE_STOP_TIME"]
-            if "USEABLE_STOP_TIME" in self._fields
-            else self._fields["STOP_TIME"]
+            self["USEABLE_STOP_TIME"]
+            if "USEABLE_STOP_TIME" in self
+            else self["STOP_TIME"]
         )
