@@ -136,5 +136,5 @@ def test_ephemeris_stepping(input_file):
         assert state.epoch in oem
 
     for segment in oem:
-        for state in oem.steps(601):
+        for state in segment.steps(601):
             assert state.epoch in oem
