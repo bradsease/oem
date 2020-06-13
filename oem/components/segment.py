@@ -182,13 +182,23 @@ class EphemerisSegment(object):
         )
 
     def steps(self, step_size):
-        """Sample Segment at equal intervals.
+        """Sample Segment at equal time intervals.
+
+        This method returns a generator producing states at equal time
+        intervals spanning the useable duration of the parent EphemerisSegment.
 
         Args:
             step_size (float): Sample step size in seconds.
 
         Returns:
             steps (generator): Generator of sampled states.
+
+        Examples:
+            Sample states in each segment of an OEM at 60-second intervals:
+
+            >>> for segment in oem:
+            ...    for state in segment.steps(60):
+            ...        pass
         """
         for epoch in time_range(self.useable_start_time,
                                 self.useable_stop_time,
