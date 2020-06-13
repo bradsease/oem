@@ -214,6 +214,24 @@ class EphemerisSegment(object):
                                 step_size):
             yield self(epoch)
 
+    def resample(self, step_size):
+        """Resample ephemeris data in-place.
+
+        Replaces the existing ephemeris state data in this EphemerisSegment
+        with a new list of states sampled at the desired sampling interval.
+
+        Args:
+            step_size (float): Sample step size in seconds.
+
+        Returns:
+            None
+        """
+        new_states = [state for state in self.steps(step_size)]
+        self._state_data = DataSection(
+            new_states,
+            version=self._state_data.version
+        )
+
     @property
     def states(self):
         """Return list of States in this segment."""
