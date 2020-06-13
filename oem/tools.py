@@ -162,7 +162,7 @@ def is_kvn(file_path):
 
 
 def time_range(start_time, stop_time, step_sec):
-    """Sample a range of times.
+    """Sample a range of astropy Times.
 
     Args:
         start_time (Time): Initial time in sample span.
@@ -170,7 +170,7 @@ def time_range(start_time, stop_time, step_sec):
         step_sec (float): Step size in seconds.
 
     Returns:
-        times (generator): Generator of sample times.
+        times (generator): Generator of sample astropy Times.
     """
     delta = (stop_time - start_time).sec
     for elapsed in np.arange(0, delta, step_sec):
