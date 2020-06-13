@@ -53,7 +53,7 @@ class CovarianceSection(object):
         )
 
     def __repr__(self):
-        return f"DataSection(v{self.version})"
+        return f"CovarianceSection(v{self.version})"
 
     @classmethod
     def _from_string(cls, segment, version, metadata):
