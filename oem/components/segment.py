@@ -102,6 +102,11 @@ class EphemerisSegment(object):
             self._covariance_data == other._covariance_data
         )
 
+    def __repr__(self):
+        start = str(self.useable_start_time)
+        stop = str(self.useable_stop_time)
+        return f"EphemerisSegment({start}, {stop})"
+
     @classmethod
     def _from_strings(cls, components, version):
         """Create EphemerisSegment from OEM segment strings.

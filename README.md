@@ -41,7 +41,16 @@ for covariance in ephemeris.covariances:
     print(covariance.epoch, covariance.matrix)
 ```
 
-The `OrbitEphemerisObject` also facilitates writing of OEMs. To save an already-open OEM, use `.save_as`:
+To sample a state at an arbitrary epoch, simply call the ephemeris with an astropy Time object
+
+```python
+epoch = Time("2020-01-01T00:00:00", scale="utc")
+sampled_state = ephemeris(epoch)
+```
+
+Note that this type of sampling is only supported if the time system of the target ephemeris is supported by astropy Time objects.
+
+The `OrbitEphemerisObject` facilitates writing of OEMs. To save an already-open OEM, use `.save_as`:
 ```python
 ephemeris.save_as("output.oem", file_format="xml")
 ```
