@@ -237,6 +237,38 @@ class OrbitEphemerisMessage(object):
         """
         cls.open(in_file_path).save_as(out_file_path, file_format=file_format)
 
+    def steps(self, step_size):
+        """Sample Ephemeris at equal time intervals.
+
+        This method returns a generator producing states at equal time
+        intervals spanning the useable duration of all segments in the
+        parent OEM.
+
+        Args:
+            step_size (float): Sample step size in seconds.
+
+        Returns:
+            steps (generator): Generator of sampled states.
+
+        Examples:
+            Sample states at 60-second intervals:
+
+            >>> for state in oem.steps(60):
+            ...     pass
+
+            Note that spacing between steps will only be constant within
+            segments; when crossing from one segment to another the spacing
+            will vary. To avoid this behavior with multi-segment OEMs, use the
+            segment interface directly:
+
+            >>> for segment in oem:
+            ...    for state in segment.steps(60):
+            ...        pass
+        """
+        for segment in self:
+            for state in segment.steps(step_size):
+                yield state
+
     def save_as(self, file_path, file_format="kvn"):
         """Write OEM to file.
 

@@ -2,7 +2,7 @@ from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
-from oem.tools import require
+from oem.tools import require, time_range
 from oem.components.metadata import MetaDataSection
 from oem.components.data import DataSection
 from oem.components.covariance import CovarianceSection
@@ -180,6 +180,30 @@ class EphemerisSegment(object):
             method,
             order
         )
+
+    def steps(self, step_size):
+        """Sample Segment at equal time intervals.
+
+        This method returns a generator producing states at equal time
+        intervals spanning the useable duration of the parent EphemerisSegment.
+
+        Args:
+            step_size (float): Sample step size in seconds.
+
+        Returns:
+            steps (generator): Generator of sampled states.
+
+        Examples:
+            Sample states in each segment of an OEM at 60-second intervals:
+
+            >>> for segment in oem:
+            ...    for state in segment.steps(60):
+            ...        pass
+        """
+        for epoch in time_range(self.useable_start_time,
+                                self.useable_stop_time,
+                                step_size):
+            yield self(epoch)
 
     @property
     def states(self):
