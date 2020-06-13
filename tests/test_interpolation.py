@@ -123,3 +123,18 @@ def test_ephemeris_accuracy(coarse_file, fine_file):
                 state.acceleration,
                 6
             )
+
+
+@pytest.mark.parametrize(
+    "input_file", ("GEO_20s.oem", "MEO_20s.oem", "LEO_10s.oem")
+)
+def test_ephemeris_stepping(input_file):
+    sample_file = SAMPLE_DIR / "real" / input_file
+    oem = OrbitEphemerisMessage.open(sample_file)
+
+    for state in oem.steps(601):
+        assert state.epoch in oem
+
+    for segment in oem:
+        for state in oem.steps(601):
+            assert state.epoch in oem
