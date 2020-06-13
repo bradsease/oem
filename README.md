@@ -48,9 +48,22 @@ epoch = Time("2020-01-01T00:00:00", scale="utc")
 sampled_state = ephemeris(epoch)
 ```
 
-Note that this type of sampling is only supported if the time system of the target ephemeris is supported by astropy Time objects.
+Note that this type of sampling is only supported if the time system of the target ephemeris is supported by astropy Time objects. The `.steps` method of both `OrbitEphemerisMessage` and `EphemerisSegment` objects enables iterable, equal-time sampling of ephemeris data. The following example samples an OEM at a 60-second interval.
 
-The `OrbitEphemerisObject` facilitates writing of OEMs. To save an already-open OEM, use `.save_as`:
+```python
+for state in oem.steps(60)
+    pass
+```
+
+The above example works for both single- and multi-segment OEMs, however the step sizes may vary at the boundary of the segments. To get consistent step sizes with multiple segments, use the segment interface directly.
+
+```python
+for segment in oem:
+    for state in segment.steps(60):
+        pass
+```
+
+The `OrbitEphemerisMessage` facilitates writing of OEMs. To save an already-open OEM, use `.save_as`:
 ```python
 ephemeris.save_as("output.oem", file_format="xml")
 ```
