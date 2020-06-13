@@ -237,6 +237,19 @@ class OrbitEphemerisMessage(object):
         """
         cls.open(in_file_path).save_as(out_file_path, file_format=file_format)
 
+    def steps(self, step_size):
+        """Sample Ephemeris at equal intervals.
+
+        Args:
+            step_size (float): Sample step size in seconds.
+
+        Returns:
+            steps (generator): Generator of sampled states.
+        """
+        for segment in self:
+            for state in segment.steps(step_size):
+                yield state
+
     def save_as(self, file_path, file_format="kvn"):
         """Write OEM to file.
 

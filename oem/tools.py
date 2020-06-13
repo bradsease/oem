@@ -1,6 +1,7 @@
 import warnings
 import datetime as dt
-from astropy.time import Time
+import numpy as np
+from astropy.time import Time, TimeDelta
 
 
 def parse_str(input_string, metadata):
@@ -158,3 +159,19 @@ def is_kvn(file_path):
         else:
             result = True
     return result
+
+
+def time_range(start_time, stop_time, step_sec):
+    """Sample a range of times.
+
+    Args:
+        start_time (Time): Initial time in sample span.
+        stop_time (Time): Final time in sample span.
+        step_sec (float): Step size in seconds.
+
+    Returns:
+        times (generator): Generator of sample times.
+    """
+    delta = (stop_time - start_time).sec
+    for elapsed in np.arange(0, delta, step_sec):
+        yield start_time + TimeDelta(elapsed, format="sec")
