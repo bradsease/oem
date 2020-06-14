@@ -174,7 +174,7 @@ class OrbitEphemerisMessage(object):
         )
 
     def __repr__(self):
-        return f"OribtEphemerisMessage(v{self.version})"
+        return f"OrbitEphemerisMessage(v{self.version})"
 
     @classmethod
     def from_kvn_oem(cls, file_path):
