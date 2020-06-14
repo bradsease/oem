@@ -1,6 +1,7 @@
 """Test parsing sample OEMS.
 """
 import pytest
+import glob
 import tempfile
 from pathlib import Path
 
@@ -8,58 +9,17 @@ from oem import OrbitEphemerisMessage
 from oem.tools import is_kvn
 
 
-THIS_DIR = Path(__file__).parent
-SAMPLE_DIR = THIS_DIR / "samples"
+SAMPLE_DIR = Path(__file__).parent / "samples"
 
 
-def _get_test_files(version, validity):
-    sample_dir = SAMPLE_DIR / version / validity
-    return sorted([
-        entry for entry in sample_dir.iterdir()
-        if str(entry).endswith(".oem")
-    ])
+def _get_test_files(version="*", validity="*"):
+    samples = SAMPLE_DIR / version / validity / "*.oem"
+    return sorted([entry for entry in glob.glob(str(samples))])
 
 
-@pytest.mark.parametrize("file_path", _get_test_files("v1_0", "valid"))
-def test_valid_v1_samples(file_path):
-    """Verify parsing of valid v1.0 OEM samples
-
-    This test requires external data.
-    """
+@pytest.mark.parametrize("file_path", _get_test_files(validity="valid"))
+def test_valid_samples(file_path):
     oem = OrbitEphemerisMessage.open(file_path)
-
-    for segment in oem:
-        for state in segment.states:
-            assert state.acceleration is None
-        assert len(oem.states) > 0
-        assert len(oem.covariances) == 0
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        written_oem_path = Path(tmp_dir) / "written.oem"
-        fmt = "xml" if is_kvn(file_path) else "kvn"
-        OrbitEphemerisMessage.convert(file_path, written_oem_path, fmt)
-        written_oem = OrbitEphemerisMessage.open(written_oem_path)
-        assert written_oem == oem
-
-
-@pytest.mark.parametrize("file_path", _get_test_files("v1_0", "invalid"))
-def test_invalid_v1_samples(file_path):
-    """Verify parsing failure for invalid v1.0 OEM samples
-
-    This test requires external data.
-    """
-    with pytest.raises(Exception):
-        OrbitEphemerisMessage.open(file_path)
-
-
-@pytest.mark.parametrize("file_path", _get_test_files("v2_0", "valid"))
-def test_valid_v2_samples(file_path):
-    """Verify parsing of valid v2.0 OEM samples
-
-    This test requires external data.
-    """
-    oem = OrbitEphemerisMessage.open(file_path)
-    assert oem.version == "2.0"
 
     for segment in oem:
         if not segment.has_accel:
@@ -81,22 +41,18 @@ def test_valid_v2_samples(file_path):
         assert written_oem == oem
 
 
-@pytest.mark.parametrize("file_path", _get_test_files("v2_0", "invalid"))
-def test_invalid_v2_samples(file_path):
-    """Verify parsing failure for invalid v2.0 OEM samples
-
-    This test requires external data.
-    """
+@pytest.mark.parametrize("file_path", _get_test_files(validity="invalid"))
+def test_invalid_samples(file_path):
     with pytest.raises(Exception):
         OrbitEphemerisMessage.open(file_path)
 
 
-def test_convert():
-    test_file = _get_test_files("v2_0", "valid")[0]
+@pytest.mark.parametrize("file_path", _get_test_files(validity="valid"))
+def test_convert(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         converted_xml_path = Path(tmp_dir) / "written.oem"
         OrbitEphemerisMessage.convert(
-            test_file,
+            file_path,
             converted_xml_path,
             "kvn"
         )
@@ -122,7 +78,7 @@ def test_compare():
     assert oem1 != oem2
 
 
-@pytest.mark.parametrize("file_path", _get_test_files("v2_0", "valid"))
+@pytest.mark.parametrize("file_path", _get_test_files(validity="valid"))
 def test_copy(file_path):
     oem1 = OrbitEphemerisMessage.open(file_path)
     oem2 = oem1.copy()
