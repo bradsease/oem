@@ -47,14 +47,6 @@ class HeaderSection(KeyValueSection):
 
     @classmethod
     def _from_string(cls, segment):
-        """Create Header Section from OEM-formatted string.
-
-        Args:
-            segment (str): String containing a single OEM header section.
-
-        Returns:
-            new_section (HeaderSection): New HeaderSection instance.
-        """
         raw_entries = re.findall(patterns.KEY_VAL, segment)
         fields = {entry[0].strip(): entry[1].strip() for entry in raw_entries}
         return cls(fields)

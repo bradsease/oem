@@ -27,11 +27,6 @@ class KeyValueSection(object):
     _field_spec = {}
 
     def _validate_fields(self, fields):
-        """Validate section fields.
-
-        Args:
-            fields (dict): Unprocessed field data.
-        """
         for key in self.required_keys:
             if key not in fields:
                 raise KeyError(f"Missing required header: {key}")
@@ -40,11 +35,6 @@ class KeyValueSection(object):
                 raise KeyError(f"Invalid header key: {key}")
 
     def _parse_fields(self, fields):
-        """Parse section fields.
-
-        Args:
-            fields (dict): Unprocessed field data.
-        """
         self._validate_fields(fields)
         self._fields = fields
 

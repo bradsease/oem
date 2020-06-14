@@ -109,15 +109,6 @@ class EphemerisSegment(object):
 
     @classmethod
     def _from_strings(cls, components, version):
-        """Create EphemerisSegment from OEM segment strings.
-
-        Args:
-            components (tuple): Tuple of OEM-formatted strings containing
-                metadata, ephemeris data, and an optional covariance section.
-
-        Returns:
-            new_section (EphemerisSegment): New EphemerisSegment instance.
-        """
         metadata = MetaDataSection._from_string(components[0], version)
         state_data = DataSection._from_string(components[1], version, metadata)
         if len(components[2]) == 0:
@@ -199,8 +190,8 @@ class EphemerisSegment(object):
         Args:
             step_size (float): Sample step size in seconds.
 
-        Returns:
-            steps (generator): Generator of sampled states.
+        Yields:
+            State: Sampled state.
 
         Examples:
             Sample states in each segment of an OEM at 60-second intervals:
@@ -226,7 +217,7 @@ class EphemerisSegment(object):
                 is False.
 
         Returns:
-            segment (EphemerisSegment): Resampled EphemerisSegment. Output is
+            EphemerisSegment: Resampled EphemerisSegment. Output is
                 an indepdent instance if in_place is True.
         """
         if in_place:

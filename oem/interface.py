@@ -177,7 +177,7 @@ class OrbitEphemerisMessage(object):
         return f"OrbitEphemerisMessage(v{self.version})"
 
     @classmethod
-    def from_kvn_oem(cls, file_path):
+    def _from_kvn_oem(cls, file_path):
         with open(file_path, "r") as ephem_file:
             contents = ephem_file.read()
         contents = re.sub(patterns.COMMENT_LINE, "", contents)
@@ -195,7 +195,7 @@ class OrbitEphemerisMessage(object):
         return cls(header, segments)
 
     @classmethod
-    def from_xml_oem(cls, file_path):
+    def _from_xml_oem(cls, file_path):
         parts = parse(str(file_path)).getroot()
         header = components.HeaderSection._from_xml(parts)
         segments = [
@@ -214,12 +214,12 @@ class OrbitEphemerisMessage(object):
             file_path (str or Path): Path of file to read.
 
         Returns:
-            oem: OrbitEphemerisMessage instance.
+            OrbitEphemerisMessage: New OEM instance.
         """
         if is_kvn(file_path):
-            oem = cls.from_kvn_oem(file_path)
+            oem = cls._from_kvn_oem(file_path)
         else:
-            oem = cls.from_xml_oem(file_path)
+            oem = cls._from_xml_oem(file_path)
         return oem
 
     @classmethod
@@ -254,8 +254,8 @@ class OrbitEphemerisMessage(object):
         Args:
             step_size (float): Sample step size in seconds.
 
-        Returns:
-            steps (generator): Generator of sampled states.
+        Yields:
+            State: Sample state.
 
         Examples:
             Sample states at 60-second intervals:
@@ -289,7 +289,7 @@ class OrbitEphemerisMessage(object):
                 is False.
 
         Returns:
-            oem (OrbitEphemerisMessage): Resampled OEM. Output is an indepedent
+            OrbitEphemerisMessage: Resampled OEM. Output is an indepedent
                 instance if in_place is True.
 
         Examples:
