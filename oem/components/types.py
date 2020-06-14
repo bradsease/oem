@@ -182,6 +182,16 @@ class State(object):
             vec = np.hstack((self.position, self.velocity))
         return vec
 
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return State(
+            self.epoch,
+            self.position.copy(),
+            self.velocity.copy(),
+            self.acceleration.copy() if self.has_accel else None,
+            version=self.version
+        )
+
 
 class Covariance(object):
     """Basic 6x6 covariance.
@@ -284,3 +294,12 @@ class Covariance(object):
             SubElement(parent, "COV_REF_FRAME").text = self.frame
         for key, index in COV_XML_ENTRY_MAP.items():
             SubElement(parent, key).text = format_float(self.matrix[index])
+
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return Covariance(
+            self.epoch,
+            self.frame,
+            self.matrix.copy(),
+            version=self.version
+        )

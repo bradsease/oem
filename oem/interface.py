@@ -237,6 +237,13 @@ class OrbitEphemerisMessage(object):
         """
         cls.open(in_file_path).save_as(out_file_path, file_format=file_format)
 
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return OrbitEphemerisMessage(
+            self.header.copy(),
+            [segment.copy() for segment in self]
+        )
+
     def steps(self, step_size):
         """Sample Ephemeris at equal time intervals.
 

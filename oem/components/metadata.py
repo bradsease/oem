@@ -191,3 +191,7 @@ class MetaDataSection(KeyValueSection):
             if "USEABLE_STOP_TIME" in self
             else self["STOP_TIME"]
         )
+
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return MetaDataSection(self._fields.copy(), version=self.version)

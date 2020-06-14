@@ -113,3 +113,10 @@ class DataSection(object):
     def has_accel(self):
         """Evaluate if section contains acceleration data."""
         return self._has_accel
+
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return DataSection(
+            [state.copy() for state in self.states],
+            version=self.version
+        )
