@@ -10,7 +10,7 @@ OrbitEphemerisMessage
    Module :ref:`types`
 
 
-.. automodule:: oem.OrbitEphemerisMessage
+.. autoclass:: oem.OrbitEphemerisMessage
     :members:
     :undoc-members:
     :show-inheritance:
