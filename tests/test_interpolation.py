@@ -138,3 +138,19 @@ def test_ephemeris_stepping(input_file):
     for segment in oem:
         for state in segment.steps(601):
             assert state.epoch in oem
+
+
+@pytest.mark.parametrize(
+    "input_file", ("GEO_20s.oem", "MEO_20s.oem", "LEO_10s.oem")
+)
+def test_ephemeris_resample(input_file):
+    sample_file = SAMPLE_DIR / "real" / input_file
+    step_size = 600
+    oem = OrbitEphemerisMessage.open(sample_file)
+    new_oem = oem.resample(step_size)
+
+    for idx in range(1, len(new_oem.states)):
+        assert np.isclose(
+            (new_oem.states[idx].epoch - new_oem.states[idx-1].epoch).sec,
+            step_size
+        )
