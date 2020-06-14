@@ -58,7 +58,7 @@ def test_valid_v2_samples(file_path):
 
     This test requires external data.
     """
-    oem = OrbitEphemerisMessage.open(file_path).copy()
+    oem = OrbitEphemerisMessage.open(file_path)
     assert oem.version == "2.0"
 
     for segment in oem:
