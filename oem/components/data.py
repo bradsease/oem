@@ -104,6 +104,13 @@ class DataSection(object):
         for entry in self._states:
             entry._to_xml(SubElement(parent, "stateVector"))
 
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return DataSection(
+            [state.copy() for state in self.states],
+            version=self.version
+        )
+
     @property
     def states(self):
         """Return a list of States in this section."""
@@ -113,10 +120,3 @@ class DataSection(object):
     def has_accel(self):
         """Evaluate if section contains acceleration data."""
         return self._has_accel
-
-    def copy(self):
-        """Create an independent copy of this instance."""
-        return DataSection(
-            [state.copy() for state in self.states],
-            version=self.version
-        )

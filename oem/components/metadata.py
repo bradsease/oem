@@ -174,6 +174,10 @@ class MetaDataSection(KeyValueSection):
         for key, value in self._fields.items():
             SubElement(parent, key).text = value
 
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return MetaDataSection(self._fields.copy(), version=self.version)
+
     @property
     def useable_start_time(self):
         """Return epoch of start of useable state data range"""
@@ -191,7 +195,3 @@ class MetaDataSection(KeyValueSection):
             if "USEABLE_STOP_TIME" in self
             else self["STOP_TIME"]
         )
-
-    def copy(self):
-        """Create an independent copy of this instance."""
-        return MetaDataSection(self._fields.copy(), version=self.version)

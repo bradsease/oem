@@ -97,14 +97,14 @@ class CovarianceSection(object):
         for entry in self._covariances:
             entry._to_xml(SubElement(parent, "covarianceMatrix"))
 
-    @property
-    def covariances(self):
-        """Return a list of covariances in this section."""
-        return self._covariances
-
     def copy(self):
         """Create an independent copy of this instance."""
         return CovarianceSection(
             [covariance.copy() for covariance in self.covariances],
             version=self.version
         )
+
+    @property
+    def covariances(self):
+        """Return a list of covariances in this section."""
+        return self._covariances
