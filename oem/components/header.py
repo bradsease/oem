@@ -84,6 +84,10 @@ class HeaderSection(KeyValueSection):
             if key != "CCSDS_OEM_VERS":
                 SubElement(parent, key).text = value
 
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return HeaderSection(self._fields.copy())
+
     @property
     def version(self):
         return self["CCSDS_OEM_VERS"]

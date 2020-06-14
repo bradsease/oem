@@ -181,6 +181,15 @@ class EphemerisSegment(object):
             order
         )
 
+    def copy(self):
+        """Create an independent copy of this instance."""
+        return EphemerisSegment(
+            self.metadata.copy(),
+            self._state_data.copy(),
+            self._covariance_data.copy() if self.has_covariance else None,
+            version=self.version
+        )
+
     def steps(self, step_size):
         """Sample Segment at equal time intervals.
 

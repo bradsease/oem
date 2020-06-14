@@ -120,3 +120,10 @@ def test_compare():
     assert oem1 == oem1
     assert oem2 == oem2
     assert oem1 != oem2
+
+
+@pytest.mark.parametrize("file_path", _get_test_files("v2_0", "valid"))
+def test_copy(file_path):
+    oem1 = OrbitEphemerisMessage.open(file_path)
+    oem2 = oem1.copy()
+    assert oem1 is not oem2 and oem1 == oem2
