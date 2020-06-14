@@ -147,10 +147,10 @@ def test_ephemeris_resample(input_file):
     sample_file = SAMPLE_DIR / "real" / input_file
     step_size = 600
     oem = OrbitEphemerisMessage.open(sample_file)
-    oem.resample(step_size)
+    new_oem = oem.resample(step_size)
 
-    for idx in range(1, len(oem.states)):
+    for idx in range(1, len(new_oem.states)):
         assert np.isclose(
-            (oem.states[idx].epoch - oem.states[idx-1].epoch).sec,
+            (new_oem.states[idx].epoch - new_oem.states[idx-1].epoch).sec,
             step_size
         )

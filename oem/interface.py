@@ -276,7 +276,7 @@ class OrbitEphemerisMessage(object):
             for state in segment.steps(step_size):
                 yield state
 
-    def resample(self, step_size):
+    def resample(self, step_size, in_place=False):
         """Resample ephemeris data in-place.
 
         Replaces the existing ephemeris state data in this OEM with new states
@@ -285,20 +285,33 @@ class OrbitEphemerisMessage(object):
 
         Args:
             step_size (float): Sample step size in seconds.
+            in_place (bool, optional): Toggle in-place resampling. Default
+                is False.
 
         Returns:
-            None
+            oem (OrbitEphemerisMessage): Resampled OEM. Output is an indepedent
+                instance if in_place is True.
 
         Examples:
             Open an ephemeris file, convert it to a 60-second sampling interval
             and save the result to a new file:
 
             >>> oem = OrbitEphemerisMessage.open("input.oem")
-            >>> oem.resample(60)
+            >>> oem.resample(60, in_place=True)
             >>> oem.save_as("output.oem")
+
+            To do the same thing without in-place operations:
+
+            >>> oem = OrbitEphemerisMessage.open("input.oem")
+            >>> new_oem = oem.resample(60)
+            >>> new_oem.save_as("output.oem")
         """
-        for segment in self:
-            segment.resample(step_size)
+        if in_place:
+            for segment in self:
+                segment.resample(step_size, in_place=True)
+        else:
+            oem = self.copy().resample(step_size, in_place=True)
+        return oem if not in_place else self
 
     def save_as(self, file_path, file_format="kvn"):
         """Write OEM to file.
