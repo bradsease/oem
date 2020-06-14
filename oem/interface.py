@@ -277,7 +277,7 @@ class OrbitEphemerisMessage(object):
                 yield state
 
     def resample(self, step_size, in_place=False):
-        """Resample ephemeris data in-place.
+        """Resample ephemeris data.
 
         Replaces the existing ephemeris state data in this OEM with new states
         sampled at the desired sampling interval. The new sampling applies to

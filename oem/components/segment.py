@@ -215,7 +215,7 @@ class EphemerisSegment(object):
             yield self(epoch)
 
     def resample(self, step_size, in_place=False):
-        """Resample ephemeris data in-place.
+        """Resample ephemeris data.
 
         Replaces the existing ephemeris state data in this EphemerisSegment
         with a new list of states sampled at the desired sampling interval.
@@ -227,7 +227,7 @@ class EphemerisSegment(object):
 
         Returns:
             segment (EphemerisSegment): Resampled EphemerisSegment. Output is
-                an indepdent copy if in_place is True.
+                an indepdent instance if in_place is True.
         """
         if in_place:
             self._state_data = DataSection(
