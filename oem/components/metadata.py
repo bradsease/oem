@@ -140,14 +140,6 @@ class MetaDataSection(KeyValueSection):
 
     @classmethod
     def _from_string(cls, segment, version):
-        """Create MetaDataSection from OEM-formatted string.
-
-        Args:
-            segment (str): String containing a single OEM metadata section.
-
-        Returns:
-            new_section (MetaDataSection): New MetaDataSection instance.
-        """
         raw_entries = re.findall(patterns.KEY_VAL, segment)
         metadata = {
             entry[0].strip(): entry[1].strip()

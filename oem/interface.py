@@ -214,7 +214,7 @@ class OrbitEphemerisMessage(object):
             file_path (str or Path): Path of file to read.
 
         Returns:
-            oem: OrbitEphemerisMessage instance.
+            OrbitEphemerisMessage: New OEM instance.
         """
         if is_kvn(file_path):
             oem = cls.from_kvn_oem(file_path)
@@ -254,8 +254,8 @@ class OrbitEphemerisMessage(object):
         Args:
             step_size (float): Sample step size in seconds.
 
-        Returns:
-            steps (generator): Generator of sampled states.
+        Yields:
+            State: Sample state.
 
         Examples:
             Sample states at 60-second intervals:
@@ -289,7 +289,7 @@ class OrbitEphemerisMessage(object):
                 is False.
 
         Returns:
-            oem (OrbitEphemerisMessage): Resampled OEM. Output is an indepedent
+            OrbitEphemerisMessage: Resampled OEM. Output is an indepedent
                 instance if in_place is True.
 
         Examples:

@@ -57,14 +57,6 @@ class CovarianceSection(object):
 
     @classmethod
     def _from_string(cls, segment, version, metadata):
-        """Create CovarianceSection from OEM-formatted string.
-
-        Args:
-            segment (str): String containing a single OEM covariance section.
-
-        Returns:
-            new_section (CovarianceSection): New CovarianceSection instance.
-        """
         raw_covariances = re.findall(
             patterns.COVARIANCE_ENTRY,
             segment,

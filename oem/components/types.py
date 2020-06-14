@@ -100,14 +100,6 @@ class State(object):
 
     @classmethod
     def _from_string(cls, segment, version, metadata):
-        """Create State from OEM-formatted string.
-
-        Args:
-            segment (str): String containing a single OEM state line.
-
-        Returns:
-            new_state (State): New State instance.
-        """
         raw_state = segment.split()
         has_accel = True if len(raw_state) == 10 else False
 
@@ -221,14 +213,6 @@ class Covariance(object):
 
     @classmethod
     def _from_string(cls, segment, version, metadata):
-        """Create Covariance from OEM-formatted string.
-
-        Args:
-            segment (str): String containing a single OEM covariance block.
-
-        Returns:
-            new_covariance (Covariance): New Covariance instance.
-        """
         headers = {
             entry[0]: entry[1].strip()
             for entry in re.findall(patterns.KEY_VAL, segment, re.MULTILINE)

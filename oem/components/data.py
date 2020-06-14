@@ -73,14 +73,6 @@ class DataSection(object):
 
     @classmethod
     def _from_string(cls, segment, version, metadata):
-        """Create DataSection from OEM-formatted string.
-
-        Args:
-            segment (str): String containing a single OEM data section.
-
-        Returns:
-            new_section (DataSection): New DataSection instance.
-        """
         raw_states = re.findall(patterns.DATA_LINE, segment, re.MULTILINE)
         states = [
             State._from_string(entry, version, metadata)
