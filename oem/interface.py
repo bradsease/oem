@@ -177,7 +177,7 @@ class OrbitEphemerisMessage(object):
         return f"OrbitEphemerisMessage(v{self.version})"
 
     @classmethod
-    def from_kvn_oem(cls, file_path):
+    def _from_kvn_oem(cls, file_path):
         with open(file_path, "r") as ephem_file:
             contents = ephem_file.read()
         contents = re.sub(patterns.COMMENT_LINE, "", contents)
@@ -195,7 +195,7 @@ class OrbitEphemerisMessage(object):
         return cls(header, segments)
 
     @classmethod
-    def from_xml_oem(cls, file_path):
+    def _from_xml_oem(cls, file_path):
         parts = parse(str(file_path)).getroot()
         header = components.HeaderSection._from_xml(parts)
         segments = [
@@ -217,9 +217,9 @@ class OrbitEphemerisMessage(object):
             OrbitEphemerisMessage: New OEM instance.
         """
         if is_kvn(file_path):
-            oem = cls.from_kvn_oem(file_path)
+            oem = cls._from_kvn_oem(file_path)
         else:
-            oem = cls.from_xml_oem(file_path)
+            oem = cls._from_xml_oem(file_path)
         return oem
 
     @classmethod
