@@ -1,6 +1,7 @@
 import re
 
-from lxml.etree import ElementTree, Element, SubElement, parse
+from lxml.etree import ElementTree, Element, SubElement
+from defusedxml.ElementTree import parse
 
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
