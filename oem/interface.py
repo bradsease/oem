@@ -5,7 +5,7 @@ from defusedxml.ElementTree import parse
 
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
-from oem.tools import require, is_kvn
+from oem.tools import require, is_kvn, regex_block_iter
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -182,17 +182,19 @@ class OrbitEphemerisMessage(object):
         with open(file_path, "r") as ephem_file:
             contents = ephem_file.read()
         contents = re.sub(patterns.COMMENT_LINE, "", contents)
-        match = re.match(patterns.CCSDS_EPHEMERIS, contents, re.MULTILINE)
+        match = re.match(patterns.HEADER_SEGMENT, contents, re.MULTILINE)
         if match:
-            header = components.HeaderSection._from_string(match.group(1))
+            header = components.HeaderSection._from_string(match.group(0))
             version = header["CCSDS_OEM_VERS"]
+            start_idx = match.span()[1]
             segments = [
                 components.EphemerisSegment._from_strings(raw_segment, version)
                 for raw_segment
-                in re.findall(patterns.DATA_BLOCK, contents, re.MULTILINE)
+                in regex_block_iter(patterns.DATA_BLOCK, contents[start_idx:])
             ]
+
         else:
-            raise ValueError("Failed to parse ephemeris file.")
+            raise ValueError("Failed to parse ephemeris header.")
         return cls(header, segments)
 
     @classmethod
