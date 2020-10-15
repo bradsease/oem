@@ -1,4 +1,5 @@
 import warnings
+import re
 import datetime as dt
 import numpy as np
 from astropy.time import Time, TimeDelta
@@ -175,3 +176,30 @@ def time_range(start_time, stop_time, step_sec):
     delta = (stop_time - start_time).sec
     for elapsed in np.arange(0, delta, step_sec):
         yield start_time + TimeDelta(elapsed, format="sec")
+
+
+def regex_block_iter(pattern, contents):
+    """Iterate through blocks of file content.
+
+    Assumes that the input pattern is repeated from the beginning to the end
+    of the file. Raises an exception if every character of the input is not
+    matched as part of a repeated block.
+
+    Args:
+        pattern (str): Regex pattern of repeated block.
+        contents (str): Full contents of file to parse.
+
+    Yields:
+        groups (tuple): Regex match results.
+
+    Raises:
+        ValueError: Failed to parse complete file contents.
+    """
+    idx = 0
+    while idx < len(contents):
+        match = re.match(pattern, contents[idx:], re.MULTILINE)
+        if match:
+            idx += match.span()[1]
+            yield match.groups()
+        else:
+            raise ValueError("Failed to parse complete file contents.")

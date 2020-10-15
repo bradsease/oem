@@ -111,7 +111,7 @@ class EphemerisSegment(object):
     def _from_strings(cls, components, version):
         metadata = MetaDataSection._from_string(components[0], version)
         state_data = DataSection._from_string(components[1], version, metadata)
-        if len(components[2]) == 0:
+        if components[2] is None:
             covariance_data = None
         else:
             covariance_data = CovarianceSection._from_string(
