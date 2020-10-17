@@ -100,7 +100,7 @@ class LagrangeStateInterpolator(Interpolator):
 
     def _setup(self, states):
         t = self._elapsed_times(states)
-        state_vectors = np.vstack((entry.vector for entry in states))
+        state_vectors = np.vstack([entry.vector for entry in states])
         self._state_polynomials = [
             lagrange(t, state_vectors[:, idx])
             for idx in range(state_vectors.shape[1])
@@ -119,7 +119,7 @@ class HermiteStateInterpolator(Interpolator):
 
     def _setup(self, states):
         t = self._elapsed_times(states)
-        state_vectors = np.vstack((entry.vector for entry in states))
+        state_vectors = np.vstack([entry.vector for entry in states])
         self._state_polynomials = [
             hermite(t, state_vectors[:, idx], state_vectors[:, idx+3])
             for idx in range(3)
