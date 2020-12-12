@@ -367,3 +367,7 @@ class OrbitEphemerisMessage(object):
             for segment in self
             for covariance in segment.covariances
         ]
+
+    @property
+    def segments(self):
+        return self._segments
