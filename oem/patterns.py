@@ -14,7 +14,7 @@ HSNL = r"(?:(?:[ \t]*\n)|[ \t]*$)+"
 FLOAT = f"(?:[+-]?\\d\\.\\d+(?:[eE][+-]\\d{{1,3}})){HS}|[+-]?\\d+\\.\\d+"
 """Floating-point number"""
 
-DATE = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?"
+DATE = r"\d{4}-(?:\d{2}-\d{2}|\d{3})T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?"
 """Date and time"""
 
 KEY_VAL = f"([A-Z_]+){HS}={HS}(.+)"
