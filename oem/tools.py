@@ -27,15 +27,16 @@ def parse_datetime(epoch):
     Returns:
         parsed_epoch (DateTime):  Parsed epoch.
     """
+    ymd_fmt = "%Y-%m-%d" if epoch.count("-") == 2 else "%Y-%j"
     if "." in epoch:
         return dt.datetime.strptime(
             epoch.replace("Z", "")[:epoch.index(".")+7].strip(),
-            "%Y-%m-%dT%H:%M:%S.%f"
+            f"{ymd_fmt}T%H:%M:%S.%f"
         )
     else:
         return dt.datetime.strptime(
             epoch.replace("Z", "").strip(),
-            "%Y-%m-%dT%H:%M:%S"
+            f"{ymd_fmt}T%H:%M:%S"
         )
 
 
@@ -48,7 +49,7 @@ def parse_utc(epoch, metadata):
     Returns:
         parsed_epoch (Time): UTC epoch.
     """
-    return Time(epoch, format="isot", scale="utc")
+    return Time(parse_datetime(epoch), format="datetime", scale="utc")
 
 
 def parse_epoch(epoch, metadata):
@@ -65,14 +66,15 @@ def parse_epoch(epoch, metadata):
             this case, time calculations may be inaccurate.
     """
     time_system = metadata["TIME_SYSTEM"].lower()
+    dt_epoch = parse_datetime(epoch)
     if time_system in Time.SCALES:
-        parsed_epoch = Time(epoch, format="isot", scale=time_system)
+        parsed_epoch = Time(dt_epoch, format="datetime", scale=time_system)
     else:
         warnings.warn(
             f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
             f"DateTime. Use caution with time calculations."
         )
-        parsed_epoch = parse_datetime(epoch)
+        parsed_epoch = dt_epoch
     return parsed_epoch
 
 
