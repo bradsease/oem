@@ -15,6 +15,7 @@ include:
   stage: test
   script:
     - python -V
+    - pip install pytest pytest-cov
     - pip install -r requirements.txt
     - pytest -v --junitxml=report.xml --cov=oem --cov-report term tests/
 
