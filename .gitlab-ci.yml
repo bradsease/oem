@@ -19,10 +19,6 @@ include:
     - pip install -r requirements.txt
     - pytest -v --junitxml=report.xml --cov=oem --cov-report term tests/
 
-run_tests_py35:
-  extends: .run_tests
-  image: python:3.5
-
 run_tests_py36:
   extends: .run_tests
   image: python:3.6
