@@ -63,6 +63,8 @@ class State(object):
 
     Attributes:
         epoch (DateTime): Epoch date and time.
+        frame (str): Reference frame.
+        center (str): Central body.
         position (ndarray): 3-element array describing the position at epoch.
         velocity (ndarray): 3-element array describing the velocity at epoch.
         acceleration (ndarray): 3-element array describing the acceleration
@@ -74,10 +76,12 @@ class State(object):
         ConstrainStateDimension
     )
 
-    def __init__(self, epoch, position, velocity, acceleration=None,
-                 version=CURRENT_VERSION):
+    def __init__(self, epoch, frame, center, position, velocity,
+                 acceleration=None, version=CURRENT_VERSION):
         self.version = version
         self.epoch = epoch
+        self.frame = frame
+        self.center = center
         self.position = np.array(position)
         self.velocity = np.array(velocity)
         self.acceleration = (
@@ -113,6 +117,8 @@ class State(object):
 
         return cls(
             epoch,
+            metadata["REF_FRAME"],
+            metadata["CENTER_NAME"],
             position,
             velocity,
             acceleration=acceleration,
@@ -130,6 +136,8 @@ class State(object):
             acceleration = None
         return cls(
             epoch,
+            metadata["REF_FRAME"],
+            metadata["CENTER_NAME"],
             position,
             velocity,
             acceleration=acceleration,
@@ -166,6 +174,8 @@ class State(object):
         """Create an independent copy of this instance."""
         return State(
             self.epoch,
+            self.frame,
+            self.center,
             self.position.copy(),
             self.velocity.copy(),
             self.acceleration.copy() if self.has_accel else None,

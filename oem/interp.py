@@ -65,6 +65,8 @@ class Interpolator(object):
 
     def __init__(self, states):
         self._reference_epoch = states[0].epoch
+        self._frame = states[0].frame
+        self._center = states[0].center
         self._setup(states)
 
     def __call__(self, epoch):
@@ -76,7 +78,14 @@ class Interpolator(object):
             acceleration = raw_state[6:]
         else:
             acceleration = None
-        return State(epoch, position, velocity, acceleration=acceleration)
+        return State(
+            epoch,
+            self._frame,
+            self._center,
+            position,
+            velocity,
+            acceleration=acceleration
+        )
 
     def _elapsed_times(self, states):
         return np.array(

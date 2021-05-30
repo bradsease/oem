@@ -45,7 +45,7 @@ def _make_test_states(poly, t_step, count, accel=True):
     else:
         accelerations = [None]*count
     return [
-        State(epoch, position, velocity, acceleration)
+        State(epoch, "ICRF", "EARTH", position, velocity, acceleration)
         for epoch, position, velocity, acceleration
         in zip(epochs, positions, velocities, accelerations)
     ]
