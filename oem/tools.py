@@ -205,3 +205,37 @@ def regex_block_iter(pattern, contents):
             yield match.groups()
         else:
             raise ValueError("Failed to parse complete file contents.")
+
+
+def epoch_span_contains(span, epoch):
+    """Determine if a given epoch falls within a given timespan.
+
+    Args:
+        span (tuple of Time): Pair of Time objects in increasing order.
+        epoch (Time): Epoch to compare with span.
+
+    Returns:
+        contains (bool): True if input epoch is in the input span, inclusive of
+            the endpoint epochs.
+    """
+    return epoch >= span[0] and epoch <= span[1]
+
+
+def epoch_span_overlap(span1, span2):
+    """Find the overlap between two epoch spans.
+
+    Args:
+        span1 (tuple of Time): Range of epochs in increasing order.
+        span2 (tuple of Time): Range of epochs in increasing order.
+
+    Returns:
+        overlap_range (tuple of Time or None): Overlapping epoch range or None
+            if there is no overlap.
+    """
+    max_start = max(span1[0], span2[0])
+    min_end = min(span1[1], span2[1])
+    if max_start < min_end:
+        overlap_range = (max_start, min_end)
+    else:
+        overlap_range = None
+    return overlap_range

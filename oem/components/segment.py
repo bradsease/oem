@@ -2,11 +2,12 @@ from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
-from oem.tools import require, time_range
+from oem.tools import require, time_range, epoch_span_contains
 from oem.components.metadata import MetaDataSection
 from oem.components.data import DataSection
 from oem.components.covariance import CovarianceSection
 from oem.interp import EphemerisInterpolator
+from oem.compare import SegmentCompare
 
 
 class ConstrainEphemerisSegmentCovariance(Constraint):
@@ -86,10 +87,7 @@ class EphemerisSegment(object):
         return self._interpolator(epoch)
 
     def __contains__(self, epoch):
-        return (
-            epoch >= self.useable_start_time and
-            epoch <= self.useable_stop_time
-        )
+        return epoch_span_contains(self.span, epoch)
 
     def __iter__(self):
         return iter(self.states)
@@ -101,6 +99,9 @@ class EphemerisSegment(object):
             self._state_data == other._state_data and
             self._covariance_data == other._covariance_data
         )
+
+    def __sub__(self, other):
+        return SegmentCompare(self, other)
 
     def __repr__(self):
         start = str(self.useable_start_time)
@@ -261,3 +262,7 @@ class EphemerisSegment(object):
     def useable_stop_time(self):
         """Return epoch of end of useable state data range"""
         return self.metadata.useable_stop_time
+
+    @property
+    def span(self):
+        return (self.useable_start_time, self.useable_stop_time)
