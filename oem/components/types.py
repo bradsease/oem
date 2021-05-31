@@ -6,6 +6,7 @@ from lxml.etree import SubElement
 from oem import patterns, CURRENT_VERSION
 from oem.tools import parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
+from oem.compare import StateCompare
 
 
 COV_XML_ENTRY_MAP = {
@@ -98,6 +99,9 @@ class State(object):
             (self.velocity == other.velocity).all() and
             np.array([self.acceleration == other.acceleration]).all()
         )
+
+    def __sub__(self, other):
+        return StateCompare(self, other)
 
     def __repr__(self):
         return f"State({str(self.epoch)})"
