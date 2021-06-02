@@ -6,6 +6,7 @@ from defusedxml.ElementTree import parse
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
 from oem.tools import require, is_kvn, regex_block_iter
+from oem.compare import EphemerisCompare
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -173,6 +174,9 @@ class OrbitEphemerisMessage(object):
                 in zip(self._segments, other._segments)
             )
         )
+
+    def __sub__(self, other):
+        return EphemerisCompare(other, self)
 
     def __repr__(self):
         return f"OrbitEphemerisMessage(v{self.version})"

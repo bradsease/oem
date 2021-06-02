@@ -10,6 +10,106 @@ REFERENCE_FRAMES = {
 }
 
 
+class EphemerisCompare(object):
+    """Comparison of two OrbitEphemerisMessage.
+
+    Only overlapping segments with identical reference frame and central bodies
+    will be compared. All comparisons are calculated in the segment reference
+    frame. Rotating reference frames are not supported for velocity-based or
+    RIC comparisons.
+
+    Attributes:
+        is_empty (bool): Flag indicating overlap between compared ephemerides.
+            Set to True if there is no overlap.
+        segments (list): List of SegmentCompare for matching EphemerisSegment
+            with overlapping spans.
+
+    Examples:
+        A comparison of two ephemerides is simply achieved through either a
+        direct call to EphemerisCompare or the subtraction interface on
+        the OrbitEphemerisMessage class. In general, the subtraction interface
+        is preferred.
+
+        >>> ephemeris1 = OrbitEphemerisMessage.open(file_path1)
+        >>> ephemeris2 = OrbitEphemerisMessage.open(file_path2)
+        >>> compare = ephemeris2 - ephemeris1
+
+        The EphemerisCompare object supports most of the same basic interfaces
+        as OrbitEphemerisMessage. To evaluate the at a particular epoch:
+
+        >>> compare(epoch)
+
+        To iterate through the compare at a fixed interval, use the `.steps`
+        method:
+
+        >>> for state_compare in compare.steps(60):
+        ...     # Operate on StateCompare
+        ...     pass
+
+        For multi-segment ephemerides, EphemerisCompare is iterable:
+
+        >>> for segment_compare in compare:
+        ...     for state_compare in segment_compare:
+        ...     pass
+    """
+
+    def __init__(self, origin, target):
+        """Create an EphemerisCompare.
+
+        Args:
+            origin (OrbitEphemerisMessage): Ephemeris at the origin of the
+                compare frame.
+            target (OrbitEphemerisMessage): Ephemeris compared against origin.
+        """
+        segments = []
+        for origin_segment in origin:
+            for target_segment in target:
+                try:
+                    segments.append(target_segment - origin_segment)
+                except ValueError:
+                    continue
+        self._segments = [entry for entry in segments if not entry.is_empty]
+
+    def __call__(self, epoch):
+        for segment in self:
+            if epoch in segment:
+                return segment(epoch)
+        else:
+            raise ValueError(
+                f"Epoch {epoch} not contained in EphemerisCompare."
+            )
+
+    def __iter__(self):
+        return iter(self._segments)
+
+    def __contains__(self, epoch):
+        return any(epoch in segment for segment in self._segments)
+
+    def steps(self, step_size):
+        """Sample EphemerisCompare at equal time intervals.
+
+        This method returns a generator producing state compares at equal time
+        intervals spanning the useable duration of the parent EphemerisCompare.
+
+        Args:
+            step_size (float): Sample step size in seconds.
+
+        Yields:
+            state_compare: Sampled StateCompare.
+        """
+        for segment in self:
+            for state in segment.steps(step_size):
+                yield state
+
+    @property
+    def is_empty(self):
+        return len(self._segments) == 0
+
+    @property
+    def segments(self):
+        return self._segments
+
+
 class SegmentCompare(object):
     """Comparison of two EphemerisSegment.
 
@@ -58,7 +158,7 @@ class SegmentCompare(object):
         """Sample SegmentCompare at equal time intervals.
 
         This method returns a generator producing state compares at equal time
-        intervals spanning the useable duration of the parent EphemerisSegment.
+        intervals spanning the useable duration of the parent SegmentCompare.
 
         Args:
             step_size (float): Sample step size in seconds.

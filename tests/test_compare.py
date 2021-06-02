@@ -70,3 +70,12 @@ def test_segment_compare_mismatch():
     segment2.metadata["CENTER_NAME"] = "MARS"
     with pytest.raises(ValueError):
         _ = segment1 - segment2
+
+
+def test_ephemeris_self_compare():
+    test_file_path = SAMPLE_DIR / "real" / "GEO_20s.oem"
+    oem = OrbitEphemerisMessage.open(test_file_path)
+    compare = oem - oem
+    assert not compare.is_empty
+    for state_compare in compare.steps(600):
+        assert state_compare.range == 0 and state_compare.range_rate == 0
