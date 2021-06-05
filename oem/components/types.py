@@ -101,7 +101,7 @@ class State(object):
         )
 
     def __sub__(self, other):
-        return StateCompare(self, other)
+        return StateCompare(other, self)
 
     def __repr__(self):
         return f"State({str(self.epoch)})"
