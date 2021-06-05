@@ -85,6 +85,9 @@ class EphemerisCompare(object):
     def __contains__(self, epoch):
         return any(epoch in segment for segment in self._segments)
 
+    def __repr__(self):
+        return f"EphemerisCompare(segments: {len(self.segments)})"
+
     def steps(self, step_size):
         """Sample EphemerisCompare at equal time intervals.
 
@@ -154,6 +157,9 @@ class SegmentCompare(object):
             raise ValueError(f"Epoch {epoch} not contained in SegmentCompare.")
         return self._target(epoch) - self._origin(epoch)
 
+    def __repr__(self):
+        return f"SegmentCompare({str(self._span[0])}, {str(self._span[1])})"
+
     def steps(self, step_size):
         """Sample SegmentCompare at equal time intervals.
 
@@ -184,6 +190,7 @@ class StateCompare(object):
     RIC comparisons.
 
     Attributes:
+        epoch (Time): Epoch of the state compare.
         range (float): Absolute distance between the two states.
         range_rate (float): Absolute velocity between the two states.
         position (ndarray): Relative position vector in the input frame.
@@ -234,6 +241,9 @@ class StateCompare(object):
                 "Incompatible states: epoch, frame, or central body mismatch."
             )
 
+    def __repr__(self):
+        return f"StateCompare({str(self.epoch)})"
+
     def _require_inertial(self):
         if not self._inertial:
             raise NotImplementedError(
@@ -251,6 +261,10 @@ class StateCompare(object):
             cross_track/np.linalg.norm(cross_track)
         ])
         return R.dot(vector)
+
+    @property
+    def epoch(self):
+        return self._origin.epoch
 
     @property
     def range(self):
