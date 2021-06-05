@@ -101,7 +101,7 @@ class EphemerisSegment(object):
         )
 
     def __sub__(self, other):
-        return SegmentCompare(self, other)
+        return SegmentCompare(other, self)
 
     def __repr__(self):
         start = str(self.useable_start_time)
