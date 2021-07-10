@@ -54,7 +54,7 @@ coverage:
   image: python:3.9
   stage: document
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - python -V
     - pip install coveralls
