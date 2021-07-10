@@ -272,7 +272,6 @@ class StateCompare(object):
 
     @property
     def range_rate(self):
-        self._require_inertial()
         return np.linalg.norm(self._target.velocity - self._origin.velocity)
 
     @property
@@ -290,4 +289,8 @@ class StateCompare(object):
 
     @property
     def velocity_ric(self):
-        return self._to_ric(self.velocity)
+        w = self._to_ric(
+            np.cross(self._origin.position, self._origin.velocity)
+            / np.linalg.norm(self._origin.position)**2
+        )
+        return self._to_ric(self.velocity) - np.cross(w, self.position_ric)

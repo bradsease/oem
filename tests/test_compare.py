@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 
 from astropy.time import Time
 from pathlib import Path
@@ -34,8 +35,6 @@ def test_state_compare_frame_mismatch():
 
 def test_state_compare_noninertial():
     state = State(Time.now(), "GRC", "EARTH", [1, 0, 0], [0, 1, 0])
-    with pytest.raises(NotImplementedError):
-        StateCompare(state, state).range_rate
     with pytest.raises(NotImplementedError):
         StateCompare(state, state).velocity
 
@@ -79,3 +78,22 @@ def test_ephemeris_self_compare():
     assert not compare.is_empty
     for state_compare in compare.steps(600):
         assert state_compare.range == 0 and state_compare.range_rate == 0
+        np.testing.assert_almost_equal(state_compare.position_ric, 0)
+        np.testing.assert_almost_equal(state_compare.velocity_ric, 0)
+
+
+def test_real_reference_ric():
+    test_origin_path = SAMPLE_DIR / "real" / "CompareExample1.oem"
+    test_target_path = SAMPLE_DIR / "real" / "CompareExample2.oem"
+    origin = OrbitEphemerisMessage.open(test_origin_path)
+    target = OrbitEphemerisMessage.open(test_target_path)
+    compare = target - origin
+    assert not compare.is_empty
+    for state_compare in compare.steps(600):
+        np.testing.assert_almost_equal(state_compare.range, 1.165554784013)
+        np.testing.assert_almost_equal(
+            state_compare.position_ric,
+            np.array([-0.000101713843, -1.165554779575, 0.0]),
+            decimal=6
+        )
+        np.testing.assert_almost_equal(state_compare.velocity_ric, 0)
