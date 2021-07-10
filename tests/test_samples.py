@@ -13,7 +13,7 @@ SAMPLE_DIR = Path(__file__).parent / "samples"
 
 
 def _get_test_files(version="*", validity="*"):
-    samples = SAMPLE_DIR / version / validity / "*.oem"
+    samples = SAMPLE_DIR / version / validity / "*.oem*"
     return sorted([entry for entry in glob.glob(str(samples))])
 
 

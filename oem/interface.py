@@ -5,7 +5,7 @@ from defusedxml.ElementTree import parse
 
 from oem import components, patterns
 from oem.base import Constraint, ConstraintSpecification
-from oem.tools import require, is_kvn, regex_block_iter
+from oem.tools import require, is_kvn, regex_block_iter, _open
 from oem.compare import EphemerisCompare
 
 
@@ -183,7 +183,7 @@ class OrbitEphemerisMessage(object):
 
     @classmethod
     def _from_kvn_oem(cls, file_path):
-        with open(file_path, "r") as ephem_file:
+        with _open(file_path, "rt") as ephem_file:
             contents = ephem_file.read()
         contents = re.sub(patterns.COMMENT_LINE, "", contents)
         match = re.match(patterns.HEADER_SEGMENT, contents, re.MULTILINE)
@@ -203,7 +203,8 @@ class OrbitEphemerisMessage(object):
 
     @classmethod
     def _from_xml_oem(cls, file_path):
-        parts = parse(str(file_path)).getroot()
+        with _open(file_path, "rt") as ephem_file:
+            parts = parse(ephem_file).getroot()
         header = components.HeaderSection._from_xml(parts)
         segments = [
             components.EphemerisSegment._from_xml(part, header.version)

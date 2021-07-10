@@ -1,5 +1,8 @@
 import warnings
 import re
+import gzip
+import bz2
+import lzma
 import datetime as dt
 import numpy as np
 from astropy.time import Time, TimeDelta
@@ -156,7 +159,7 @@ def is_kvn(file_path):
     returns:
         result (bool): True if file is KVN, false if XML.
     """
-    with open(file_path, "r") as target_file:
+    with _open(file_path, "rt") as target_file:
         if "<?xml" in target_file.readline():
             result = False
         else:
@@ -239,3 +242,25 @@ def epoch_span_overlap(span1, span2):
     else:
         overlap_range = None
     return overlap_range
+
+
+def _get_opener(path):
+    headers = {
+        b"\x1F\x8b": gzip.open,
+        b"\x42\x5A\x68": bz2.open,
+        b"\x5d\x00\x00": lzma.open,
+        b"\xFD\x37\x7A\x58\x5A\x00": lzma.open,
+    }
+    with open(path, "rb") as fid:
+        header = fid.read(6)
+        for key, value in headers.items():
+            if header.startswith(key):
+                opener = value
+                break
+        else:
+            opener = open
+    return opener
+
+
+def _open(path, mode):
+    return _get_opener(path)(path, mode)
