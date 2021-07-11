@@ -2,3 +2,4 @@ numpy
 lxml
 astropy
 defusedxml
+sgp4
