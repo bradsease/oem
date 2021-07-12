@@ -1,3 +1,5 @@
+import numpy as np
+
 from sgp4.api import Satrec
 from astropy.coordinates import (
     CartesianDifferential, CartesianRepresentation, TEME, GCRS
@@ -31,22 +33,22 @@ def _build_metadata(satrec, start_epoch, stop_epoch):
     })
 
 
-def _build_state(satrec, epoch, frame):
-    return State(
-        epoch,
-        frame,
-        "Earth",
-        *_sample_tle_at_epoch(satrec, epoch, frame)
-    )
+def _build_states(satrec, epoch_range, frame):
+    return [
+        State(epoch, frame, "Earth", position, velocity)
+        for epoch, position, velocity
+        in zip(
+            epoch_range,
+            *_sample_tle_at_epoch_array(satrec, epoch_range, frame)
+        )
+    ]
 
 
 def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
+    epoch_range = list(time_range(start_epoch, stop_epoch, step))
     return EphemerisSegment(
         _build_metadata(satrec, start_epoch, stop_epoch),
-        DataSection([
-            _build_state(satrec, epoch, frame)
-            for epoch in time_range(start_epoch, stop_epoch, step)
-        ])
+        DataSection(_build_states(satrec, epoch_range, frame))
     )
 
 
@@ -57,21 +59,23 @@ def _build_oem(satrec, start_epoch, stop_epoch, step, frame):
     )
 
 
-def _sample_tle_at_epoch(satrec, epoch, frame):
+def _sample_tle_at_epoch_array(satrec, epochs, frame):
     if frame not in ("TEME", "ICRF"):
         raise ValueError(f"Unsupported frame: {frame}")
-    err, r, v = satrec.sgp4(epoch.jd1, epoch.jd2)
-    if err:
-        raise ValueError(f"SGP4 propagation failed: {err}")
+    jd1 = np.array([epoch.jd1 for epoch in epochs])
+    jd2 = np.array([epoch.jd2 for epoch in epochs])
+    err, r, v = satrec.sgp4_array(jd1, jd2)
+    if any(err):
+        raise ValueError(f"SGP4 propagation failed!")
     else:
-        teme_p = CartesianRepresentation(r*u.km)
-        teme_v = CartesianDifferential(v*u.km/u.s)
-        state = TEME(teme_p.with_differentials(teme_v), obstime=epoch)
+        teme_p = CartesianRepresentation(r.T*u.km)
+        teme_v = CartesianDifferential(v.T*u.km/u.s)
+        states = TEME(teme_p.with_differentials(teme_v), obstime=epochs)
         if frame == "ICRF":
-            state = state.transform_to(GCRS(obstime=epoch))
+            states = states.transform_to(GCRS(obstime=epochs))
         return (
-            state.cartesian.get_xyz().value,
-            state.cartesian.differentials["s"].get_d_xyz().value
+            states.cartesian.get_xyz().value.T,
+            states.cartesian.differentials["s"].get_d_xyz().value.T
         )
 
 
