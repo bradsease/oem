@@ -376,3 +376,10 @@ class OrbitEphemerisMessage(object):
     @property
     def segments(self):
         return self._segments
+
+    @property
+    def span(self):
+        return (
+            min(segment.useable_start_time for segment in self),
+            max(segment.useable_stop_time for segment in self)
+        )

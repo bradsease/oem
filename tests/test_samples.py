@@ -20,6 +20,7 @@ def _get_test_files(version="*", validity="*"):
 @pytest.mark.parametrize("file_path", _get_test_files(validity="valid"))
 def test_valid_samples(file_path):
     oem = OrbitEphemerisMessage.open(file_path)
+    assert oem.span[0] <= oem.span[1]
 
     for segment in oem:
         if not segment.has_accel:
