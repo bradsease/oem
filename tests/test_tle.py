@@ -19,6 +19,18 @@ def test_sample(frame):
     assert len(oem._segments) == 1
 
 
+@pytest.mark.parametrize("frame", ("TEME", "ICRF"))
+def test_convert_and_compare(frame):
+    start_epoch = Time("2019-12-09T20:42:09.000", scale="utc")
+    stop_epoch = start_epoch + TimeDelta(1*units.day)
+    origin = tle_to_oem(SAMPLE_TLE, start_epoch, stop_epoch, 600, frame=frame)
+    target = tle_to_oem(SAMPLE_TLE, *origin.span, 600, frame=frame)
+    compare = target - origin
+    assert not compare.is_empty
+    for compare in compare.steps(3600):
+        assert compare.range == 0 and compare.range_rate == 0
+
+
 def test_bad_frame():
     start_epoch = Time("2019-12-09T20:42:09.000", scale="utc")
     stop_epoch = start_epoch + TimeDelta(1*units.day)
