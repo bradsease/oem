@@ -244,23 +244,30 @@ def epoch_span_overlap(span1, span2):
     return overlap_range
 
 
-def _get_opener(path):
+def _get_compression(path):
     headers = {
-        b"\x1F\x8b": gzip.open,
-        b"\x42\x5A\x68": bz2.open,
-        b"\x5d\x00\x00": lzma.open,
-        b"\xFD\x37\x7A\x58\x5A\x00": lzma.open,
+        b"\x1F\x8b": "gzip",
+        b"\x42\x5A\x68": "bz2",
+        b"\x5d\x00\x00": "lzma",
+        b"\xFD\x37\x7A\x58\x5A\x00": "lzma",
     }
+    compression = None
     with open(path, "rb") as fid:
         header = fid.read(6)
         for key, value in headers.items():
             if header.startswith(key):
-                opener = value
+                compression = value
                 break
-        else:
-            opener = open
-    return opener
+    return compression
 
 
-def _open(path, mode):
-    return _get_opener(path)(path, mode)
+def _open(path, mode, compression=None):
+    if mode == "rt":
+        compression = _get_compression(path)
+    openers = {
+        "gzip": gzip.open,
+        "bz2": bz2.open,
+        "lzma": lzma.open,
+        None: open
+    }
+    return openers[compression](path, mode)

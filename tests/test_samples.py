@@ -7,6 +7,7 @@ from pathlib import Path
 
 from oem import OrbitEphemerisMessage
 from oem.tools import is_kvn
+from oem.tools import _get_compression
 
 
 SAMPLE_DIR = Path(__file__).parent / "samples"
@@ -84,3 +85,14 @@ def test_copy(file_path):
     oem1 = OrbitEphemerisMessage.open(file_path)
     oem2 = oem1.copy()
     assert oem1 is not oem2 and oem1 == oem2
+
+
+@pytest.mark.parametrize("compression", ("gzip", "bz2", "lzma"))
+def test_compression(compression):
+    file_path = _get_test_files(validity="valid")[0]
+    oem = OrbitEphemerisMessage.open(file_path)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        written_oem_path = Path(tmp_dir) / "written.oem"
+        oem.save_as(written_oem_path, compression=compression)
+        oem_readback = OrbitEphemerisMessage.open(written_oem_path)
+        assert oem == oem_readback

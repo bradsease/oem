@@ -321,7 +321,7 @@ class OrbitEphemerisMessage(object):
             oem = self.copy().resample(step_size, in_place=True)
         return oem if not in_place else self
 
-    def save_as(self, file_path, file_format="kvn"):
+    def save_as(self, file_path, file_format="kvn", compression=None):
         """Write OEM to file.
 
         Args:
@@ -329,18 +329,18 @@ class OrbitEphemerisMessage(object):
             file_format (str, optional): Type of file to output. Options are
                 'kvn' and 'xml'. Default is 'kvn'.
         """
-        if file_format == "kvn":
-            with open(file_path, "w") as output_file:
-                output_file.write(self._to_kvn_oem())
-        elif file_format == "xml":
-            self._to_xml_oem().write(
-                str(file_path),
-                pretty_print=True,
-                encoding="utf-8",
-                xml_declaration=True
-            )
-        else:
-            raise ValueError(f"Unrecognized file type: '{file_format}'")
+        with _open(file_path, "wb", compression) as output_file:
+            if file_format == "kvn":
+                output_file.write(bytes(self._to_kvn_oem(), "utf-8"))
+            elif file_format == "xml":
+                self._to_xml_oem().write(
+                    output_file,
+                    pretty_print=True,
+                    encoding="utf-8",
+                    xml_declaration=True
+                )
+            else:
+                raise ValueError(f"Unrecognized file type: '{file_format}'")
 
     def _to_kvn_oem(self):
         lines = self.header._to_string() + "\n"
