@@ -4,9 +4,9 @@ import os
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = '1.0'#os.environ.get("CI_COMMIT_TAG")
-# if version is None:
-#     raise ValueError("Version not found.")
+version = os.environ.get("CI_COMMIT_TAG")[1:]
+if version is None:
+    raise ValueError("Version not found.")
 
 setuptools.setup(
     name="oem",
