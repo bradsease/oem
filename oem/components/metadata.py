@@ -150,9 +150,9 @@ class MetaDataSection(KeyValueSection):
     @classmethod
     def _from_xml(cls, segment, version):
         metadata = {
-            entry.tag: entry.text
+            entry.tag.rpartition('}')[-1]: entry.text
             for entry in segment
-            if entry.tag != "COMMENT"
+            if entry.tag.rpartition('}')[-1] != "COMMENT"
         }
         return cls(metadata, version=version)
 

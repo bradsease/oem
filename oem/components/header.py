@@ -55,9 +55,9 @@ class HeaderSection(KeyValueSection):
     def _from_xml(cls, segment):
         header_segment = list(segment)[0]
         fields = {
-            entry.tag: entry.text
+            entry.tag.rpartition('}')[-1]: entry.text
             for entry in header_segment
-            if entry.tag != "COMMENT"
+            if entry.tag.rpartition('}')[-1] != "COMMENT"
         }
         fields["CCSDS_OEM_VERS"] = segment.attrib["version"]
         return cls(fields)
