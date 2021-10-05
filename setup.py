@@ -4,7 +4,7 @@ import os
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = os.environ.get("CI_COMMIT_TAG")[1:]
+version = 'v0.3.1'#os.environ.get("CI_COMMIT_TAG")[1:]
 if version is None:
     raise ValueError("Version not found.")
 
