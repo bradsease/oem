@@ -85,7 +85,7 @@ class DataSection(object):
         states = [
             State._from_xml(entry, version, metadata)
             for entry in segment
-            if entry.tag != "COMMENT"
+            if entry.tag.rpartition('}')[-1] != "COMMENT"
         ]
         return cls(states, version=version)
 

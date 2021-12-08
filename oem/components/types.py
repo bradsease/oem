@@ -243,8 +243,8 @@ class Covariance(object):
 
     @classmethod
     def _from_xml(cls, segment, version, metadata):
-        parts = [entry for entry in segment if entry.tag != "COMMENT"]
-        entries = {entry.tag: entry.text for entry in parts}
+        parts = [entry for entry in segment if entry.tag.rpartition('}')[-1] != "COMMENT"]
+        entries = {entry.tag.rpartition('}')[-1]: entry.text for entry in parts}
         if "EPOCH" not in entries:
             raise ValueError("Covariance entry missing keyword 'EPOCH'")
         else:
