@@ -6,7 +6,7 @@ Python tools for working with Orbit Ephemeris Messages (OEMs).
 
 [![GitHub Release](https://img.shields.io/github/v/release/bradsease/oem)](https://github.com/bradsease/oem/releases) [![GitHub](https://img.shields.io/github/license/bradsease/oem)](https://github.com/bradsease/oem/blob/main/LICENSE)
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/bradsease/oem)](https://github.com/bradsease/oem) [![Pipeline Status](https://gitlab.com/bradsease/oem/badges/main/pipeline.svg)](https://gitlab.com/bradsease/oem/pipelines) [![Coverage Status](https://coveralls.io/repos/github/bradsease/oem/badge.svg?branch=HEAD)](https://coveralls.io/github/bradsease/oem?branch=HEAD) [![Documentation Status](https://readthedocs.org/projects/oem/badge/?version=latest)](https://oem.readthedocs.io/en/latest/?badge=latest)
+[![GitHub last commit](https://img.shields.io/github/last-commit/bradsease/oem)](https://github.com/bradsease/oem) [![Pipeline Status](https://github.com/bradsease/oem/actions/workflows/python-package.yml/badge.svg)](https://github.com/bradsease/oem/actions/workflows/python-package.yml) [![Coverage Status](https://coveralls.io/repos/github/bradsease/oem/badge.svg?branch=HEAD)](https://coveralls.io/github/bradsease/oem?branch=HEAD) [![Documentation Status](https://readthedocs.org/projects/oem/badge/?version=latest)](https://oem.readthedocs.io/en/latest/?badge=latest)
 
 
 ## Installation
