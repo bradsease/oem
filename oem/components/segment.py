@@ -82,6 +82,8 @@ class EphemerisSegment(object):
         self._interpolator = None
 
     def __call__(self, epoch):
+        if epoch not in self:
+            raise ValueError(f"Epoch {epoch} not contained in segment.")
         if not self._interpolator:
             self._init_interpolator()
         return self._interpolator(epoch)
