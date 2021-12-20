@@ -96,3 +96,16 @@ def test_compression(compression):
         oem.save_as(written_oem_path, compression=compression)
         oem_readback = OrbitEphemerisMessage.open(written_oem_path)
         assert oem == oem_readback
+
+
+def test_parse():
+    file_path = _get_test_files(version="v2_0", validity="valid")[1]
+    from oem.parser.base import FiniteStateMachineParser
+    from oem.parser.states import STATES
+    fsm = FiniteStateMachineParser(STATES, "HEADER")
+    with open(file_path, "r") as test_file:
+        contents = [
+            line if not line.startswith("COMMENT") else ""
+            for line in test_file.readlines()
+        ]
+        fsm.parse(contents)
