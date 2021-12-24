@@ -4,7 +4,7 @@ import numpy as np
 from lxml.etree import SubElement
 
 from oem import patterns, CURRENT_VERSION
-from oem.tools import parse_epoch, require, format_float, format_epoch
+from oem.tools import _bulk_parse_epochs, parse_epoch, require, format_float, format_epoch
 from oem.base import ConstraintSpecification, Constraint
 from oem.compare import StateCompare
 
@@ -78,18 +78,19 @@ class State(object):
     )
 
     def __init__(self, epoch, frame, center, position, velocity,
-                 acceleration=None, version=CURRENT_VERSION):
+                 acceleration=None, version=CURRENT_VERSION, _check=True):
         self.version = version
         self.epoch = epoch
         self.frame = frame
         self.center = center
-        self.position = np.array(position)
-        self.velocity = np.array(velocity)
+        self.position = np.fromiter(position, np.float64)
+        self.velocity = np.fromiter(velocity, np.float64)
         self.acceleration = (
-            np.array(acceleration)
+            np.fromiter(acceleration, np.float64)
             if acceleration is not None else None
         )
-        self._constraint_spec.apply(self)
+        if _check:
+            self._constraint_spec.apply(self)
 
     def __eq__(self, other):
         return (
@@ -301,3 +302,38 @@ class Covariance(object):
             self.matrix.copy(),
             version=self.version
         )
+
+
+def _bulk_generate_states(state_data, metadata, version):
+    split_state_data = [entry.split() for entry in state_data]
+    epochs = _bulk_parse_epochs([entry[0] for entry in split_state_data], metadata)
+    frame = metadata["REF_FRAME"]
+    center = metadata["CENTER_NAME"]
+    if len(split_state_data[0]) == 10:
+        states = [
+            State(
+                epoch,
+                frame,
+                center,
+                data[1:4],
+                data[4:7],
+                data[7:],
+                version=version,
+                _check=False
+            )
+            for epoch, data in zip(epochs, split_state_data)
+        ]
+    else:
+        states = [
+            State(
+                epoch,
+                frame,
+                center,
+                dat[1:4],
+                dat[4:7],
+                version=version,
+                _check=False
+            )
+            for epoch, dat in zip(epochs, split_state_data)
+        ]
+    return states

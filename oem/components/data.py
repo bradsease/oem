@@ -4,7 +4,7 @@ from lxml.etree import SubElement
 
 from oem import patterns, CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
-from oem.tools import require
+from oem.tools import require, _sorted_epochs
 from oem.components.types import State
 
 
@@ -15,11 +15,7 @@ class ConstrainDataSectionEpochOrder(Constraint):
 
     def func(self, data_section):
         require(
-            all(
-                (data_section.states[idx].epoch
-                 < data_section.states[idx+1].epoch)
-                for idx in range(len(data_section.states)-1)
-            ),
+            _sorted_epochs(data_section.states),
             "States in data section are not ordered by epoch"
         )
 
@@ -30,12 +26,16 @@ class ConstrainDataSectionStates(Constraint):
     versions = ["1.0", "2.0"]
 
     def func(self, data_section):
-        for state in data_section:
-            if (not data_section.has_accel
-                    and state.acceleration is not None
-                    or data_section.has_accel
-                    and state.acceleration is None):
-                raise ValueError("Cannot change state type mid-segment.")
+        if data_section.has_accel:
+            require(
+                all(state.acceleration is not None for state in data_section),
+                "Cannot change state type mid-segment."
+            )
+        else:
+            require(
+                all(state.acceleration is None for state in data_section),
+                "Cannot change state type mid-segment."
+            )
 
 
 class DataSection(object):
@@ -49,11 +49,12 @@ class DataSection(object):
         ConstrainDataSectionEpochOrder
     )
 
-    def __init__(self, states, version=CURRENT_VERSION):
+    def __init__(self, states, version=CURRENT_VERSION, _check=True):
         self.version = version
         self._has_accel = False if states[0].acceleration is None else True
         self._states = states
-        self._constraint_spec.apply(self)
+        if _check:
+            self._constraint_spec.apply(self)
 
     def __iter__(self):
         return iter(self.states)

@@ -4,7 +4,7 @@ from lxml.etree import SubElement
 
 from oem import patterns, CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
-from oem.tools import require
+from oem.tools import require, _sorted_epochs
 from oem.components.types import Covariance
 
 
@@ -15,11 +15,7 @@ class ConstrainCovarianceSectionEpochOrder(Constraint):
 
     def func(self, covariance_section):
         require(
-            all(
-                (covariance_section.covariances[idx].epoch
-                 < covariance_section.covariances[idx+1].epoch)
-                for idx in range(len(covariance_section.covariances)-1)
-            ),
+            _sorted_epochs(covariance_section.covariances),
             "States in data section are not ordered by epoch"
         )
 

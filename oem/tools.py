@@ -3,6 +3,7 @@ import re
 import gzip
 import bz2
 import lzma
+import re
 import datetime as dt
 import numpy as np
 from astropy.time import Time, TimeDelta
@@ -79,6 +80,64 @@ def parse_epoch(epoch, metadata):
         )
         parsed_epoch = dt_epoch
     return parsed_epoch
+
+
+def _bulk_parse_epochs(epochs, metadata):
+    """Parse OEM standard epochs using metadata TIME_SYSTEM.
+
+    Applies time-ordered constraint to input epochs. For faster comparisons,
+    the strings are compared directly prior to parsing.
+
+    Args:
+        epochs (list of str):
+        metadata (MetaDataSection): Metadata corresponding to this epoch.
+
+    Returns:
+        parsed_epochs (list of Time):
+    """
+    sorted = all(epochs[idx] < epochs[idx+1] for idx in range(len(epochs) - 1))
+    require(sorted, "States in data section are not ordered by epoch")
+
+    time_system = metadata["TIME_SYSTEM"].lower()
+    fmt = _identify_epoch_format(epochs[0])
+    coerce_fcn = _coerce_epoch_isot if fmt == "isot" else _coerce_epoch_yday
+    if time_system in Time.SCALES:
+        parsed_epochs = Time(
+            [coerce_fcn(epoch) for epoch in epochs],
+            format=fmt,
+            scale=time_system
+        )
+    else:
+        warnings.warn(
+            f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
+            f"DateTime. Use caution with time calculations."
+        )
+        parsed_epochs = [parse_epoch(epoch) for epoch in epochs]
+
+    return parsed_epochs
+
+
+def _sorted_epochs(states):
+    return all(
+        states[idx].epoch < states[idx+1].epoch
+        for idx in range(len(states) - 1)
+    )
+
+
+def _identify_epoch_format(epoch):
+    if epoch.count("-") == 2:
+        fmt = "isot"
+    else:
+        fmt = "yday"
+    return fmt
+
+
+def _coerce_epoch_isot(epoch):
+    return epoch.replace("Z", "")
+
+
+def _coerce_epoch_yday(epoch):
+    return epoch.replace("-", ":").replace("T", ":")
 
 
 def parse_integer(input, metadata):

@@ -27,17 +27,13 @@ class ConstrainEphemerisSegmentCovarianceEpochs(Constraint):
 
     versions = ["1.0", "2.0"]
 
-    def func(self, ephemeris_segment):
-        for covariance in ephemeris_segment.covariances:
+    def func(self, segment):
+        if segment.has_covariance:
             require(
-                (
-                    covariance.epoch >=
-                    ephemeris_segment.metadata["START_TIME"]
-                    and
-                    covariance.epoch <=
-                    ephemeris_segment.metadata["STOP_TIME"]
-                ),
-                f"Covariance epoch not within range: {covariance.epoch}"
+                segment.covariances[0].epoch >= segment.metadata["START_TIME"]
+                and
+                segment.covariances[-1].epoch <= segment.metadata["STOP_TIME"],
+                "All covariance epochs must be within useable range."
             )
 
 
@@ -46,18 +42,12 @@ class ConstrainEphemerisSegmentStateEpochs(Constraint):
 
     versions = ["1.0", "2.0"]
 
-    def func(self, ephemeris_segment):
-        for state in ephemeris_segment.states:
-            require(
-                (
-                    state.epoch >=
-                    ephemeris_segment.metadata["START_TIME"]
-                    and
-                    state.epoch <=
-                    ephemeris_segment.metadata["STOP_TIME"]
-                ),
-                f"State epoch not within usable range: {state.epoch}"
-            )
+    def func(self, segment):
+        require(
+            segment.states[0].epoch >= segment.metadata["START_TIME"]
+            and segment.states[-1].epoch <= segment.metadata["STOP_TIME"],
+            "All state epochs must be within useable range."
+        )
 
 
 class EphemerisSegment(object):
