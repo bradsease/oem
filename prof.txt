@@ -1,0 +1,121 @@
+Wrote profile results to prof.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 0.834267 s
+File: /home/brad/ephem/oem/components/types.py
+Function: __init__ at line 80
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    80                                               @profile
+    81                                               def __init__(self, epoch, frame, center, position, velocity,
+    82                                                            acceleration=None, version=CURRENT_VERSION, _check=True):
+    83    100000      89420.0      0.9     10.7          self.version = version
+    84    100000      54874.0      0.5      6.6          self.epoch = epoch
+    85    100000      49016.0      0.5      5.9          self.frame = frame
+    86    100000      47576.0      0.5      5.7          self.center = center
+    87    100000     275601.0      2.8     33.0          self.position = np.fromiter(position, np.float64)
+    88    100000     203012.0      2.0     24.3          self.velocity = np.fromiter(velocity, np.float64)
+    89                                                   self.acceleration = (
+    90                                                       np.fromiter(acceleration, np.float64)
+    91    100000      64443.0      0.6      7.7              if acceleration is not None else None
+    92                                                   )
+    93    100000      50325.0      0.5      6.0          if _check:
+    94                                                       self._constraint_spec.apply(self)
+
+Total time: 15.1604 s
+File: /home/brad/ephem/oem/components/types.py
+Function: _bulk_generate_states at line 308
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   308                                           @profile
+   309                                           def _bulk_generate_states(state_data, metadata, version):
+   310         1     121632.0 121632.0      0.8      split_state_data = [entry.split() for entry in state_data]
+   311         1     137392.0 137392.0      0.9      epochs = _bulk_parse_epochs([entry[0] for entry in split_state_data], metadata)
+   312         1         14.0     14.0      0.0      frame = metadata["REF_FRAME"]
+   313         1          3.0      3.0      0.0      center = metadata["CENTER_NAME"]
+   314         1          3.0      3.0      0.0      if len(split_state_data[0]) == 10:
+   315                                                   states = [
+   316                                                       State(
+   317                                                           epoch,
+   318                                                           frame,
+   319                                                           center,
+   320                                                           data[1:4],
+   321                                                           data[4:7],
+   322                                                           data[7:],
+   323                                                           version=version,
+   324                                                           _check=False
+   325                                                       )
+   326                                                       for epoch, data in zip(epochs, split_state_data)
+   327                                                   ]
+   328                                               else:
+   329                                                   states = [
+   330         1          2.0      2.0      0.0              State(
+   331                                                           epoch,
+   332                                                           frame,
+   333                                                           center,
+   334                                                           dat[1:4],
+   335                                                           dat[4:7],
+   336                                                           version=version,
+   337                                                           _check=False
+   338                                                       )
+   339         1   14901395.0 14901395.0     98.3              for epoch, dat in zip(epochs, split_state_data)
+   340                                                   ]
+   341         1          2.0      2.0      0.0      return states
+
+Total time: 17.5701 s
+File: /home/brad/ephem/oem/parser.py
+Function: parse at line 27
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    27                                               @profile
+    28                                               def parse(self, stream):
+    29    100019      65611.0      0.7      0.4          for line in stream:
+    30    100018      56237.0      0.6      0.3              stripped_line = line.strip()
+    31    100018      59259.0      0.6      0.3              if stripped_line and not line.startswith("COMMENT"):
+    32    100016    2208725.0     22.1     12.6                  self._parser(stripped_line)
+    33         1   15180281.0 15180281.0     86.4          return self._end_file()
+
+Total time: 0.122221 s
+File: /home/brad/ephem/oem/tools.py
+Function: _bulk_parse_epochs at line 85
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    85                                           @profile
+    86                                           def _bulk_parse_epochs(epochs, metadata):
+    87                                               """Parse OEM standard epochs using metadata TIME_SYSTEM.
+    88                                           
+    89                                               Applies time-ordered constraint to input epochs. For faster comparisons,
+    90                                               the strings are compared directly prior to parsing.
+    91                                           
+    92                                               Args:
+    93                                                   epochs (list of str):
+    94                                                   metadata (MetaDataSection): Metadata corresponding to this epoch.
+    95                                           
+    96                                               Returns:
+    97                                                   parsed_epochs (list of Time):
+    98                                               """
+    99         1      35684.0  35684.0     29.2      sorted = all(epochs[idx] < epochs[idx+1] for idx in range(len(epochs) - 1))
+   100         1          4.0      4.0      0.0      require(sorted, "States in data section are not ordered by epoch")
+   101                                           
+   102         1         13.0     13.0      0.0      time_system = metadata["TIME_SYSTEM"].lower()
+   103         1          7.0      7.0      0.0      fmt = _identify_epoch_format(epochs[0])
+   104         1          1.0      1.0      0.0      coerce_fcn = _coerce_epoch_isot if fmt == "isot" else _coerce_epoch_yday
+   105         1          4.0      4.0      0.0      if time_system in Time.SCALES:
+   106         1          1.0      1.0      0.0          parsed_epochs = Time(
+   107         1      44364.0  44364.0     36.3              [coerce_fcn(epoch) for epoch in epochs],
+   108         1          2.0      2.0      0.0              format=fmt,
+   109         1      42138.0  42138.0     34.5              scale=time_system
+   110                                                   )
+   111                                               else:
+   112                                                   warnings.warn(
+   113                                                       f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
+   114                                                       f"DateTime. Use caution with time calculations."
+   115                                                   )
+   116                                                   parsed_epochs = [parse_epoch(epoch) for epoch in epochs]
+   117                                           
+   118         1          3.0      3.0      0.0      return parsed_epochs
+

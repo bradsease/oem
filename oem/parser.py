@@ -5,7 +5,7 @@ from oem.components import (
 )
 from oem import OrbitEphemerisMessage
 from oem.components.types import _bulk_generate_states
-from oem.patterns import KEY_VAL, DATA_LINE
+from oem.patterns import KEY_VAL, DATA_LINE, COVARIANCE_LINE
 
 
 class InvalidFormatError(Exception):
@@ -22,6 +22,7 @@ class KvnParser(object):
         self._regex = {
             "KEY_VAL": re.compile(KEY_VAL),
             "DATA_LINE": re.compile(DATA_LINE),
+            "COVARIANCE_LINE": re.compile(COVARIANCE_LINE),
         }
 
     def parse(self, stream):
@@ -86,10 +87,7 @@ class KvnParser(object):
         finish = False
         match = self._regex["DATA_LINE"].match(line)
         if match:
-            if "DATA" in self._section_cache:
-                self._section_cache["DATA"].append(line)
-            else:
-                self._section_cache["DATA"] = [line]
+            self._section_cache.setdefault("DATA", []).append(line)
         elif "COVARIANCE_START" in line:
             finish = True
             new_state = "COVARIANCE"
@@ -118,7 +116,40 @@ class KvnParser(object):
             self.state = new_state
 
     def _parse_covariance_line(self, line):
-        pass
+        finish = False
+        if self._section_cache.get("SUBSTATE", "HEADER") == "HEADER":
+            match = self._regex["KEY_VAL"].match(line)
+            if match:
+                self._section_cache.setdefault("DATA", []).append(line)
+            else:
+                if len(self._section_cache.get("DATA", [])) >= 1:
+                    self._section_cache["SUBSTATE"] = "DATA"
+                    return self._parse_covariance_line(line)
+                else:
+                    self._raise()
+
+        elif self._section_cache.get("SUBSTATE", "HEADER") == "DATA":
+            match = self._regex["COVARIANCE_LINE"].match(line)
+            if match:
+                self._section_cache["DATA"].append(line)
+            else:
+                match = self._regex["KEY_VAL"].match(line)
+                if match:
+                    self._section_cache["SUBSTATE"] = "HEADER"
+                    return self._parse_covariance_line(line)
+                elif "METADATA_START" in line:
+                    finish = True
+                    new_state = "METADATA"
+                elif "END OF FILE" in line:
+                    finish = True
+                    new_state = "SUCCESS"
+                else:
+                    self._raise()
+
+        if finish:
+            pass
+            # make covs
+            self.state = new_state
 
     def _end_section(self):
         self._section_cache = {}

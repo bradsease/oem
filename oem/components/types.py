@@ -306,33 +306,52 @@ class Covariance(object):
 
 def _bulk_generate_states(state_data, metadata, version):
     split_state_data = [entry.split() for entry in state_data]
-    epochs = _bulk_parse_epochs([entry[0] for entry in split_state_data], metadata)
+    epochs = _bulk_parse_epochs(
+        [entry[0] for entry in split_state_data],
+        metadata
+    )
     frame = metadata["REF_FRAME"]
     center = metadata["CENTER_NAME"]
     if len(split_state_data[0]) == 10:
         states = [
             State(
-                epoch,
-                frame,
-                center,
-                data[1:4],
-                data[4:7],
-                data[7:],
-                version=version,
-                _check=False
+                epoch, frame, center, data[1:4], data[4:7], data[7:],
+                version=version, _check=False
             )
             for epoch, data in zip(epochs, split_state_data)
         ]
     else:
         states = [
             State(
-                epoch,
-                frame,
-                center,
-                dat[1:4],
-                dat[4:7],
-                version=version,
-                _check=False
+                epoch, frame, center, dat[1:4], dat[4:7],
+                version=version, _check=False
+            )
+            for epoch, dat in zip(epochs, split_state_data)
+        ]
+    return states
+
+
+def _bulk_generate_covariances(covariance_data, metadata, version):
+    split_state_data = [entry.split() for entry in covariance_data]
+    epochs = _bulk_parse_epochs(
+        [entry[0] for entry in split_state_data],
+        metadata
+    )
+    frame = metadata["REF_FRAME"]
+    center = metadata["CENTER_NAME"]
+    if len(split_state_data[0]) == 10:
+        states = [
+            State(
+                epoch, frame, center, data[1:4], data[4:7], data[7:],
+                version=version, _check=False
+            )
+            for epoch, data in zip(epochs, split_state_data)
+        ]
+    else:
+        states = [
+            State(
+                epoch, frame, center, dat[1:4], dat[4:7],
+                version=version, _check=False
             )
             for epoch, dat in zip(epochs, split_state_data)
         ]

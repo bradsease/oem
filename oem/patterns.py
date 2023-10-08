@@ -50,6 +50,8 @@ DATA_SEGMENT = (
     f"(?:{DATA_LINE}(?:{HSNL}|$))+"
 )
 
+COVARIANCE_LINE = f"(?:{FLOAT}{HS}){{1,6}}{HSNL}"
+
 COVARIANCE_MATRIX = "".join([
     f"(?:{FLOAT}{HS}){{{idx}}}{HSNL}"
     for idx in range(1, 7)

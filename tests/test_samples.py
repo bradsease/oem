@@ -96,3 +96,17 @@ def test_compression(compression):
         oem.save_as(written_oem_path, compression=compression)
         oem_readback = OrbitEphemerisMessage.open(written_oem_path)
         assert oem == oem_readback
+
+
+def test_parser_new():
+    # file_path = "/home/brad/ephem/tests/samples/real/LEO_10s.oem"
+    # file_path = "/home/brad/ephem/test.oem"
+    file_path = "/home/brad/ephem/tests/samples/v2_0/valid/sample02.oem"
+    from oem.parser import KvnParser
+    parser = KvnParser()
+    import time
+    start = time.time()
+    with open(file_path, "r") as input_file:
+        parser.parse(input_file)
+    runtime = time.time() - start
+    print(runtime)
