@@ -78,7 +78,7 @@ class Constraint(object):
         Args:
             obj: Constrained object
         """
-        if obj.version in self.versions:
+        if obj.version in self.versions or self.versions == ["*"]:
             self.func(obj)
 
 

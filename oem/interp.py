@@ -1,7 +1,5 @@
 import numpy as np
 
-from oem.components import State
-
 
 def lagrange(x, y):
     """Create a Lagrange interpolation polynomial.
@@ -64,9 +62,7 @@ def hermite(x, y, dy):
 class Interpolator(object):
 
     def __init__(self, states):
-        self._reference_epoch = states[0].epoch
-        self._frame = states[0].frame
-        self._center = states[0].center
+        self._reference_epoch = states[0][0]
         self._setup(states)
 
     def __call__(self, epoch):
@@ -78,19 +74,11 @@ class Interpolator(object):
             acceleration = raw_state[6:]
         else:
             acceleration = None
-        return State(
-            epoch,
-            self._frame,
-            self._center,
-            position,
-            velocity,
-            acceleration=acceleration
-        )
+        return position, velocity, acceleration
 
     def _elapsed_times(self, states):
-        return np.array(
-            [(entry.epoch - self.reference_epoch).sec for entry in states]
-        )
+        reference = self.reference_epoch
+        return np.array(tuple((epoch - reference).sec for epoch in states[0]))
 
     @property
     def reference_epoch(self):
@@ -109,7 +97,7 @@ class LagrangeStateInterpolator(Interpolator):
 
     def _setup(self, states):
         t = self._elapsed_times(states)
-        state_vectors = np.vstack([entry.vector for entry in states])
+        state_vectors = np.column_stack(states[1:])
         self._state_polynomials = [
             lagrange(t, state_vectors[:, idx])
             for idx in range(state_vectors.shape[1])
@@ -128,7 +116,7 @@ class HermiteStateInterpolator(Interpolator):
 
     def _setup(self, states):
         t = self._elapsed_times(states)
-        state_vectors = np.vstack([entry.vector for entry in states])
+        state_vectors = np.column_stack(states[1:])
         self._state_polynomials = [
             hermite(t, state_vectors[:, idx], state_vectors[:, idx+3])
             for idx in range(3)
@@ -160,10 +148,7 @@ class EphemerisInterpolator(object):
         self.base_interpolator = self.method_map[method.lower()]
         self._states = states
         self._order = order
-        self._populate_interpolator_nodes(
-            [entry.epoch for entry in states],
-            order
-        )
+        self._populate_interpolator_nodes(states[0], order)
 
     def __call__(self, epoch):
         interpolator = self._get_best_interpolator(epoch)
@@ -184,12 +169,12 @@ class EphemerisInterpolator(object):
         best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
         samples = self.base_interpolator._samples_required(self.order)
         return self.base_interpolator(
-            self._states[best_idx:best_idx+samples]
+            tuple(entry[best_idx:best_idx+samples] for entry in self._states)
         )
 
     @property
     def reference_epoch(self):
-        return self._states[0].epoch
+        return self._states[0][0]
 
     @property
     def order(self):

@@ -1,5 +1,4 @@
 import warnings
-import re
 import gzip
 import bz2
 import lzma
@@ -79,6 +78,48 @@ def parse_epoch(epoch, metadata):
         )
         parsed_epoch = dt_epoch
     return parsed_epoch
+
+
+def _identify_epoch_format(epoch):
+    if epoch.count("-") == 2:
+        fmt = "isot"
+    else:
+        fmt = "yday"
+    return fmt
+
+
+def _coerce_epoch_yday(epoch):
+    return epoch.replace("-", ":").replace("T", ":")
+
+
+def _bulk_parse_epochs(epochs, metadata):
+    """Parse OEM standard epochs using metadata TIME_SYSTEM.
+
+    Applies time-ordered constraint to input epochs. For faster comparisons,
+    the strings are compared directly prior to parsing.
+
+    Args:
+        epochs (list of str):
+        metadata (MetaDataSection): Metadata corresponding to this epoch.
+
+    Returns:
+        parsed_epochs (list of Time):
+    """
+    time_system = metadata["TIME_SYSTEM"].lower()
+    fmt = _identify_epoch_format(epochs[0])
+    if fmt != "isot":
+        epochs = tuple(_coerce_epoch_yday(epoch) for epoch in epochs)
+
+    if time_system in Time.SCALES:
+        parsed_epochs = Time(epochs, format=fmt, scale=time_system)
+    else:
+        warnings.warn(
+            f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
+            f"DateTime. Use caution with time calculations."
+        )
+        parsed_epochs = tuple(parse_epoch(epoch, metadata) for epoch in epochs)
+
+    return parsed_epochs
 
 
 def parse_integer(input, metadata):
@@ -181,33 +222,6 @@ def time_range(start_time, stop_time, step_sec):
     delta = (stop_time - start_time).sec
     for elapsed in np.arange(0, delta, step_sec):
         yield start_time + TimeDelta(elapsed, format="sec")
-
-
-def regex_block_iter(pattern, contents):
-    """Iterate through blocks of file content.
-
-    Assumes that the input pattern is repeated from the beginning to the end
-    of the file. Raises an exception if every character of the input is not
-    matched as part of a repeated block.
-
-    Args:
-        pattern (str): Regex pattern of repeated block.
-        contents (str): Full contents of file to parse.
-
-    Yields:
-        groups (tuple): Regex match results.
-
-    Raises:
-        ValueError: Failed to parse complete file contents.
-    """
-    idx = 0
-    while idx < len(contents):
-        match = re.match(pattern, contents[idx:], re.MULTILINE)
-        if match:
-            idx += match.span()[1]
-            yield match.groups()
-        else:
-            raise ValueError("Failed to parse complete file contents.")
 
 
 def epoch_span_contains(span, epoch):

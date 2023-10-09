@@ -7,7 +7,6 @@ from pathlib import Path
 
 from oem import OrbitEphemerisMessage
 from oem.tools import is_kvn
-from oem.tools import _get_compression
 
 
 SAMPLE_DIR = Path(__file__).parent / "samples"

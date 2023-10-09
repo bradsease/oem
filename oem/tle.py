@@ -6,9 +6,7 @@ from astropy.coordinates import (
 )
 from astropy.time import Time
 from astropy import units as u
-from oem.components import (
-    HeaderSection, MetaDataSection, State, EphemerisSegment, DataSection
-)
+from oem.components import HeaderSection, MetaDataSection, EphemerisSegment
 from oem import OrbitEphemerisMessage
 from oem.tools import time_range
 
@@ -33,22 +31,12 @@ def _build_metadata(satrec, start_epoch, stop_epoch):
     })
 
 
-def _build_states(satrec, epoch_range, frame):
-    return [
-        State(epoch, frame, "Earth", position, velocity)
-        for epoch, position, velocity
-        in zip(
-            epoch_range,
-            *_sample_tle_at_epoch_array(satrec, epoch_range, frame)
-        )
-    ]
-
-
 def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
     epoch_range = list(time_range(start_epoch, stop_epoch, step))
+    position, velocity = _sample_tle_at_epoch_array(satrec, epoch_range, frame)
     return EphemerisSegment(
         _build_metadata(satrec, start_epoch, stop_epoch),
-        DataSection(_build_states(satrec, epoch_range, frame))
+        (epoch_range, *zip(*position), *zip(*velocity))
     )
 
 
@@ -66,7 +54,7 @@ def _sample_tle_at_epoch_array(satrec, epochs, frame):
     jd2 = np.array([epoch.jd2 for epoch in epochs])
     err, r, v = satrec.sgp4_array(jd1, jd2)
     if any(err):
-        raise ValueError(f"SGP4 propagation failed!")
+        raise ValueError("SGP4 propagation failed!")
     else:
         teme_p = CartesianRepresentation(r.T*u.km)
         teme_v = CartesianDifferential(v.T*u.km/u.s)

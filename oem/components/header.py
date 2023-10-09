@@ -1,8 +1,5 @@
-import re
-
 from lxml.etree import SubElement
 
-from oem import patterns
 from oem.tools import parse_utc, parse_str, format_epoch
 from oem.base import KeyValueSection, HeaderField
 
@@ -46,21 +43,8 @@ class HeaderSection(KeyValueSection):
         return f"HeaderSection(v{self.version})"
 
     @classmethod
-    def _from_string(cls, segment):
-        raw_entries = re.findall(patterns.KEY_VAL, segment)
-        fields = {entry[0].strip(): entry[1].strip() for entry in raw_entries}
-        return cls(fields)
-
-    @classmethod
-    def _from_xml(cls, segment):
-        header_segment = list(segment)[0]
-        fields = {
-            entry.tag.rpartition('}')[-1]: entry.text
-            for entry in header_segment
-            if entry.tag.rpartition('}')[-1] != "COMMENT"
-        }
-        fields["CCSDS_OEM_VERS"] = segment.attrib["version"]
-        return cls(fields)
+    def _from_raw_data(cls, segment):
+        return cls(segment)
 
     def _to_string(self):
         lines = f"CCSDS_OEM_VERS = {self.version}\n"

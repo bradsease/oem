@@ -1,8 +1,6 @@
-import re
-
 from lxml.etree import SubElement
 
-from oem import patterns, CURRENT_VERSION
+from oem import CURRENT_VERSION
 from oem.tools import (
     parse_epoch, parse_integer, parse_str, format_epoch, require,
     require_field)
@@ -13,7 +11,7 @@ from oem.base import (
 class ConstrainMetaDataTime(Constraint):
     '''Apply constraints to metadata START_TIME and STOP_TIME'''
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, metadata):
         require_field("START_TIME", metadata)
@@ -27,7 +25,7 @@ class ConstrainMetaDataTime(Constraint):
 class ConstrainMetadataUseableTime(Constraint):
     '''Apply constraints to USEABLE_START_TIME & USEABLE_STOP_TIME'''
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, metadata):
         if "USEABLE_START_TIME" in metadata or "USEABLE_STOP_TIME" in metadata:
@@ -57,7 +55,7 @@ class ConstrainMetadataUseableTime(Constraint):
 class ConstrainMetaDataInterpolation(Constraint):
     '''Apply constraints to metadata INTERPOLATION and INTERPOLATION_DEGREE'''
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, metadata):
         if "INTERPOLATION" in metadata:
@@ -77,6 +75,18 @@ class ConstrainMetaDataRefFrameEpoch(Constraint):
         require(
             "REF_FRAME_EPOCH" not in metadata,
             "Metadata keyword 'REF_FRAME_EPOCH' not supported in OEM v1.0"
+        )
+
+
+class ConstrainMetaDataMessageId(Constraint):
+    '''Apply constraints to metadata MESSAGE_ID'''
+
+    versions = ["1.0", "2.0"]
+
+    def func(self, metadata):
+        require(
+            "MESSAGE_ID" not in metadata,
+            "Metadata keyword 'MESSAGE_ID' not supported in OEM v1.0 and v2.0"
         )
 
 
@@ -112,13 +122,15 @@ class MetaDataSection(KeyValueSection):
         "USEABLE_START_TIME": HeaderField(parse_epoch, format_epoch),
         "USEABLE_STOP_TIME": HeaderField(parse_epoch, format_epoch),
         "INTERPOLATION": HeaderField(parse_str, str),
-        "INTERPOLATION_DEGREE": HeaderField(parse_integer, str)
+        "INTERPOLATION_DEGREE": HeaderField(parse_integer, str),
+        "MESSAGE_ID": HeaderField(parse_str, str),
     }
     _constraint_spec = ConstraintSpecification(
         ConstrainMetaDataTime,
         ConstrainMetadataUseableTime,
         ConstrainMetaDataInterpolation,
-        ConstrainMetaDataRefFrameEpoch
+        ConstrainMetaDataRefFrameEpoch,
+        ConstrainMetaDataMessageId,
     )
 
     def __init__(self, metadata, version=CURRENT_VERSION):
@@ -139,22 +151,8 @@ class MetaDataSection(KeyValueSection):
         return f"MetaDataSection({start}, {stop})"
 
     @classmethod
-    def _from_string(cls, segment, version):
-        raw_entries = re.findall(patterns.KEY_VAL, segment)
-        metadata = {
-            entry[0].strip(): entry[1].strip()
-            for entry in raw_entries
-        }
-        return cls(metadata, version=version)
-
-    @classmethod
-    def _from_xml(cls, segment, version):
-        metadata = {
-            entry.tag.rpartition('}')[-1]: entry.text
-            for entry in segment
-            if entry.tag.rpartition('}')[-1] != "COMMENT"
-        }
-        return cls(metadata, version=version)
+    def _from_raw_data(cls, segment, version):
+        return cls(segment, version=version)
 
     def _to_string(self):
         lines = "META_START\n"

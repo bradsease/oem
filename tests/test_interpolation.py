@@ -6,7 +6,6 @@ import numpy as np
 from astropy.time import Time, TimeDelta
 
 from oem import OrbitEphemerisMessage
-from oem.components import State
 from oem.interp import (
     LagrangeStateInterpolator, HermiteStateInterpolator, EphemerisInterpolator)
 
@@ -42,13 +41,11 @@ def _make_test_states(poly, t_step, count, accel=True):
             poly.deriv().deriv()([t_step*idx]*3)
             for idx in range(count)
         ]
+        return (
+            epochs, *zip(*positions), *zip(*velocities), *zip(*accelerations)
+        )
     else:
-        accelerations = [None]*count
-    return [
-        State(epoch, "ICRF", "EARTH", position, velocity, acceleration)
-        for epoch, position, velocity, acceleration
-        in zip(epochs, positions, velocities, accelerations)
-    ]
+        return (epochs, *zip(*positions), *zip(*velocities))
 
 
 @pytest.mark.parametrize("has_accel", (True, False))
@@ -66,14 +63,12 @@ def test_interpolators(Interpolator, samples, has_accel):
     interpolator = Interpolator(states)
 
     for elapsed in np.arange(0, (samples-1)*time_step, 1):
-        test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
-        predict = interpolator(test_epoch)
-        np.testing.assert_almost_equal(predict.position, position(elapsed))
-        np.testing.assert_almost_equal(predict.velocity, velocity(elapsed))
+        test_epoch = states[0][0] + TimeDelta(elapsed, format="sec")
+        predict_pos, predict_vel, predict_accel = interpolator(test_epoch)
+        np.testing.assert_almost_equal(predict_pos, position(elapsed))
+        np.testing.assert_almost_equal(predict_vel, velocity(elapsed))
         if has_accel:
-            np.testing.assert_almost_equal(
-                predict.acceleration, acceleration(elapsed)
-            )
+            np.testing.assert_almost_equal(predict_accel, acceleration(elapsed))
 
 
 @pytest.mark.parametrize("has_accel", (True, False))
@@ -89,13 +84,13 @@ def test_ephemeris_interpolator(method, order, has_accel):
     interpolator = EphemerisInterpolator(states, method, order)
 
     for elapsed in np.arange(0, (samples-1)*time_step, 5):
-        test_epoch = states[0].epoch + TimeDelta(elapsed, format="sec")
-        predict = interpolator(test_epoch)
-        np.testing.assert_almost_equal(predict.position, position(elapsed), 6)
-        np.testing.assert_almost_equal(predict.velocity, velocity(elapsed), 6)
+        test_epoch = states[0][0] + TimeDelta(elapsed, format="sec")
+        predict_pos, predict_vel, predict_accel = interpolator(test_epoch)
+        np.testing.assert_almost_equal(predict_pos, position(elapsed), 6)
+        np.testing.assert_almost_equal(predict_vel, velocity(elapsed), 6)
         if has_accel:
             np.testing.assert_almost_equal(
-                predict.acceleration, acceleration(elapsed), 6
+                predict_accel, acceleration(elapsed), 6
             )
 
 

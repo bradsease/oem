@@ -1,8 +1,5 @@
 {
     "git.enableCommitSigning": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.linting.enabled": true,
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
         "tests/"
@@ -11,5 +8,4 @@
         "**/__pycache__": true,
         "**/.pytest_cache": true
     },
-    "restructuredtext.confPath": "${workspaceFolder}/docs"
 }

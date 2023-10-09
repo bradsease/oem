@@ -1,10 +1,7 @@
-import re
-
 import numpy as np
-from lxml.etree import SubElement
 
-from oem import patterns, CURRENT_VERSION
-from oem.tools import parse_epoch, require, format_float, format_epoch
+from oem import CURRENT_VERSION
+from oem.tools import require
 from oem.base import ConstraintSpecification, Constraint
 from oem.compare import StateCompare
 
@@ -47,7 +44,7 @@ class ConstrainStateType(Constraint):
 
 class ConstrainStateDimension(Constraint):
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, state):
         require(state.position.size == 3, "State position size != 3")
@@ -107,72 +104,17 @@ class State(object):
         return f"State({str(self.epoch)})"
 
     @classmethod
-    def _from_string(cls, segment, version, metadata):
-        raw_state = segment.split()
-        has_accel = True if len(raw_state) == 10 else False
-
-        epoch = parse_epoch(raw_state[0], metadata)
-        position = [float(entry) for entry in raw_state[1:4]]
-        velocity = [float(entry) for entry in raw_state[4:7]]
-        if has_accel:
-            acceleration = [float(entry) for entry in raw_state[7:]]
-        else:
-            acceleration = None
-
+    def _from_raw_data(cls, data, version, metadata):
+        epoch, *state = data
         return cls(
             epoch,
             metadata["REF_FRAME"],
             metadata["CENTER_NAME"],
-            position,
-            velocity,
-            acceleration=acceleration,
+            state[:3],
+            state[3:6],
+            acceleration=state[6:] if len(state) == 9 else None,
             version=version
         )
-
-    @classmethod
-    def _from_xml(cls, segment, version, metadata):
-        epoch = parse_epoch(segment[0].text, metadata)
-        position = [float(entry.text) for entry in segment[1:4]]
-        velocity = [float(entry.text) for entry in segment[4:7]]
-        if len(segment) == 10:
-            acceleration = [float(entry.text) for entry in segment[7:]]
-        else:
-            acceleration = None
-        return cls(
-            epoch,
-            metadata["REF_FRAME"],
-            metadata["CENTER_NAME"],
-            position,
-            velocity,
-            acceleration=acceleration,
-            version=version
-        )
-
-    def _to_string(self):
-        entries = list(self.position) + list(self.velocity)
-        if self.has_accel:
-            entries += list(self.acceleration)
-        formatted_epoch = format_epoch(self.epoch)
-        formatted_entries = "  ".join(
-            [format_float(entry) for entry in entries]
-        )
-        return f"{formatted_epoch}  {formatted_entries}\n"
-
-    def _to_xml(self, parent):
-        SubElement(parent, "EPOCH").text = format_epoch(self.epoch)
-        SubElement(parent, "X").text = format_float(self.position[0])
-        SubElement(parent, "Y").text = format_float(self.position[1])
-        SubElement(parent, "Z").text = format_float(self.position[2])
-        SubElement(parent, "X_DOT").text = format_float(self.velocity[0])
-        SubElement(parent, "Y_DOT").text = format_float(self.velocity[1])
-        SubElement(parent, "Z_DOT").text = format_float(self.velocity[2])
-        if self.has_accel:
-            SubElement(parent, "X_DDOT").text = (
-                format_float(self.acceleration[0]))
-            SubElement(parent, "Y_DDOT").text = (
-                format_float(self.acceleration[1]))
-            SubElement(parent, "Z_DDOT").text = (
-                format_float(self.acceleration[2]))
 
     def copy(self):
         """Create an independent copy of this instance."""
@@ -226,72 +168,17 @@ class Covariance(object):
         return f"Covariance({str(self.epoch)})"
 
     @classmethod
-    def _from_string(cls, segment, version, metadata):
-        headers = {
-            entry[0]: entry[1].strip()
-            for entry in re.findall(patterns.KEY_VAL, segment, re.MULTILINE)
-        }
-        if "EPOCH" not in headers:
-            raise ValueError("Covariance entry missing keyword 'EPOCH'")
-        else:
-            epoch = parse_epoch(headers["EPOCH"], metadata)
-        frame = headers.get("COV_REF_FRAME")
-
-        raw_covariance = re.findall(
-            patterns.COVARIANCE_MATRIX,
-            segment,
-            re.MULTILINE
-        )[0]
-
-        matrix = np.zeros((6, 6))
-        covariance_lines = [
-            entry for entry in raw_covariance.splitlines()
-            if entry.strip()
-        ]
-        for row_idx, row in enumerate(covariance_lines):
-            for col_idx, entry in enumerate(row.split()):
-                matrix[row_idx, col_idx] = float(entry)
-                matrix[col_idx, row_idx] = float(entry)
-
+    def _from_raw_data(cls, data, version):
+        epoch, frame, *s = data
+        matrix = np.array((
+            (s[0],  s[1],   s[3],  s[6], s[10], s[15]),
+            (s[1],  s[2],   s[4],  s[7], s[11], s[16]),
+            (s[3],  s[4],   s[5],  s[8], s[12], s[17]),
+            (s[6],  s[7],   s[8],  s[9], s[13], s[18]),
+            (s[10], s[11], s[12], s[13], s[14], s[19]),
+            (s[15], s[16], s[17], s[18], s[19], s[20]),
+        ))
         return cls(epoch, frame, matrix, version=version)
-
-    @classmethod
-    def _from_xml(cls, segment, version, metadata):
-        parts = [entry for entry in segment if entry.tag.rpartition('}')[-1] != "COMMENT"]
-        entries = {entry.tag.rpartition('}')[-1]: entry.text for entry in parts}
-        if "EPOCH" not in entries:
-            raise ValueError("Covariance entry missing keyword 'EPOCH'")
-        else:
-            epoch = parse_epoch(entries["EPOCH"], metadata)
-        frame = entries.get("COV_REF_FRAME")
-
-        matrix = np.zeros((6, 6))
-        for key, index in COV_XML_ENTRY_MAP.items():
-            matrix[index] = float(entries[key])
-            if index[0] != index[1]:
-                matrix[index[::-1]] = float(entries[key])
-
-        return cls(epoch, frame, matrix, version=version)
-
-    def _to_string(self):
-        lines = f"EPOCH = {format_epoch(self.epoch)}\n"
-        if self.frame:
-            lines += f"COV_REF_FRAME = {self.frame}\n"
-
-        idx = 1
-        for row in self.matrix:
-            formatted_entries = [format_float(entry) for entry in row[:idx]]
-            lines += "  ".join(formatted_entries) + "\n"
-            idx += 1
-
-        return lines
-
-    def _to_xml(self, parent):
-        SubElement(parent, "EPOCH").text = format_epoch(self.epoch)
-        if self.frame:
-            SubElement(parent, "COV_REF_FRAME").text = self.frame
-        for key, index in COV_XML_ENTRY_MAP.items():
-            SubElement(parent, key).text = format_float(self.matrix[index])
 
     def copy(self):
         """Create an independent copy of this instance."""

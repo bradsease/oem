@@ -1,18 +1,16 @@
-import re
-
 from lxml.etree import ElementTree, Element, SubElement
-from defusedxml.ElementTree import parse
 
-from oem import components, patterns
+from oem import components
 from oem.base import Constraint, ConstraintSpecification
-from oem.tools import require, is_kvn, regex_block_iter, _open
+from oem.tools import require, is_kvn, _open
 from oem.compare import EphemerisCompare
+from oem.parsers import parse_kvn_oem, parse_xml_oem
 
 
 class ConstrainOemTimeSystem(Constraint):
     """Apply constraints to OEM TIME_SYSTEM."""
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, oem):
         time_system = None
@@ -29,7 +27,7 @@ class ConstrainOemTimeSystem(Constraint):
 class ConstrainOemObject(Constraint):
     """Apply constraint to OEM OBJECT_NAME and OBJECT_ID."""
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, oem):
         object_name = oem._segments[0].metadata["OBJECT_NAME"]
@@ -48,7 +46,7 @@ class ConstrainOemObject(Constraint):
 class ConstrainOemStates(Constraint):
     '''Apply constraints to OEM data sections'''
 
-    versions = ["1.0", "2.0"]
+    versions = ["*"]
 
     def func(self, oem):
         if oem.version == "1.0":
@@ -184,31 +182,21 @@ class OrbitEphemerisMessage(object):
     @classmethod
     def _from_kvn_oem(cls, file_path):
         with _open(file_path, "rt") as ephem_file:
-            contents = ephem_file.read()
-        contents = re.sub(patterns.COMMENT_LINE, "", contents)
-        match = re.match(patterns.HEADER_SEGMENT, contents, re.MULTILINE)
-        if match:
-            header = components.HeaderSection._from_string(match.group(0))
-            version = header["CCSDS_OEM_VERS"]
-            start_idx = match.span()[1]
-            segments = [
-                components.EphemerisSegment._from_strings(raw_segment, version)
-                for raw_segment
-                in regex_block_iter(patterns.DATA_BLOCK, contents[start_idx:])
-            ]
-
-        else:
-            raise ValueError("Failed to parse ephemeris header.")
-        return cls(header, segments)
+            return cls._from_raw_data(parse_kvn_oem(ephem_file))
 
     @classmethod
     def _from_xml_oem(cls, file_path):
         with _open(file_path, "rt") as ephem_file:
-            parts = parse(ephem_file).getroot()
-        header = components.HeaderSection._from_xml(parts)
+            return cls._from_raw_data(parse_xml_oem(ephem_file))
+
+    @classmethod
+    def _from_raw_data(cls, data):
+        raw_header, raw_segments = data
+        header = components.HeaderSection._from_raw_data(raw_header)
         segments = [
-            components.EphemerisSegment._from_xml(part, header.version)
-            for part in parts[1]
+            components.EphemerisSegment._from_raw_data(
+                raw_segment, header.version
+            ) for raw_segment in raw_segments
         ]
         return cls(header, segments)
 

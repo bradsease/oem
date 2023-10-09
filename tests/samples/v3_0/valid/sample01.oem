@@ -1,5 +1,5 @@
-CCSDS_OEM_VERS = 2.0
-COMMENT Invalid example with a 3.0 header
+CCSDS_OEM_VERS = 3.0
+COMMENT Valid example of a 3.0 header
 COMMENT This is a test comment
 CREATION_DATE = 1996-11-04T17:22:31
 ORIGINATOR = NASA/JPL
