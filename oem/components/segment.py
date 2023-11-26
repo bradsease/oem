@@ -1,4 +1,5 @@
 from lxml.etree import SubElement
+from itertools import chain
 
 from oem import CURRENT_VERSION
 from oem.base import ConstraintSpecification, Constraint
@@ -244,22 +245,21 @@ class EphemerisSegment(object):
             EphemerisSegment: Resampled EphemerisSegment. Output is
                 an indepdent instance if in_place is True.
         """
-        # TODO: Optimize this
+        if not self._interpolator:
+            self._init_interpolator()
+
+        epochs = time_range(
+            self.useable_start_time, self.useable_stop_time, step_size
+        )
+
         if in_place:
-            if self.has_accel:
-                states = (
-                    (
-                        state.epoch,
-                        *state.position,
-                        *state.velocity,
-                        *state.acceleration
-                    ) for state in self.steps(step_size)
-                )
-            else:
-                states = (
-                    (state.epoch, *state.position, *state.velocity)
-                    for state in self.steps(step_size)
-                )
+            states = (
+                (
+                    epoch, *chain.from_iterable(
+                        self._interpolator(epoch)[:2 + self.has_accel]
+                    )
+                ) for epoch in epochs
+            )
             self._state_data = tuple(zip(*states))
         else:
             segment = self.copy().resample(step_size, in_place=True)
