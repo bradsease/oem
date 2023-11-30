@@ -63,9 +63,7 @@ class KeyValueSection(object):
     def required_keys(self):
         """Return list of keys required by this section."""
         return [
-            key for key, header_spec
-            in self._field_spec.items()
-            if header_spec.required
+            key for key, header_spec in self._field_spec.items() if header_spec.required
         ]
 
 

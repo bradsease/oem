@@ -1,8 +1,9 @@
-import warnings
-import gzip
 import bz2
-import lzma
 import datetime as dt
+import gzip
+import lzma
+import warnings
+
 import numpy as np
 from astropy.time import Time, TimeDelta
 
@@ -32,13 +33,12 @@ def parse_datetime(epoch):
     ymd_fmt = "%Y-%m-%d" if epoch.count("-") == 2 else "%Y-%j"
     if "." in epoch:
         return dt.datetime.strptime(
-            epoch.replace("Z", "")[:epoch.index(".")+7].strip(),
-            f"{ymd_fmt}T%H:%M:%S.%f"
+            epoch.replace("Z", "")[: epoch.index(".") + 7].strip(),
+            f"{ymd_fmt}T%H:%M:%S.%f",
         )
     else:
         return dt.datetime.strptime(
-            epoch.replace("Z", "").strip(),
-            f"{ymd_fmt}T%H:%M:%S"
+            epoch.replace("Z", "").strip(), f"{ymd_fmt}T%H:%M:%S"
         )
 
 
@@ -278,10 +278,5 @@ def _get_compression(path):
 def _open(path, mode, compression=None):
     if mode == "rt":
         compression = _get_compression(path)
-    openers = {
-        "gzip": gzip.open,
-        "bz2": bz2.open,
-        "lzma": lzma.open,
-        None: open
-    }
+    openers = {"gzip": gzip.open, "bz2": bz2.open, "lzma": lzma.open, None: open}
     return openers[compression](path, mode)

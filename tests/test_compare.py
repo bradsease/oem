@@ -1,12 +1,12 @@
-import pytest
-import numpy as np
-
-from astropy.time import Time
 from pathlib import Path
+
+import numpy as np
+import pytest
+from astropy.time import Time
+
 from oem import OrbitEphemerisMessage
 from oem.compare import StateCompare
 from oem.components import State
-
 
 SAMPLE_DIR = Path(__file__).parent / "samples"
 
@@ -94,6 +94,6 @@ def test_real_reference_ric():
         np.testing.assert_almost_equal(
             state_compare.position_ric,
             np.array([-0.000101713843, -1.165554779575, 0.0]),
-            decimal=6
+            decimal=6,
         )
         np.testing.assert_almost_equal(state_compare.velocity_ric, 0)

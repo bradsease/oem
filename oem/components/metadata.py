@@ -1,15 +1,19 @@
 from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
+from oem.base import Constraint, ConstraintSpecification, HeaderField, KeyValueSection
 from oem.tools import (
-    parse_epoch, parse_integer, parse_str, format_epoch, require,
-    require_field)
-from oem.base import (
-    KeyValueSection, HeaderField, ConstraintSpecification, Constraint)
+    format_epoch,
+    parse_epoch,
+    parse_integer,
+    parse_str,
+    require,
+    require_field,
+)
 
 
 class ConstrainMetaDataTime(Constraint):
-    '''Apply constraints to metadata START_TIME and STOP_TIME'''
+    """Apply constraints to metadata START_TIME and STOP_TIME"""
 
     versions = ["*"]
 
@@ -18,12 +22,12 @@ class ConstrainMetaDataTime(Constraint):
         require_field("STOP_TIME", metadata)
         require(
             metadata["START_TIME"] <= metadata["STOP_TIME"],
-            "START_TIME is before STOP_TIME"
+            "START_TIME is before STOP_TIME",
         )
 
 
 class ConstrainMetadataUseableTime(Constraint):
-    '''Apply constraints to USEABLE_START_TIME & USEABLE_STOP_TIME'''
+    """Apply constraints to USEABLE_START_TIME & USEABLE_STOP_TIME"""
 
     versions = ["*"]
 
@@ -31,29 +35,28 @@ class ConstrainMetadataUseableTime(Constraint):
         if "USEABLE_START_TIME" in metadata or "USEABLE_STOP_TIME" in metadata:
             require(
                 "USEABLE_START_TIME" in metadata,
-                "USEABLE_STOP_TIME provided without USEABLE_START_TIME"
+                "USEABLE_STOP_TIME provided without USEABLE_START_TIME",
             )
             require(
                 "USEABLE_STOP_TIME" in metadata,
-                "USEABLE_START_TIME provided without USEABLE_STOP_TIME"
+                "USEABLE_START_TIME provided without USEABLE_STOP_TIME",
             )
             require(
-                metadata["USEABLE_START_TIME"]
-                <= metadata["USEABLE_STOP_TIME"],
-                "USEABLE_START_TIME after USEABLE_STOP_TIME"
+                metadata["USEABLE_START_TIME"] <= metadata["USEABLE_STOP_TIME"],
+                "USEABLE_START_TIME after USEABLE_STOP_TIME",
             )
             require(
                 metadata["USEABLE_START_TIME"] >= metadata["START_TIME"],
-                "USEABLE_START_TIME before START_TIME"
+                "USEABLE_START_TIME before START_TIME",
             )
             require(
                 metadata["USEABLE_STOP_TIME"] <= metadata["STOP_TIME"],
-                "USEABLE_STOP_TIME after STOP_TIME"
+                "USEABLE_STOP_TIME after STOP_TIME",
             )
 
 
 class ConstrainMetaDataInterpolation(Constraint):
-    '''Apply constraints to metadata INTERPOLATION and INTERPOLATION_DEGREE'''
+    """Apply constraints to metadata INTERPOLATION and INTERPOLATION_DEGREE"""
 
     versions = ["*"]
 
@@ -62,31 +65,31 @@ class ConstrainMetaDataInterpolation(Constraint):
             require_field("INTERPOLATION_DEGREE", metadata)
             require(
                 float(metadata["INTERPOLATION_DEGREE"]).is_integer(),
-                "Interpolation degree is not an integer"
+                "Interpolation degree is not an integer",
             )
 
 
 class ConstrainMetaDataRefFrameEpoch(Constraint):
-    '''Apply constraints to metadata REF_FRAME_EPOCH'''
+    """Apply constraints to metadata REF_FRAME_EPOCH"""
 
     versions = ["1.0"]
 
     def func(self, metadata):
         require(
             "REF_FRAME_EPOCH" not in metadata,
-            "Metadata keyword 'REF_FRAME_EPOCH' not supported in OEM v1.0"
+            "Metadata keyword 'REF_FRAME_EPOCH' not supported in OEM v1.0",
         )
 
 
 class ConstrainMetaDataMessageId(Constraint):
-    '''Apply constraints to metadata MESSAGE_ID'''
+    """Apply constraints to metadata MESSAGE_ID"""
 
     versions = ["1.0", "2.0"]
 
     def func(self, metadata):
         require(
             "MESSAGE_ID" not in metadata,
-            "Metadata keyword 'MESSAGE_ID' not supported in OEM v1.0 and v2.0"
+            "Metadata keyword 'MESSAGE_ID' not supported in OEM v1.0 and v2.0",
         )
 
 
@@ -140,9 +143,9 @@ class MetaDataSection(KeyValueSection):
 
     def __eq__(self, other):
         return (
-            self.version == other.version and
-            self._fields.keys() == other._fields.keys() and
-            all(self[key] == other[key] for key in self)
+            self.version == other.version
+            and self._fields.keys() == other._fields.keys()
+            and all(self[key] == other[key] for key in self)
         )
 
     def __repr__(self):

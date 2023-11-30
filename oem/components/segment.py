@@ -1,33 +1,38 @@
-from lxml.etree import SubElement
 from itertools import chain
 
+from lxml.etree import SubElement
+
 from oem import CURRENT_VERSION
-from oem.base import ConstraintSpecification, Constraint
-from oem.tools import (
-    require, time_range, epoch_span_contains, _bulk_parse_epochs, format_float,
-    format_epoch
-)
-from oem.parsers import COV_XML_KEYS
-from oem.components.metadata import MetaDataSection
-from oem.components.types import State, Covariance
-from oem.interp import EphemerisInterpolator
+from oem.base import Constraint, ConstraintSpecification
 from oem.compare import SegmentCompare
+from oem.components.metadata import MetaDataSection
+from oem.components.types import Covariance, State
+from oem.interp import EphemerisInterpolator
+from oem.parsers import COV_XML_KEYS
+from oem.tools import (
+    _bulk_parse_epochs,
+    epoch_span_contains,
+    format_epoch,
+    format_float,
+    require,
+    time_range,
+)
 
 
 class ConstrainEphemerisSegmentCovariance(Constraint):
-    '''Apply constraints to ephemeris segment covariance sections'''
+    """Apply constraints to ephemeris segment covariance sections"""
 
     versions = ["1.0"]
 
     def func(self, ephemeris_segment):
         require(
             ephemeris_segment._covariance_data is None,
-            "Covariance data block not supported in OEM v1.0"
+            "Covariance data block not supported in OEM v1.0",
         )
 
 
 class ConstrainEphemerisSegmentStateVectors(Constraint):
-    '''Apply constraints to ephemeris segment state vectors'''
+    """Apply constraints to ephemeris segment state vectors"""
 
     versions = ["1.0"]
 
@@ -40,12 +45,12 @@ class ConstrainEphemerisSegmentStateVectors(Constraint):
 
 def _process_states(metadata, raw_data_rows):
     if len(raw_data_rows) == 0:
-        raise ValueError('Empty data section.')
+        raise ValueError("Empty data section.")
 
     raw_data_columns = tuple(zip(*raw_data_rows))
 
     epochs = raw_data_columns[0]
-    sorted = all(epochs[idx] < epochs[idx+1] for idx in range(len(epochs) - 1))
+    sorted = all(epochs[idx] < epochs[idx + 1] for idx in range(len(epochs) - 1))
     require(sorted, "States in data section are not ordered by epoch")
 
     epochs = tuple(_bulk_parse_epochs(raw_data_columns[0], metadata))
@@ -54,7 +59,7 @@ def _process_states(metadata, raw_data_rows):
 
 def _process_covariances(metadata, raw_data_rows):
     if len(raw_data_rows) == 0:
-        raise ValueError('Empty covariance section.')
+        raise ValueError("Empty covariance section.")
     raw_data_columns = tuple(zip(*raw_data_rows))
     epochs = tuple(_bulk_parse_epochs(raw_data_columns[0], metadata))
     frames = raw_data_columns[1]
@@ -72,8 +77,9 @@ class EphemerisSegment(object):
         ConstrainEphemerisSegmentStateVectors,
     )
 
-    def __init__(self, metadata, state_data, covariance_data=None,
-                 version=CURRENT_VERSION):
+    def __init__(
+        self, metadata, state_data, covariance_data=None, version=CURRENT_VERSION
+    ):
         self.version = version
         self.metadata = metadata
         self._state_data = state_data
@@ -105,10 +111,10 @@ class EphemerisSegment(object):
 
     def __eq__(self, other):
         return (
-            self.version == other.version and
-            self.metadata == other.metadata and
-            self._state_data == other._state_data and
-            self._covariance_data == other._covariance_data
+            self.version == other.version
+            and self.metadata == other.metadata
+            and self._state_data == other._state_data
+            and self._covariance_data == other._covariance_data
         )
 
     def __sub__(self, other):
@@ -121,18 +127,18 @@ class EphemerisSegment(object):
 
     @classmethod
     def _from_raw_data(cls, segment, version):
-        metadata = MetaDataSection._from_raw_data(segment['header'], version)
+        metadata = MetaDataSection._from_raw_data(segment["header"], version)
 
         try:
-            state_data = _process_states(metadata, segment['data'])
+            state_data = _process_states(metadata, segment["data"])
         except Exception:
-            raise ValueError('Malformed data section.')
+            raise ValueError("Malformed data section.")
 
-        if segment.get('cov'):
+        if segment.get("cov"):
             try:
-                cov_data = _process_covariances(metadata, segment['cov'])
+                cov_data = _process_covariances(metadata, segment["cov"])
             except Exception:
-                raise ValueError('Malformed covariance section.')
+                raise ValueError("Malformed covariance section.")
         else:
             cov_data = None
 
@@ -141,45 +147,45 @@ class EphemerisSegment(object):
     def _to_string(self):
         lines = self.metadata._to_string() + "\n"
         for epoch, *state in zip(*self._state_data):
-            lines += f'{format_epoch(epoch)} '
-            lines += ' '.join(format_float(entry) for entry in state) + '\n'
-        lines += '\n'
+            lines += f"{format_epoch(epoch)} "
+            lines += " ".join(format_float(entry) for entry in state) + "\n"
+        lines += "\n"
 
         if self._covariance_data:
-            lines += 'COVARIANCE_START\n'
+            lines += "COVARIANCE_START\n"
             for epoch, frame, *cov in zip(*self._covariance_data):
-                lines += f'EPOCH = {format_epoch(epoch)}\n'
-                if frame != self.metadata['REF_FRAME']:
-                    lines += f'COV_REF_FRAME = {frame}\n'
-                lines += f'{format_float(cov[0])}\n'
-                lines += ' '.join(format_float(c) for c in cov[1:3]) + '\n'
-                lines += ' '.join(format_float(c) for c in cov[3:6]) + '\n'
-                lines += ' '.join(format_float(c) for c in cov[6:10]) + '\n'
-                lines += ' '.join(format_float(c) for c in cov[10:15]) + '\n'
-                lines += ' '.join(format_float(c) for c in cov[15:]) + '\n'
-            lines += 'COVARIANCE_STOP\n'
-            lines += '\n'
+                lines += f"EPOCH = {format_epoch(epoch)}\n"
+                if frame != self.metadata["REF_FRAME"]:
+                    lines += f"COV_REF_FRAME = {frame}\n"
+                lines += f"{format_float(cov[0])}\n"
+                lines += " ".join(format_float(c) for c in cov[1:3]) + "\n"
+                lines += " ".join(format_float(c) for c in cov[3:6]) + "\n"
+                lines += " ".join(format_float(c) for c in cov[6:10]) + "\n"
+                lines += " ".join(format_float(c) for c in cov[10:15]) + "\n"
+                lines += " ".join(format_float(c) for c in cov[15:]) + "\n"
+            lines += "COVARIANCE_STOP\n"
+            lines += "\n"
 
         return lines
 
     def _to_xml(self, parent):
         self.metadata._to_xml(SubElement(parent, "metadata"))
         data = SubElement(parent, "data")
-        fields = ('X', 'Y', 'Z', 'X_DOT', 'Y_DOT', 'Z_DOT')
+        fields = ("X", "Y", "Z", "X_DOT", "Y_DOT", "Z_DOT")
         for epoch, *state in zip(*self._state_data):
-            vector = SubElement(data, 'stateVector')
+            vector = SubElement(data, "stateVector")
             SubElement(vector, "EPOCH").text = format_epoch(epoch)
             for idx, field in enumerate(fields):
                 SubElement(vector, field).text = format_float(state[idx])
             if len(state) == 9:
-                for idx, field in enumerate(('X_DDOT', 'Y_DDOT', 'Z_DDOT')):
-                    SubElement(vector, field).text = format_float(state[idx+6])
+                for idx, field in enumerate(("X_DDOT", "Y_DDOT", "Z_DDOT")):
+                    SubElement(vector, field).text = format_float(state[idx + 6])
 
         if self._covariance_data:
             for epoch, frame, *cov in zip(*self._covariance_data):
-                covdata = SubElement(data, 'covarianceMatrix')
+                covdata = SubElement(data, "covarianceMatrix")
                 SubElement(covdata, "EPOCH").text = format_epoch(epoch)
-                if frame != self.metadata['REF_FRAME']:
+                if frame != self.metadata["REF_FRAME"]:
                     SubElement(covdata, "COV_REF_FRAME").text = frame
                 for idx, key in enumerate(COV_XML_KEYS):
                     SubElement(covdata, key).text = format_float(cov[idx])
@@ -191,11 +197,7 @@ class EphemerisSegment(object):
         else:
             method = "LAGRANGE"
             order = 5
-        self._interpolator = EphemerisInterpolator(
-            self._state_data,
-            method,
-            order
-        )
+        self._interpolator = EphemerisInterpolator(self._state_data, method, order)
 
     def copy(self):
         """Create an independent copy of this instance."""
@@ -203,7 +205,7 @@ class EphemerisSegment(object):
             self.metadata.copy(),
             self._state_data,
             self._covariance_data if self.has_covariance else None,
-            version=self.version
+            version=self.version,
         )
 
     def steps(self, step_size):
@@ -225,9 +227,9 @@ class EphemerisSegment(object):
             ...    for state in segment.steps(60):
             ...        pass
         """
-        for epoch in time_range(self.useable_start_time,
-                                self.useable_stop_time,
-                                step_size):
+        for epoch in time_range(
+            self.useable_start_time, self.useable_stop_time, step_size
+        ):
             yield self(epoch)
 
     def resample(self, step_size, in_place=False):
@@ -248,17 +250,17 @@ class EphemerisSegment(object):
         if not self._interpolator:
             self._init_interpolator()
 
-        epochs = time_range(
-            self.useable_start_time, self.useable_stop_time, step_size
-        )
+        epochs = time_range(self.useable_start_time, self.useable_stop_time, step_size)
 
         if in_place:
             states = (
                 (
-                    epoch, *chain.from_iterable(
-                        self._interpolator(epoch)[:2 + self.has_accel]
-                    )
-                ) for epoch in epochs
+                    epoch,
+                    *chain.from_iterable(
+                        self._interpolator(epoch)[: 2 + self.has_accel]
+                    ),
+                )
+                for epoch in epochs
             )
             self._state_data = tuple(zip(*states))
         else:

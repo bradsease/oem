@@ -1,13 +1,13 @@
 """Test parsing sample OEMS.
 """
-import pytest
 import glob
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from oem import OrbitEphemerisMessage
 from oem.tools import is_kvn
-
 
 SAMPLE_DIR = Path(__file__).parent / "samples"
 
@@ -52,19 +52,11 @@ def test_invalid_samples(file_path):
 def test_convert(file_path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         converted_xml_path = Path(tmp_dir) / "written.oem"
-        OrbitEphemerisMessage.convert(
-            file_path,
-            converted_xml_path,
-            "kvn"
-        )
+        OrbitEphemerisMessage.convert(file_path, converted_xml_path, "kvn")
         converted_xml = OrbitEphemerisMessage.open(converted_xml_path)
 
         converted_kvn_path = Path(tmp_dir) / "written.oem"
-        OrbitEphemerisMessage.convert(
-            converted_xml_path,
-            converted_kvn_path,
-            "xml"
-        )
+        OrbitEphemerisMessage.convert(converted_xml_path, converted_kvn_path, "xml")
         converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
 
         assert converted_xml == converted_kvn

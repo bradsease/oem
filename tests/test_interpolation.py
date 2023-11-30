@@ -1,14 +1,16 @@
-import pytest
 import datetime as dt
 from pathlib import Path
 
 import numpy as np
+import pytest
 from astropy.time import Time, TimeDelta
 
 from oem import OrbitEphemerisMessage
 from oem.interp import (
-    LagrangeStateInterpolator, HermiteStateInterpolator, EphemerisInterpolator)
-
+    EphemerisInterpolator,
+    HermiteStateInterpolator,
+    LagrangeStateInterpolator,
+)
 
 THIS_DIR = Path(__file__).parent
 SAMPLE_DIR = THIS_DIR / "samples"
@@ -31,19 +33,15 @@ def _make_test_states(poly, t_step, count, accel=True):
     """
     start_epoch = dt.datetime.now()
     epochs = [
-        Time(start_epoch + dt.timedelta(seconds=t_step*idx))
-        for idx in range(count)
+        Time(start_epoch + dt.timedelta(seconds=t_step * idx)) for idx in range(count)
     ]
-    positions = [poly([t_step*idx]*3) for idx in range(count)]
-    velocities = [poly.deriv()([t_step*idx]*3) for idx in range(count)]
+    positions = [poly([t_step * idx] * 3) for idx in range(count)]
+    velocities = [poly.deriv()([t_step * idx] * 3) for idx in range(count)]
     if accel:
         accelerations = [
-            poly.deriv().deriv()([t_step*idx]*3)
-            for idx in range(count)
+            poly.deriv().deriv()([t_step * idx] * 3) for idx in range(count)
         ]
-        return (
-            epochs, *zip(*positions), *zip(*velocities), *zip(*accelerations)
-        )
+        return (epochs, *zip(*positions), *zip(*velocities), *zip(*accelerations))
     else:
         return (epochs, *zip(*positions), *zip(*velocities))
 
@@ -51,10 +49,10 @@ def _make_test_states(poly, t_step, count, accel=True):
 @pytest.mark.parametrize("has_accel", (True, False))
 @pytest.mark.parametrize(
     "Interpolator, samples",
-    ((LagrangeStateInterpolator, 8), (HermiteStateInterpolator, 4))
+    ((LagrangeStateInterpolator, 8), (HermiteStateInterpolator, 4)),
 )
 def test_interpolators(Interpolator, samples, has_accel):
-    position = np.poly1d([.1, .1, .1])
+    position = np.poly1d([0.1, 0.1, 0.1])
     velocity = position.deriv()
     acceleration = velocity.deriv()
     time_step = 60
@@ -62,7 +60,7 @@ def test_interpolators(Interpolator, samples, has_accel):
     states = _make_test_states(position, time_step, samples, accel=has_accel)
     interpolator = Interpolator(states)
 
-    for elapsed in np.arange(0, (samples-1)*time_step, 1):
+    for elapsed in np.arange(0, (samples - 1) * time_step, 1):
         test_epoch = states[0][0] + TimeDelta(elapsed, format="sec")
         predict_pos, predict_vel, predict_accel = interpolator(test_epoch)
         np.testing.assert_almost_equal(predict_pos, position(elapsed))
@@ -74,7 +72,7 @@ def test_interpolators(Interpolator, samples, has_accel):
 @pytest.mark.parametrize("has_accel", (True, False))
 @pytest.mark.parametrize("method, order", (("LAGRANGE", 8), ("HERMITE", 9)))
 def test_ephemeris_interpolator(method, order, has_accel):
-    position = np.poly1d([.1, .1, .1])
+    position = np.poly1d([0.1, 0.1, 0.1])
     velocity = position.deriv()
     acceleration = velocity.deriv()
     time_step = 30
@@ -83,15 +81,13 @@ def test_ephemeris_interpolator(method, order, has_accel):
     states = _make_test_states(position, time_step, samples, accel=has_accel)
     interpolator = EphemerisInterpolator(states, method, order)
 
-    for elapsed in np.arange(0, (samples-1)*time_step, 5):
+    for elapsed in np.arange(0, (samples - 1) * time_step, 5):
         test_epoch = states[0][0] + TimeDelta(elapsed, format="sec")
         predict_pos, predict_vel, predict_accel = interpolator(test_epoch)
         np.testing.assert_almost_equal(predict_pos, position(elapsed), 6)
         np.testing.assert_almost_equal(predict_vel, velocity(elapsed), 6)
         if has_accel:
-            np.testing.assert_almost_equal(
-                predict_accel, acceleration(elapsed), 6
-            )
+            np.testing.assert_almost_equal(predict_accel, acceleration(elapsed), 6)
 
 
 @pytest.mark.parametrize(
@@ -99,8 +95,8 @@ def test_ephemeris_interpolator(method, order, has_accel):
     (
         ("GEO_60s.oem", "GEO_20s.oem"),
         ("MEO_60s.oem", "MEO_20s.oem"),
-        ("LEO_60s.oem", "LEO_10s.oem")
-    )
+        ("LEO_60s.oem", "LEO_10s.oem"),
+    ),
 )
 def test_ephemeris_accuracy(coarse_file, fine_file):
     fine_sample = SAMPLE_DIR / "real" / fine_file
@@ -113,16 +109,10 @@ def test_ephemeris_accuracy(coarse_file, fine_file):
         np.testing.assert_almost_equal(predict.position, state.position, 6)
         np.testing.assert_almost_equal(predict.velocity, state.velocity, 6)
         if state.has_accel:
-            np.testing.assert_almost_equal(
-                predict.acceleration,
-                state.acceleration,
-                6
-            )
+            np.testing.assert_almost_equal(predict.acceleration, state.acceleration, 6)
 
 
-@pytest.mark.parametrize(
-    "input_file", ("GEO_20s.oem", "MEO_20s.oem", "LEO_10s.oem")
-)
+@pytest.mark.parametrize("input_file", ("GEO_20s.oem", "MEO_20s.oem", "LEO_10s.oem"))
 def test_ephemeris_stepping(input_file):
     sample_file = SAMPLE_DIR / "real" / input_file
     oem = OrbitEphemerisMessage.open(sample_file)
@@ -142,9 +132,7 @@ def test_ephemeris_stepping(input_file):
             segment(out_of_bounds_epoch)
 
 
-@pytest.mark.parametrize(
-    "input_file", ("GEO_20s.oem", "MEO_20s.oem", "LEO_10s.oem")
-)
+@pytest.mark.parametrize("input_file", ("GEO_20s.oem", "MEO_20s.oem", "LEO_10s.oem"))
 def test_ephemeris_resample(input_file):
     sample_file = SAMPLE_DIR / "real" / input_file
     step_size = 600
@@ -153,6 +141,5 @@ def test_ephemeris_resample(input_file):
 
     for idx in range(1, len(new_oem.states)):
         assert np.isclose(
-            (new_oem.states[idx].epoch - new_oem.states[idx-1].epoch).sec,
-            step_size
+            (new_oem.states[idx].epoch - new_oem.states[idx - 1].epoch).sec, step_size
         )

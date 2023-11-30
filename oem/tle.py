@@ -1,34 +1,41 @@
 import numpy as np
-
-from sgp4.api import Satrec
+from astropy import units as u
 from astropy.coordinates import (
-    CartesianDifferential, CartesianRepresentation, TEME, GCRS
+    GCRS,
+    TEME,
+    CartesianDifferential,
+    CartesianRepresentation,
 )
 from astropy.time import Time
-from astropy import units as u
-from oem.components import HeaderSection, MetaDataSection, EphemerisSegment
+from sgp4.api import Satrec
+
 from oem import OrbitEphemerisMessage
+from oem.components import EphemerisSegment, HeaderSection, MetaDataSection
 from oem.tools import time_range
 
 
 def _build_header():
-    return HeaderSection({
-        "CCSDS_OEM_VERS": "2.0",
-        "CREATION_DATE": Time.now().isot,
-        "ORIGINATOR": "OEM-Python"
-    })
+    return HeaderSection(
+        {
+            "CCSDS_OEM_VERS": "2.0",
+            "CREATION_DATE": Time.now().isot,
+            "ORIGINATOR": "OEM-Python",
+        }
+    )
 
 
 def _build_metadata(satrec, start_epoch, stop_epoch):
-    return MetaDataSection({
-        "OBJECT_NAME": str(satrec.satnum),
-        "OBJECT_ID": str(satrec.satnum),
-        "CENTER_NAME": "Earth",
-        "REF_FRAME": "ICRF",
-        "TIME_SYSTEM": "UTC",
-        "START_TIME": start_epoch.isot,
-        "STOP_TIME": stop_epoch.isot,
-    })
+    return MetaDataSection(
+        {
+            "OBJECT_NAME": str(satrec.satnum),
+            "OBJECT_ID": str(satrec.satnum),
+            "CENTER_NAME": "Earth",
+            "REF_FRAME": "ICRF",
+            "TIME_SYSTEM": "UTC",
+            "START_TIME": start_epoch.isot,
+            "STOP_TIME": stop_epoch.isot,
+        }
+    )
 
 
 def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
@@ -36,14 +43,13 @@ def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
     position, velocity = _sample_tle_at_epoch_array(satrec, epoch_range, frame)
     return EphemerisSegment(
         _build_metadata(satrec, start_epoch, stop_epoch),
-        (epoch_range, *zip(*position), *zip(*velocity))
+        (epoch_range, *zip(*position), *zip(*velocity)),
     )
 
 
 def _build_oem(satrec, start_epoch, stop_epoch, step, frame):
     return OrbitEphemerisMessage(
-        _build_header(),
-        [_build_segment(satrec, start_epoch, stop_epoch, step, frame)]
+        _build_header(), [_build_segment(satrec, start_epoch, stop_epoch, step, frame)]
     )
 
 
@@ -56,14 +62,14 @@ def _sample_tle_at_epoch_array(satrec, epochs, frame):
     if any(err):
         raise ValueError("SGP4 propagation failed!")
     else:
-        teme_p = CartesianRepresentation(r.T*u.km)
-        teme_v = CartesianDifferential(v.T*u.km/u.s)
+        teme_p = CartesianRepresentation(r.T * u.km)
+        teme_v = CartesianDifferential(v.T * u.km / u.s)
         states = TEME(teme_p.with_differentials(teme_v), obstime=epochs)
         if frame == "ICRF":
             states = states.transform_to(GCRS(obstime=epochs))
         return (
             states.cartesian.get_xyz().value.T,
-            states.cartesian.differentials["s"].get_d_xyz().value.T
+            states.cartesian.differentials["s"].get_d_xyz().value.T,
         )
 
 

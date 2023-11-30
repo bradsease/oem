@@ -1,8 +1,7 @@
-from .types import State, Covariance
-from .segment import EphemerisSegment
 from .header import HeaderSection
 from .metadata import MetaDataSection
-
+from .segment import EphemerisSegment
+from .types import Covariance, State
 
 __all__ = [
     State,
