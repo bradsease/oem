@@ -1,10 +1,10 @@
-from lxml.etree import ElementTree, Element, SubElement
+from lxml.etree import Element, ElementTree, SubElement
 
 from oem import components
 from oem.base import Constraint, ConstraintSpecification
-from oem.tools import require, is_kvn, _open
 from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
+from oem.tools import _open, is_kvn, require
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -20,7 +20,7 @@ class ConstrainOemTimeSystem(Constraint):
             else:
                 require(
                     segment.metadata["TIME_SYSTEM"] == time_system,
-                    "TIME_SYSTEM not fixed in OEM"
+                    "TIME_SYSTEM not fixed in OEM",
                 )
 
 
@@ -35,16 +35,15 @@ class ConstrainOemObject(Constraint):
         for segment in oem:
             require(
                 segment.metadata["OBJECT_NAME"] == object_name,
-                "OBJECT_NAME not fixed in OEM"
+                "OBJECT_NAME not fixed in OEM",
             )
             require(
-                segment.metadata["OBJECT_ID"] == object_id,
-                "OBJECT_ID not fixed in OEM"
+                segment.metadata["OBJECT_ID"] == object_id, "OBJECT_ID not fixed in OEM"
             )
 
 
 class ConstrainOemStates(Constraint):
-    '''Apply constraints to OEM data sections'''
+    """Apply constraints to OEM data sections"""
 
     versions = ["*"]
 
@@ -57,21 +56,25 @@ class ConstrainOemStates(Constraint):
     def v1_0(self, oem):
         require(
             all(
-                (oem._segments[idx].metadata["STOP_TIME"]
-                 <= oem._segments[idx+1].metadata["START_TIME"])
-                for idx in range(len(oem._segments)-1)
+                (
+                    oem._segments[idx].metadata["STOP_TIME"]
+                    <= oem._segments[idx + 1].metadata["START_TIME"]
+                )
+                for idx in range(len(oem._segments) - 1)
             ),
-            "Data section state epochs overlap"
+            "Data section state epochs overlap",
         )
 
     def v2_0(self, oem):
         require(
             all(
-                (oem._segments[idx].useable_stop_time
-                 <= oem._segments[idx+1].useable_start_time)
-                for idx in range(len(oem._segments)-1)
+                (
+                    oem._segments[idx].useable_stop_time
+                    <= oem._segments[idx + 1].useable_start_time
+                )
+                for idx in range(len(oem._segments) - 1)
             ),
-            "Data section state epochs overlap"
+            "Data section state epochs overlap",
         )
 
 
@@ -131,18 +134,16 @@ class OrbitEphemerisMessage(object):
     """
 
     _constraint_spec = ConstraintSpecification(
-        ConstrainOemTimeSystem,
-        ConstrainOemObject,
-        ConstrainOemStates
+        ConstrainOemTimeSystem, ConstrainOemObject, ConstrainOemStates
     )
 
     def __init__(self, header, segments):
-        '''Create an Orbit Ephemeris Message.
+        """Create an Orbit Ephemeris Message.
 
         Args:
             header (HeaderSection): Object containing the OEM header section.
             segments (list): List of OEM EphemerisSegments.
-        '''
+        """
         self.header = header
         self.version = self.header["CCSDS_OEM_VERS"]
         self._segments = segments
@@ -163,13 +164,12 @@ class OrbitEphemerisMessage(object):
 
     def __eq__(self, other):
         return (
-            self.version == other.version and
-            self.header == other.header and
-            len(self._segments) == len(other._segments) and
-            all(
+            self.version == other.version
+            and self.header == other.header
+            and len(self._segments) == len(other._segments)
+            and all(
                 this_segment == other_segment
-                for this_segment, other_segment
-                in zip(self._segments, other._segments)
+                for this_segment, other_segment in zip(self._segments, other._segments)
             )
         )
 
@@ -194,9 +194,8 @@ class OrbitEphemerisMessage(object):
         raw_header, raw_segments = data
         header = components.HeaderSection._from_raw_data(raw_header)
         segments = [
-            components.EphemerisSegment._from_raw_data(
-                raw_segment, header.version
-            ) for raw_segment in raw_segments
+            components.EphemerisSegment._from_raw_data(raw_segment, header.version)
+            for raw_segment in raw_segments
         ]
         return cls(header, segments)
 
@@ -236,8 +235,7 @@ class OrbitEphemerisMessage(object):
     def copy(self):
         """Create an independent copy of this instance."""
         return OrbitEphemerisMessage(
-            self.header.copy(),
-            [segment.copy() for segment in self]
+            self.header.copy(), [segment.copy() for segment in self]
         )
 
     def steps(self, step_size):
@@ -325,7 +323,7 @@ class OrbitEphemerisMessage(object):
                     output_file,
                     pretty_print=True,
                     encoding="utf-8",
-                    xml_declaration=True
+                    xml_declaration=True,
                 )
             else:
                 raise ValueError(f"Unrecognized file type: '{file_format}'")
@@ -345,21 +343,13 @@ class OrbitEphemerisMessage(object):
 
     @property
     def states(self):
-        '''Return a list of states in all segments.'''
-        return [
-            state
-            for segment in self
-            for state in segment.states
-        ]
+        """Return a list of states in all segments."""
+        return [state for segment in self for state in segment.states]
 
     @property
     def covariances(self):
-        '''Return a list of covariances in all segments.'''
-        return [
-            covariance
-            for segment in self
-            for covariance in segment.covariances
-        ]
+        """Return a list of covariances in all segments."""
+        return [covariance for segment in self for covariance in segment.covariances]
 
     @property
     def segments(self):
@@ -369,5 +359,5 @@ class OrbitEphemerisMessage(object):
     def span(self):
         return (
             min(segment.useable_start_time for segment in self),
-            max(segment.useable_stop_time for segment in self)
+            max(segment.useable_stop_time for segment in self),
         )

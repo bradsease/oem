@@ -8,3 +8,4 @@ htmlcov/*
 docs/_build/*
 build/*
 .venv/*
+.vscode/*
