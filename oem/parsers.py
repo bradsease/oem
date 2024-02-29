@@ -50,7 +50,7 @@ def parse_kvn_oem(ephem_file):
     if match:
         header[match.group(1)] = match.group(2)
     if "CCSDS_OEM_VERS" not in header:
-        err('OEM file must start with "CCSDS_OEM_VERS" keyword.')
+        err(line_number=0, message='OEM file must start with "CCSDS_OEM_VERS" keyword.')
 
     for idx, line in enumerate(ephem_file):
         line = line.strip()
