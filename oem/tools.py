@@ -159,9 +159,14 @@ def format_epoch(epoch):
         epoch (Time, DateTime): Epoch to convert to string.
 
     Returns:
-        formatted_epoch (str): Epoch in YYYY-MM-DDTHH:MM:SS.sss format.
+        formatted_epoch (str): Epoch in YYYY-MM-DDTHH:MM:SS.ssssss format.
     """
-    return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
+    if isinstance(epoch, dt.datetime):
+        return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
+    elif isinstance(epoch, Time):
+        return epoch.datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
+    else:
+        raise ValueError(f"Cannot format epoch of type: {type(epoch)}")
 
 
 def require(boolean, message):
