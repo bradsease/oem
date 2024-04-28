@@ -51,7 +51,7 @@ def parse_utc(epoch, metadata):
     Returns:
         parsed_epoch (Time): UTC epoch.
     """
-    return Time(parse_datetime(epoch), format="datetime", scale="utc")
+    return Time(parse_datetime(epoch), format="datetime", scale="utc", precision=6)
 
 
 def parse_epoch(epoch, metadata):
@@ -70,7 +70,7 @@ def parse_epoch(epoch, metadata):
     time_system = metadata["TIME_SYSTEM"].lower()
     dt_epoch = parse_datetime(epoch)
     if time_system in Time.SCALES:
-        parsed_epoch = Time(dt_epoch, format="datetime", scale=time_system)
+        parsed_epoch = Time(dt_epoch, format="datetime", scale=time_system, precision=6)
     else:
         warnings.warn(
             f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
@@ -111,7 +111,7 @@ def _bulk_parse_epochs(epochs, metadata):
         epochs = tuple(_coerce_epoch_yday(epoch) for epoch in epochs)
 
     if time_system in Time.SCALES:
-        parsed_epochs = Time(epochs, format=fmt, scale=time_system)
+        parsed_epochs = Time(epochs, format=fmt, scale=time_system, precision=6)
     else:
         warnings.warn(
             f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
@@ -161,12 +161,7 @@ def format_epoch(epoch):
     Returns:
         formatted_epoch (str): Epoch in YYYY-MM-DDTHH:MM:SS.ssssss format.
     """
-    if isinstance(epoch, dt.datetime):
-        return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
-    elif isinstance(epoch, Time):
-        return epoch.datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
-    else:
-        raise ValueError(f"Cannot format epoch of type: {type(epoch)}")
+    return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
 
 def require(boolean, message):
