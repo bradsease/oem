@@ -15,7 +15,11 @@ The `oem` package is available through `pip`.
 pip install oem
 ```
 
-## Usage
+## Documentation
+See the full [documentation here](https://bsease.gitbook.io/oem)
+
+
+## Basic Usage
 The `OrbitEphemerisMessage` class is the primary interface for OEM Files.
 ```python
 from oem import OrbitEphemerisMessage
