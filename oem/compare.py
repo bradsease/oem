@@ -64,10 +64,7 @@ class EphemerisCompare(object):
         segments = []
         for origin_segment in origin:
             for target_segment in target:
-                try:
-                    segments.append(target_segment - origin_segment)
-                except ValueError:
-                    continue
+                segments.append(target_segment - origin_segment)
         self._segments = [entry for entry in segments if not entry.is_empty]
 
     def __call__(self, epoch):
@@ -173,6 +170,22 @@ class SegmentCompare(object):
     @property
     def is_empty(self):
         return self._span is None
+
+    @property
+    def start_time(self):
+        if self.is_empty:
+            raise ValueError("This SegmentCompare contains no overlapping state")
+        return self._span[0]
+
+    @property
+    def stop_time(self):
+        if self.is_empty:
+            raise ValueError("This SegmentCompare contains no overlapping state")
+        return self._span[1]
+
+    @property
+    def span(self):
+        return self._span
 
 
 class StateCompare(object):

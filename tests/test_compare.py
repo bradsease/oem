@@ -75,9 +75,15 @@ def test_ephemeris_self_compare():
     test_file_path = SAMPLE_DIR / "real" / "GEO_20s.oem"
     oem = OrbitEphemerisMessage.open(test_file_path)
     compare = oem - oem
+
     assert not compare.is_empty
+    segment = compare.segments[0]
+    assert segment.start_time < segment.stop_time
+    np.testing.assert_almost_equal(compare(segment.start_time).position_ric, 0)
+
     for state_compare in compare.steps(600):
         assert state_compare.range == 0 and state_compare.range_rate == 0
+        assert state_compare.epoch in compare
         np.testing.assert_almost_equal(state_compare.position_ric, 0)
         np.testing.assert_almost_equal(state_compare.velocity_ric, 0)
 
