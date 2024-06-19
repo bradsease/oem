@@ -155,7 +155,7 @@ def parse_kvn_oem(ephem_file):
 
             match = re.match(KEY_VAL, line)
             if match:
-                if match.group(1) in header:
+                if match.group(1) in segments[-1]["header"]:
                     err(idx, f"Duplicate entry: {match.group(1)}")
                 segments[-1]["header"][match.group(1)] = match.group(2)
             else:
