@@ -119,9 +119,12 @@ def parse_kvn_oem(ephem_file):
                     raw_values = line.split()
                     if len(raw_values) != cov_data_line:
                         err(idx, "Malformed covariance shape")
-                    covdata["data"] = covdata["data"] + tuple(
-                        float(entry) for entry in raw_values
-                    )
+                    try:
+                        covdata["data"] = covdata["data"] + tuple(
+                            float(entry) for entry in raw_values
+                        )
+                    except ValueError:
+                        err(idx, "Malformed covariance data")
 
                     if cov_data_line == 6:
                         segments[-1]["cov"].append(

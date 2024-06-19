@@ -1,5 +1,5 @@
 CCSDS_OEM_VERS = 2.0
-COMMENT Malformed covariance (invalid header)
+COMMENT Malformed covariance (invalid data)
 COMMENT covariance headers
 CREATION_DATE = 1996-11-04T17:22:31
 ORIGINATOR = NASA/JPL
