@@ -1,5 +1,6 @@
 """Test parsing sample OEMS.
 """
+
 import glob
 import tempfile
 from pathlib import Path
@@ -56,7 +57,9 @@ def test_convert(file_path):
         converted_xml = OrbitEphemerisMessage.open(converted_xml_path)
 
         converted_kvn_path = Path(tmp_dir) / "written.oem"
-        OrbitEphemerisMessage.convert(converted_xml_path, converted_kvn_path, "xml")
+        OrbitEphemerisMessage.convert(
+            converted_xml_path, converted_kvn_path, "xml", compression="gzip"
+        )
         converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
 
         assert converted_xml == converted_kvn

@@ -218,7 +218,7 @@ class OrbitEphemerisMessage(object):
         return oem
 
     @classmethod
-    def convert(cls, in_file_path, out_file_path, file_format):
+    def convert(cls, in_file_path, out_file_path, file_format, compression=None):
         """Convert an OEM to a particular file format.
 
         This method will succeed and produce an output file even if the input
@@ -229,8 +229,12 @@ class OrbitEphemerisMessage(object):
             out_file_path (str or Path): Desired path for converted ephemeris.
             file_format (str): Desired output format. Options are
                 'kvn' and 'xml'.
+            compression (str, optional): File compression type to use. Options are
+                'gzip', 'bz2', and 'lzma'. Default is None.
         """
-        cls.open(in_file_path).save_as(out_file_path, file_format=file_format)
+        cls.open(in_file_path).save_as(
+            out_file_path, file_format=file_format, compression=None
+        )
 
     def copy(self):
         """Create an independent copy of this instance."""
@@ -314,6 +318,8 @@ class OrbitEphemerisMessage(object):
             file_path (str or Path): Desired path for output ephemeris.
             file_format (str, optional): Type of file to output. Options are
                 'kvn' and 'xml'. Default is 'kvn'.
+            compression (str, optional): File compression type to use. Options are
+                'gzip', 'bz2', and 'lzma'. Default is None.
         """
         with _open(file_path, "wb", compression) as output_file:
             if file_format == "kvn":

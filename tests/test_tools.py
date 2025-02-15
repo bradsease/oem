@@ -14,8 +14,11 @@ def test_parse_integer():
 
 
 def test_format_epoch():
-    assert tools.format_epoch(
-        datetime.fromisoformat("2024-02-08T19:46:03.597928")
-    ) == "2024-02-08T19:46:03.597928"
-    assert tools.format_epoch(Time("2024-02-08T19:46:03.597928", precision=6)
-                              ) == "2024-02-08T19:46:03.597928"
+    assert (
+        tools.format_epoch(datetime.fromisoformat("2024-02-08T19:46:03.597928"))
+        == "2024-02-08T19:46:03.597928"
+    )
+    assert (
+        tools.format_epoch(Time("2024-02-08T19:46:03.597928", precision=6))
+        == "2024-02-08T19:46:03.597928"
+    )
