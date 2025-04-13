@@ -24,13 +24,13 @@ def _build_header():
     )
 
 
-def _build_metadata(satrec, start_epoch, stop_epoch):
+def _build_metadata(satrec, start_epoch, stop_epoch, frame):
     return MetaDataSection(
         {
             "OBJECT_NAME": str(satrec.satnum),
             "OBJECT_ID": str(satrec.satnum),
             "CENTER_NAME": "Earth",
-            "REF_FRAME": "ICRF",
+            "REF_FRAME": frame.upper(),
             "TIME_SYSTEM": "UTC",
             "START_TIME": start_epoch.isot,
             "STOP_TIME": stop_epoch.isot,
@@ -42,7 +42,7 @@ def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
     epoch_range = list(time_range(start_epoch, stop_epoch, step))
     position, velocity = _sample_tle_at_epoch_array(satrec, epoch_range, frame)
     return EphemerisSegment(
-        _build_metadata(satrec, start_epoch, stop_epoch),
+        _build_metadata(satrec, start_epoch, stop_epoch, frame),
         (epoch_range, *zip(*position), *zip(*velocity)),
     )
 

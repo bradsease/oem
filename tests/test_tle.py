@@ -16,6 +16,7 @@ def test_sample(frame):
     stop_epoch = start_epoch + TimeDelta(1 * units.day)
     oem = tle_to_oem(SAMPLE_TLE, start_epoch, stop_epoch, 3600, frame=frame)
     assert len(oem._segments) == 1
+    assert oem.segments[0].metadata["REF_FRAME"] == frame
 
 
 @pytest.mark.parametrize("frame", ("TEME", "ICRF"))
