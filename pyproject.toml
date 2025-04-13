@@ -1,7 +1,7 @@
 [project]
 name = "oem"
 description = "Python Orbit Ephemeris Message (OEM) tools"
-version = "0.4.3"
+version = "0.4.4"
 authors = [
     { name = "Brad Sease", email = "bradsease@gmail.com" }
 ]
