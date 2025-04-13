@@ -81,6 +81,6 @@ OrbitEphemerisMessage.convert("input_file.oem", "output_file.oem", "kvn")
 
 This implementation follows the CCSDS recommended standards for Orbit Data Messages.
 
-[1] *Orbit Data Messages*, CCSDS 502.0-B-3, 2023. Available: https://public.ccsds.org/Pubs/502x0b3e1.pdf
+[1] *Orbit Data Messages*, CCSDS 502.0-B-3, 2023. Available: https://ccsds.org/wp-content/uploads/gravity_forms/5-448e85c647331d9cbaf66c096458bdd5/2025/01//502x0b3e1.pdf
 
-[2] *XML Specification for Navigation Data Messages*, CCSDS 505.0-B-3, 2023. Available: https://public.ccsds.org/Pubs/505x0b3.pdf
+[2] *XML Specification for Navigation Data Messages*, CCSDS 505.0-B-3, 2023. Available: https://ccsds.org/wp-content/uploads/gravity_forms/5-448e85c647331d9cbaf66c096458bdd5/2025/01//505x0b3e2.pdf
