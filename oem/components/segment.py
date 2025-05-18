@@ -12,8 +12,6 @@ from oem.parsers import COV_XML_KEYS
 from oem.tools import (
     _bulk_parse_epochs,
     epoch_span_contains,
-    format_epoch,
-    format_float,
     require,
     time_range,
 )
@@ -144,7 +142,7 @@ class EphemerisSegment(object):
 
         return cls(metadata, state_data, cov_data, version=version)
 
-    def _to_string(self):
+    def _to_string(self, format_epoch, format_float):
         lines = self.metadata._to_string() + "\n"
         for epoch, *state in zip(*self._state_data):
             lines += f"{format_epoch(epoch)} "
@@ -168,7 +166,7 @@ class EphemerisSegment(object):
 
         return lines
 
-    def _to_xml(self, parent):
+    def _to_xml(self, parent, format_epoch, format_float):
         self.metadata._to_xml(SubElement(parent, "metadata"))
         data = SubElement(parent, "data")
         fields = ("X", "Y", "Z", "X_DOT", "Y_DOT", "Z_DOT")

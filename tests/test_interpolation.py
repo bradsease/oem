@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from astropy.time import Time, TimeDelta
+from astropy import units
 
 from oem import OrbitEphemerisMessage
 from oem.interp import (
@@ -124,7 +125,7 @@ def test_ephemeris_stepping(input_file):
         for state in segment.steps(601):
             assert state.epoch in oem
 
-    out_of_bounds_epoch = oem.span[0] - TimeDelta(1)
+    out_of_bounds_epoch = oem.span[0] - TimeDelta(1 * units.day)
     with pytest.raises(ValueError):
         oem(out_of_bounds_epoch)
     for segment in oem:

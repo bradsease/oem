@@ -140,16 +140,28 @@ def parse_integer(input, metadata):
         raise ValueError(f"Invalid integer: '{input}'")
 
 
-def format_float(value):
+def format_float_scientific(value):
     """Convert float to a common string format.
 
     Args:
         value: Any input that can be cast as a float.
 
     Returns:
-        formatted_value (str): Float following standard format.
+        formatted_value (str): Float following standard scientific format.
     """
-    return f"{value:+.14e}"
+    return f"{value:.14e}"
+
+
+def format_float_decimal(value):
+    """Convert float to a common string format.
+
+    Args:
+        value: Any input that can be cast as a float.
+
+    Returns:
+        formatted_value (str): Float following standard decimal format.
+    """
+    return f"{value:.6f}"
 
 
 def format_epoch(epoch):
@@ -260,10 +272,10 @@ def epoch_span_overlap(span1, span2):
 
 def _get_compression(path):
     headers = {
-        b"\x1F\x8b": "gzip",
-        b"\x42\x5A\x68": "bz2",
+        b"\x1f\x8b": "gzip",
+        b"\x42\x5a\x68": "bz2",
         b"\x5d\x00\x00": "lzma",
-        b"\xFD\x37\x7A\x58\x5A\x00": "lzma",
+        b"\xfd\x37\x7a\x58\x5a\x00": "lzma",
     }
     compression = None
     with open(path, "rb") as fid:

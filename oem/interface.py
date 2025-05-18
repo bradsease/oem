@@ -4,7 +4,24 @@ from oem import components
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
-from oem.tools import _open, is_kvn, require
+from oem.tools import (
+    _open,
+    is_kvn,
+    require,
+    format_epoch,
+    format_float_scientific,
+    format_float_decimal,
+)
+
+
+NUMBER_FORMATERS = {
+    "scientific": format_float_scientific,
+    "fixed_cm": format_float_decimal,
+}
+
+EPOCH_FORMATERS = {
+    "iso": format_epoch,
+}
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -218,7 +235,15 @@ class OrbitEphemerisMessage(object):
         return oem
 
     @classmethod
-    def convert(cls, in_file_path, out_file_path, file_format, compression=None):
+    def convert(
+        cls,
+        in_file_path,
+        out_file_path,
+        file_format,
+        compression=None,
+        epoch_format="iso",
+        number_format="scientific",
+    ):
         """Convert an OEM to a particular file format.
 
         This method will succeed and produce an output file even if the input
@@ -231,9 +256,19 @@ class OrbitEphemerisMessage(object):
                 'kvn' and 'xml'.
             compression (str, optional): File compression type to use. Options are
                 'gzip', 'bz2', and 'lzma'. Default is None.
+            epoch_format (str, optional): Format for epoch output. Options are
+                'iso'. Default is 'iso'.
+            number_format (str, optional): Format for number output. Options are
+                'scientific' and 'fixed_cm'. Fixed (cm) representation uses centimeter
+                precision.  Note that the fixed-point option will produce out-of-spec
+                values (more than 16 digits) beyond 1e12 km. Default is 'scientific'.
         """
         cls.open(in_file_path).save_as(
-            out_file_path, file_format=file_format, compression=None
+            out_file_path,
+            file_format=file_format,
+            compression=compression,
+            number_format=number_format,
+            epoch_format=epoch_format,
         )
 
     def copy(self):
@@ -311,7 +346,14 @@ class OrbitEphemerisMessage(object):
             oem = self.copy().resample(step_size, in_place=True)
         return oem if not in_place else self
 
-    def save_as(self, file_path, file_format="kvn", compression=None):
+    def save_as(
+        self,
+        file_path,
+        file_format="kvn",
+        compression=None,
+        epoch_format="iso",
+        number_format="scientific",
+    ):
         """Write OEM to file.
 
         Args:
@@ -320,12 +362,33 @@ class OrbitEphemerisMessage(object):
                 'kvn' and 'xml'. Default is 'kvn'.
             compression (str, optional): File compression type to use. Options are
                 'gzip', 'bz2', and 'lzma'. Default is None.
+            epoch_format (str, optional): Format for epoch output. Options are
+                'iso'. Default is 'iso'.
+            number_format (str, optional): Format for number output. Options are
+                'scientific' and 'fixed_cm'. Fixed (cm) representation uses centimeter
+                precision.  Note that the fixed-point option will produce out-of-spec
+                values (more than 16 digits) beyond 1e12 km. Default is 'scientific'.
         """
+        if epoch_format not in EPOCH_FORMATERS:
+            raise ValueError(
+                f"Unrecognized epoch format: '{epoch_format}'. "
+                f"Options are {list(EPOCH_FORMATERS.keys())}"
+            )
+        if number_format not in NUMBER_FORMATERS:
+            raise ValueError(
+                f"Unrecognized number format: '{number_format}'. "
+                f"Options are {list(NUMBER_FORMATERS.keys())}"
+            )
+        epoch_formatter = EPOCH_FORMATERS[epoch_format]
+        number_formatter = NUMBER_FORMATERS[number_format]
+
         with _open(file_path, "wb", compression) as output_file:
             if file_format == "kvn":
-                output_file.write(bytes(self._to_kvn_oem(), "utf-8"))
+                output_file.write(
+                    bytes(self._to_kvn_oem(epoch_formatter, number_formatter), "utf-8")
+                )
             elif file_format == "xml":
-                self._to_xml_oem().write(
+                self._to_xml_oem(epoch_formatter, number_formatter).write(
                     output_file,
                     pretty_print=True,
                     encoding="utf-8",
@@ -334,17 +397,22 @@ class OrbitEphemerisMessage(object):
             else:
                 raise ValueError(f"Unrecognized file type: '{file_format}'")
 
-    def _to_kvn_oem(self):
+    def _to_kvn_oem(self, epoch_formatter, number_formatter):
         lines = self.header._to_string() + "\n"
-        lines += "".join(entry._to_string() for entry in self._segments)
+        lines += "".join(
+            entry._to_string(epoch_formatter, number_formatter)
+            for entry in self._segments
+        )
         return lines
 
-    def _to_xml_oem(self):
+    def _to_xml_oem(self, epoch_formatter, number_formatter):
         oem = Element("oem", id="CCSDS_OEM_VERS", version=self.version)
         self.header._to_xml(SubElement(oem, "header"))
         body = SubElement(oem, "body")
         for entry in self._segments:
-            entry._to_xml(SubElement(body, "segment"))
+            entry._to_xml(
+                SubElement(body, "segment"), epoch_formatter, number_formatter
+            )
         return ElementTree(oem)
 
     @property

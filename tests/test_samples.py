@@ -1,5 +1,4 @@
-"""Test parsing sample OEMS.
-"""
+"""Test parsing sample OEMS."""
 
 import glob
 import tempfile
@@ -49,16 +48,23 @@ def test_invalid_samples(file_path):
         OrbitEphemerisMessage.open(file_path)
 
 
+@pytest.mark.parametrize("number_format", ("scientific", "fixed_cm"))
 @pytest.mark.parametrize("file_path", _get_test_files(validity="valid"))
-def test_convert(file_path):
+def test_convert(file_path, number_format):
     with tempfile.TemporaryDirectory() as tmp_dir:
         converted_xml_path = Path(tmp_dir) / "written.oem"
-        OrbitEphemerisMessage.convert(file_path, converted_xml_path, "kvn")
+        OrbitEphemerisMessage.convert(
+            file_path, converted_xml_path, "kvn", number_format=number_format
+        )
         converted_xml = OrbitEphemerisMessage.open(converted_xml_path)
 
         converted_kvn_path = Path(tmp_dir) / "written.oem"
         OrbitEphemerisMessage.convert(
-            converted_xml_path, converted_kvn_path, "xml", compression="gzip"
+            converted_xml_path,
+            converted_kvn_path,
+            "xml",
+            compression="gzip",
+            number_format=number_format,
         )
         converted_kvn = OrbitEphemerisMessage.open(converted_kvn_path)
 
