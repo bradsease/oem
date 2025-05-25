@@ -2,6 +2,7 @@
 
 import glob
 import tempfile
+from importlib.resources import files
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,7 @@ import pytest
 from oem import OrbitEphemerisMessage
 from oem.tools import is_kvn
 
-SAMPLE_DIR = Path(__file__).parent / "samples"
+SAMPLE_DIR = files("tests").joinpath("samples")
 
 
 def _get_test_files(version="*", validity="*"):

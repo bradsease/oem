@@ -1,5 +1,4 @@
 import datetime as dt
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -13,8 +12,7 @@ from oem.interp import (
     LagrangeStateInterpolator,
 )
 
-THIS_DIR = Path(__file__).parent
-SAMPLE_DIR = THIS_DIR / "samples"
+from .test_samples import SAMPLE_DIR
 
 
 def _make_test_states(poly, t_step, count, accel=True):
