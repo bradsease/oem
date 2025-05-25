@@ -1,7 +1,8 @@
 import pytest
-from .test_samples import _get_test_files
+
 from oem import OrbitEphemerisMessage
 
+from .test_samples import _get_test_files
 
 SAMPLE_FILE = _get_test_files(version="v2_0", validity="valid")[1]
 SAMPLE_FILE_ACCEL = _get_test_files(version="v2_0", validity="valid")[7]

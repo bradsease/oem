@@ -6,13 +6,12 @@ from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
 from oem.tools import (
     _open,
+    format_epoch,
+    format_float_decimal,
+    format_float_scientific,
     is_kvn,
     require,
-    format_epoch,
-    format_float_scientific,
-    format_float_decimal,
 )
-
 
 NUMBER_FORMATERS = {
     "scientific": format_float_scientific,
@@ -235,15 +234,7 @@ class OrbitEphemerisMessage(object):
         return oem
 
     @classmethod
-    def convert(
-        cls,
-        in_file_path,
-        out_file_path,
-        file_format,
-        compression=None,
-        epoch_format="iso",
-        number_format="scientific",
-    ):
+    def convert(cls, in_file_path, out_file_path, file_format, **save_args):
         """Convert an OEM to a particular file format.
 
         This method will succeed and produce an output file even if the input
@@ -254,21 +245,11 @@ class OrbitEphemerisMessage(object):
             out_file_path (str or Path): Desired path for converted ephemeris.
             file_format (str): Desired output format. Options are
                 'kvn' and 'xml'.
-            compression (str, optional): File compression type to use. Options are
-                'gzip', 'bz2', and 'lzma'. Default is None.
-            epoch_format (str, optional): Format for epoch output. Options are
-                'iso'. Default is 'iso'.
-            number_format (str, optional): Format for number output. Options are
-                'scientific' and 'fixed_cm'. Fixed (cm) representation uses centimeter
-                precision.  Note that the fixed-point option will produce out-of-spec
-                values (more than 16 digits) beyond 1e12 km. Default is 'scientific'.
+            **save_args: Additional arguments to pass to the save_as method. See
+                `save_as` for details.
         """
         cls.open(in_file_path).save_as(
-            out_file_path,
-            file_format=file_format,
-            compression=compression,
-            number_format=number_format,
-            epoch_format=epoch_format,
+            out_file_path, file_format=file_format, **save_args
         )
 
     def copy(self):

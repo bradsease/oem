@@ -3,8 +3,8 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from astropy.time import Time, TimeDelta
 from astropy import units
+from astropy.time import Time, TimeDelta
 
 from oem import OrbitEphemerisMessage
 from oem.interp import (
