@@ -16,7 +16,7 @@ pip install oem
 ```
 
 ## Documentation
-See the full [documentation here](https://bsease.gitbook.io/oem)
+See the full [documentation here](docs/index.md).
 
 
 ## Basic Usage
