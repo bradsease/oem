@@ -9,3 +9,4 @@ docs/_build/*
 build/*
 .venv/*
 .vscode/*
+uv.lock
