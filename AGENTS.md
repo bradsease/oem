@@ -12,6 +12,7 @@
 - Run lint checks with `uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics`.
 - Format all Python code with Black: `uv run black .`.
 - Use Black for all code formatting; do not introduce unrelated formatting changes.
+- Update the relevant documentation when adding features or changing interfaces that affect documented elements; do not make unrelated documentation changes.
 
 ## Pull Requests
 
