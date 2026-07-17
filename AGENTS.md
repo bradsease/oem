@@ -17,3 +17,4 @@
 
 - Verify the final PR title and description against `git diff` and the complete commit range before submitting or updating a PR.
 - Use real Markdown line breaks and describe every included change and verification result accurately.
+- Request review from Brad Sease (`bradsease`) when creating a PR.
