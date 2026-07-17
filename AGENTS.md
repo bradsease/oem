@@ -12,3 +12,8 @@
 - Run lint checks with `uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics`.
 - Format all Python code with Black: `uv run black .`.
 - Use Black for all code formatting; do not introduce unrelated formatting changes.
+
+## Pull Requests
+
+- Verify the final PR title and description against `git diff` and the complete commit range before submitting or updating a PR.
+- Use real Markdown line breaks and describe every included change and verification result accurately.
