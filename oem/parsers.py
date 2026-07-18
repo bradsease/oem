@@ -202,11 +202,16 @@ def parse_xml_oem(ephem_file):
             raise ValueError("Malformed data section")
 
         ref_frame = raw_metadata.find("REF_FRAME")
+
+        def cov_ref_frame(entry):
+            entry_ref_frame = entry.find("COV_REF_FRAME")
+            return (entry_ref_frame if entry_ref_frame is not None else ref_frame).text
+
         try:
             segment["cov"] = tuple(
                 (
                     entry.find("EPOCH").text,
-                    (entry.find("COV_REF_FRAME") or ref_frame).text,
+                    cov_ref_frame(entry),
                     *(float(entry.find(key).text) for key in COV_XML_KEYS),
                 )
                 for entry in raw_data

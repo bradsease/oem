@@ -11,6 +11,8 @@ from oem.tools import is_kvn
 
 SAMPLE_DIR = Path(__file__).parent / "samples"
 
+pytestmark = pytest.mark.filterwarnings("ignore:Unsupported TIME_SYSTEM 'abcd'")
+
 
 def _get_test_files(version="*", validity="*"):
     samples = SAMPLE_DIR / version / validity / "*.oem*"
