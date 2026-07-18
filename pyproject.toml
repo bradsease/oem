@@ -46,3 +46,6 @@ coverage = [
 tle = [
     "sgp4>=2.1"
 ]
+
+[tool.setuptools.packages.find]
+include = ["oem*"]
