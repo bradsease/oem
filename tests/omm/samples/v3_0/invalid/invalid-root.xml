@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Invalid because the XML root element must be omm. -->
+<opm id="CCSDS_OPM_VERS" version="3.0"/>

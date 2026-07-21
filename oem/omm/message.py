@@ -20,7 +20,7 @@ from .sections import OmmData, OmmHeader, OmmMetadata
 
 
 class OrbitMeanElementsMessage(object):
-    """Python representation of a CCSDS OMM version 3.0.
+    """Python representation of a CCSDS OMM version 2.0 or 3.0.
 
     An OMM comprises one header, one metadata block, and one data block. The
     data block contains the five logical OMM data groups defined by CCSDS.

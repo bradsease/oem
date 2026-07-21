@@ -52,7 +52,7 @@ def _parse_kvn(file_obj):
         if "=" not in line:
             raise ValueError(f"Invalid OMM entry on line {number}")
         key, value = (entry.strip() for entry in line.split("=", 1))
-        if not key or not value:
+        if not key or (not value and key not in ("CREATION_DATE", "ORIGINATOR")):
             raise ValueError(f"Invalid OMM entry on line {number}")
         if key in HEADER_FIELDS:
             if phase != "header":

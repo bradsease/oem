@@ -14,6 +14,7 @@ from .fields import (
     COVARIANCE_COMPONENTS,
     COVARIANCE_FIELDS,
     SPACECRAFT_PARAMETER_FIELDS,
+    SUPPORTED_VERSIONS,
     VERSION,
 )
 
@@ -53,7 +54,21 @@ class ConstrainOmmVersion(Constraint):
     versions = ["*"]
 
     def func(self, header):
-        require(header.version == VERSION, f"Unsupported OMM version: {header.version}")
+        require(
+            header.version in SUPPORTED_VERSIONS,
+            f"Unsupported OMM version: {header.version}",
+        )
+
+
+class ConstrainOmmV2Header(Constraint):
+    versions = ["2.0"]
+
+    def func(self, header):
+        for field in ("CLASSIFICATION", "MESSAGE_ID"):
+            require(
+                field not in header,
+                f"Header keyword '{field}' not supported in OMM v2.0",
+            )
 
 
 class OmmHeader(OmmKeyValueSection):
@@ -64,7 +79,14 @@ class OmmHeader(OmmKeyValueSection):
         "ORIGINATOR": HeaderField(parse_str, str, required=True),
         "MESSAGE_ID": HeaderField(parse_str, str),
     }
-    _constraint_spec = ConstraintSpecification(ConstrainOmmVersion)
+    _constraint_spec = ConstraintSpecification(
+        ConstrainOmmVersion, ConstrainOmmV2Header
+    )
+
+    def __getitem__(self, key):
+        if key == "CREATION_DATE" and not self._fields[key]:
+            return ""
+        return super().__getitem__(key)
 
     @property
     def version(self):
@@ -84,7 +106,7 @@ class OmmMetadata(OmmKeyValueSection):
 
 
 class ConstrainOmmData(Constraint):
-    versions = [VERSION]
+    versions = SUPPORTED_VERSIONS
 
     def func(self, data):
         has_axis = "SEMI_MAJOR_AXIS" in data
@@ -133,6 +155,43 @@ class ConstrainOmmData(Constraint):
             )
         if theory in ("SGP4", "SGP/SGP4"):
             require("BSTAR" in data, "BSTAR is required for SGP4 OMMs")
+
+        if "CLASSIFICATION_TYPE" in data:
+            require(
+                len(data["CLASSIFICATION_TYPE"]) == 1,
+                "CLASSIFICATION_TYPE must be one character",
+            )
+
+
+class ConstrainOmmV2Data(Constraint):
+    versions = ["2.0"]
+
+    def func(self, data):
+        for field in ("BTERM", "AGOM"):
+            require(
+                field not in data,
+                f"Data keyword '{field}' not supported in OMM v2.0",
+            )
+        require(
+            data.metadata["MEAN_ELEMENT_THEORY"].upper() != "SGP4-XP",
+            "SGP4-XP is not supported in OMM v2.0",
+        )
+        if data.metadata["MEAN_ELEMENT_THEORY"].upper() == "SGP":
+            require(
+                "MEAN_MOTION_DOT" in data,
+                "MEAN_MOTION_DOT is required for SGP OMMs",
+            )
+            require(
+                "MEAN_MOTION_DDOT" in data,
+                "MEAN_MOTION_DDOT is required for SGP OMMs",
+            )
+
+
+class ConstrainOmmV3Data(Constraint):
+    versions = [VERSION]
+
+    def func(self, data):
+        theory = data.metadata["MEAN_ELEMENT_THEORY"].upper()
         if theory == "SGP4-XP":
             require("BTERM" in data, "BTERM is required for SGP4-XP OMMs")
             require("AGOM" in data, "AGOM is required for SGP4-XP OMMs")
@@ -153,11 +212,6 @@ class ConstrainOmmData(Constraint):
             not ({"MEAN_MOTION_DDOT", "AGOM"} <= set(data)),
             "MEAN_MOTION_DDOT and AGOM cannot both be provided",
         )
-        if "CLASSIFICATION_TYPE" in data:
-            require(
-                len(data["CLASSIFICATION_TYPE"]) == 1,
-                "CLASSIFICATION_TYPE must be one character",
-            )
 
 
 class OmmData(OmmKeyValueSection):
@@ -192,7 +246,9 @@ class OmmData(OmmKeyValueSection):
             for field in COVARIANCE_FIELDS
         },
     }
-    _constraint_spec = ConstraintSpecification(ConstrainOmmData)
+    _constraint_spec = ConstraintSpecification(
+        ConstrainOmmData, ConstrainOmmV2Data, ConstrainOmmV3Data
+    )
 
     def __init__(self, fields, metadata, version=VERSION):
         self.metadata = metadata

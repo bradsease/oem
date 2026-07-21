@@ -26,6 +26,19 @@ from oem import OrbitEphemerisMessage
 
 ephemeris = OrbitEphemerisMessage.open("input_file.oem")
 ```
+
+## OMM Support
+
+The `oem.omm` module supports CCSDS Orbit Mean-Elements Message (OMM) versions
+2.0 and 3.0. OMM 1.0 was not defined by the CCSDS standard. OMM 2.0 KVN and the
+library's compatible single-OMM XML representation are supported alongside the
+standard OMM 3.0 KVN and XML representations.
+
+```python
+from oem.omm import OrbitMeanElementsMessage
+
+omm = OrbitMeanElementsMessage.open("input_file.omm")
+```
 Each OEM is made up of one or more segments of state and optional covariance data. The `OrbitEphemerisMessage` class provides iterables for both.
 ```python
 for segment in ephemeris:

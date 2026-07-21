@@ -1,6 +1,7 @@
 """OMM field groups and versions."""
 
 VERSION = "3.0"
+SUPPORTED_VERSIONS = ("2.0", VERSION)
 HEADER_FIELDS = (
     "CCSDS_OMM_VERS",
     "CLASSIFICATION",
