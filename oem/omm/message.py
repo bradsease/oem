@@ -57,14 +57,54 @@ class OrbitMeanElementsMessage(object):
         """Convert an OMM between KVN and XML formats."""
         cls.open(in_file_path).save_as(out_file_path, file_format, **save_args)
 
-    def at(self, epoch):
-        """Propagate an SGP4 OMM at a scalar Astropy :class:`~astropy.time.Time`."""
+    def at(self, epoch, frame="ICRF"):
+        """Propagate an SGP4 OMM at a scalar Astropy :class:`~astropy.time.Time`.
+
+        For better performance, convert to an OEM with :meth:`to_oem` before
+        repeatedly sampling the same OMM.
+
+        Args:
+            epoch (Time): Propagation epoch.
+            frame (str, optional): Desired output frame. Currently supported
+                options are "TEME" and "ICRF". Default is "ICRF".
+        """
         if not isinstance(epoch, Time) or not epoch.isscalar:
             raise TypeError("epoch must be a scalar astropy.time.Time")
+        satellite = self._satrec()
+        from oem.tle import _sample_tle_at_epoch_array
+
+        position, velocity = _sample_tle_at_epoch_array(satellite, [epoch], frame)
+        return State(
+            epoch,
+            frame,
+            self.metadata["CENTER_NAME"],
+            position[0],
+            velocity[0],
+            version=self.version,
+        )
+
+    def to_oem(self, start_epoch, stop_epoch, step, frame="ICRF"):
+        """Create an OEM by propagating this OMM with SGP4.
+
+        Args:
+            start_epoch (Time): Output OEM start time.
+            stop_epoch (Time): Output OEM stop time.
+            step (float): Output OEM step time in seconds.
+            frame (str, optional): Desired output frame. Currently supported
+                options are "ICRF" and "TEME". Default is "ICRF".
+
+        Returns:
+            OrbitEphemerisMessage: Converted OEM instance.
+        """
+        from oem.tle import satrec_to_oem
+
+        return satrec_to_oem(self._satrec(), start_epoch, stop_epoch, step, frame)
+
+    def _satrec(self):
         if self.metadata["MEAN_ELEMENT_THEORY"].upper() not in ("SGP4", "SGP/SGP4"):
             raise ValueError("SGP4 propagation requires an SGP4 mean element theory")
         try:
-            from sgp4.api import SGP4_ERRORS, Satrec
+            from sgp4.api import Satrec
             from sgp4.omm import initialize
         except ImportError as error:
             raise ImportError("SGP4 propagation requires the 'sgp4' package") from error
@@ -82,18 +122,7 @@ class OrbitMeanElementsMessage(object):
         fields["EPOCH"] = format_epoch(self.epoch)
         satellite = Satrec()
         initialize(satellite, fields)
-        error, position, velocity = satellite.sgp4(epoch.utc.jd1, epoch.utc.jd2)
-        if error:
-            detail = SGP4_ERRORS.get(error, "unknown error")
-            raise ValueError(f"SGP4 propagation failed: {detail}")
-        return State(
-            epoch,
-            "TEME",
-            self.metadata["CENTER_NAME"],
-            position,
-            velocity,
-            version=self.version,
-        )
+        return satellite
 
     def save_as(self, file_path, file_format="kvn", compression=None):
         """Write this OMM as KVN or XML."""

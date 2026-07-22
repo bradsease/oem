@@ -7,7 +7,7 @@ from astropy.coordinates import (
     CartesianRepresentation,
 )
 from astropy.time import Time
-from sgp4.api import Satrec
+from sgp4.api import SGP4_ERRORS, Satrec
 
 from oem import OrbitEphemerisMessage
 from oem.components import EphemerisSegment, HeaderSection, MetaDataSection
@@ -60,7 +60,8 @@ def _sample_tle_at_epoch_array(satrec, epochs, frame):
     jd2 = np.array([epoch.jd2 for epoch in epochs])
     err, r, v = satrec.sgp4_array(jd1, jd2)
     if any(err):
-        raise ValueError("SGP4 propagation failed!")
+        detail = SGP4_ERRORS.get(err[0], "unknown error")
+        raise ValueError(f"SGP4 propagation failed: {detail}")
     else:
         teme_p = CartesianRepresentation(r.T * u.km)
         teme_v = CartesianDifferential(v.T * u.km / u.s)

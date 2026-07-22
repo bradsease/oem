@@ -194,7 +194,7 @@ def test_at_matches_sgp4(omm):
     initialize(satellite, fields)
     error, position, velocity = satellite.sgp4(epoch.utc.jd1, epoch.utc.jd2)
 
-    state = omm.at(epoch)
+    state = omm.at(epoch, frame="TEME")
 
     assert error == 0
     assert state.epoch == epoch
@@ -202,6 +202,42 @@ def test_at_matches_sgp4(omm):
     assert state.center == "EARTH"
     np.testing.assert_allclose(state.position, position)
     np.testing.assert_allclose(state.velocity, velocity)
+
+
+def test_at_defaults_to_icrf(omm):
+    assert omm.at(omm.epoch).frame == "ICRF"
+
+
+def test_to_oem_rejects_unsupported_frame(omm):
+    with pytest.raises(ValueError, match="Unsupported frame"):
+        omm.to_oem(omm.epoch, omm.epoch + 600 * u.s, 600, frame="INVALID")
+
+
+def test_to_oem_requires_sgp4_mean_element_theory(omm):
+    header, metadata, data = _parts(omm)
+    metadata["MEAN_ELEMENT_THEORY"] = "SGP4-XP"
+    data.pop("BSTAR")
+    data.pop("MEAN_MOTION_DDOT")
+    data["BTERM"] = "0.01"
+    data["AGOM"] = "0.001"
+    xp_omm = OrbitMeanElementsMessage(header, metadata, data)
+
+    with pytest.raises(ValueError, match="requires an SGP4 mean element theory"):
+        xp_omm.to_oem(xp_omm.epoch, xp_omm.epoch + 600 * u.s, 600)
+
+
+@pytest.mark.parametrize("frame", ("TEME", "ICRF"))
+def test_to_oem_matches_at(omm, frame):
+    start_epoch = omm.epoch + 600 * u.s
+    oem = omm.to_oem(start_epoch, start_epoch + 600 * u.s, 600, frame=frame)
+
+    state = omm.at(start_epoch, frame=frame)
+    oem_state = oem.states[0]
+
+    assert oem_state.epoch == state.epoch
+    assert oem_state.frame == state.frame
+    np.testing.assert_allclose(oem_state.position, state.position)
+    np.testing.assert_allclose(oem_state.velocity, state.velocity)
 
 
 @pytest.mark.parametrize(
