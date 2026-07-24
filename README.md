@@ -18,6 +18,10 @@ pip install oem
 ## Documentation
 See the full [documentation here](docs/index.md).
 
+## Releases
+See [the release guide](docs/releasing.md) for PyPI publishing setup and the
+tag-based release process.
+
 
 ## Basic Usage
 The `OrbitEphemerisMessage` class is the primary interface for OEM Files.
