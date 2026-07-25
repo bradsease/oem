@@ -1,0 +1,81 @@
+"""OMM field groups and versions."""
+
+VERSION = "3.0"
+SUPPORTED_VERSIONS = ("2.0", VERSION)
+HEADER_FIELDS = (
+    "CCSDS_OMM_VERS",
+    "CLASSIFICATION",
+    "CREATION_DATE",
+    "ORIGINATOR",
+    "MESSAGE_ID",
+)
+METADATA_FIELDS = (
+    "OBJECT_NAME",
+    "OBJECT_ID",
+    "CENTER_NAME",
+    "REF_FRAME",
+    "REF_FRAME_EPOCH",
+    "TIME_SYSTEM",
+    "MEAN_ELEMENT_THEORY",
+)
+MEAN_ELEMENT_FIELDS = (
+    "EPOCH",
+    "SEMI_MAJOR_AXIS",
+    "MEAN_MOTION",
+    "ECCENTRICITY",
+    "INCLINATION",
+    "RA_OF_ASC_NODE",
+    "ARG_OF_PERICENTER",
+    "MEAN_ANOMALY",
+    "GM",
+)
+SPACECRAFT_PARAMETER_FIELDS = (
+    "MASS",
+    "SOLAR_RAD_AREA",
+    "SOLAR_RAD_COEFF",
+    "DRAG_AREA",
+    "DRAG_COEFF",
+)
+TLE_PARAMETER_FIELDS = (
+    "EPHEMERIS_TYPE",
+    "CLASSIFICATION_TYPE",
+    "NORAD_CAT_ID",
+    "ELEMENT_SET_NO",
+    "REV_AT_EPOCH",
+    "BSTAR",
+    "BTERM",
+    "MEAN_MOTION_DOT",
+    "MEAN_MOTION_DDOT",
+    "AGOM",
+)
+COVARIANCE_FIELDS = (
+    "COV_REF_FRAME",
+    "CX_X",
+    "CY_X",
+    "CY_Y",
+    "CZ_X",
+    "CZ_Y",
+    "CZ_Z",
+    "CX_DOT_X",
+    "CX_DOT_Y",
+    "CX_DOT_Z",
+    "CX_DOT_X_DOT",
+    "CY_DOT_X",
+    "CY_DOT_Y",
+    "CY_DOT_Z",
+    "CY_DOT_X_DOT",
+    "CY_DOT_Y_DOT",
+    "CZ_DOT_X",
+    "CZ_DOT_Y",
+    "CZ_DOT_Z",
+    "CZ_DOT_X_DOT",
+    "CZ_DOT_Y_DOT",
+    "CZ_DOT_Z_DOT",
+)
+COVARIANCE_COMPONENTS = COVARIANCE_FIELDS[1:]
+NUMERIC_DATA_FIELDS = (
+    set(MEAN_ELEMENT_FIELDS)
+    | set(SPACECRAFT_PARAMETER_FIELDS)
+    | set(TLE_PARAMETER_FIELDS)
+    | set(COVARIANCE_COMPONENTS)
+) - {"EPOCH", "EPHEMERIS_TYPE", "NORAD_CAT_ID", "ELEMENT_SET_NO", "REV_AT_EPOCH"}

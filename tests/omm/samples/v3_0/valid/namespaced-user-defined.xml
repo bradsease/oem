@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Valid namespaced OMM 3.0 XML with a user-defined parameter. -->
+<omm xmlns="urn:ccsds:ndm:xml:nav:1.0" id="CCSDS_OMM_VERS" version="3.0">
+  <header>
+    <CREATION_DATE>2020-01-01T00:00:00.000000</CREATION_DATE>
+    <ORIGINATOR>TEST</ORIGINATOR>
+  </header>
+  <body>
+    <segment>
+      <metadata>
+        <OBJECT_NAME>TEST SATELLITE</OBJECT_NAME>
+        <OBJECT_ID>2020-001A</OBJECT_ID>
+        <CENTER_NAME>EARTH</CENTER_NAME>
+        <REF_FRAME>EME2000</REF_FRAME>
+        <TIME_SYSTEM>UTC</TIME_SYSTEM>
+        <MEAN_ELEMENT_THEORY>DSST</MEAN_ELEMENT_THEORY>
+      </metadata>
+      <data>
+        <meanElements>
+          <EPOCH>2020-01-02T03:04:05.000000</EPOCH>
+          <SEMI_MAJOR_AXIS>7000.0</SEMI_MAJOR_AXIS>
+          <ECCENTRICITY>0.001</ECCENTRICITY>
+          <INCLINATION>98.0</INCLINATION>
+          <RA_OF_ASC_NODE>10.0</RA_OF_ASC_NODE>
+          <ARG_OF_PERICENTER>20.0</ARG_OF_PERICENTER>
+          <MEAN_ANOMALY>30.0</MEAN_ANOMALY>
+        </meanElements>
+        <userDefinedParameters>
+          <USER_DEFINED parameter="SOURCE">test fixture</USER_DEFINED>
+        </userDefinedParameters>
+      </data>
+    </segment>
+  </body>
+</omm>

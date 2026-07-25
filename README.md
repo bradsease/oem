@@ -26,6 +26,7 @@ from oem import OrbitEphemerisMessage
 
 ephemeris = OrbitEphemerisMessage.open("input_file.oem")
 ```
+
 Each OEM is made up of one or more segments of state and optional covariance data. The `OrbitEphemerisMessage` class provides iterables for both.
 ```python
 for segment in ephemeris:
@@ -77,10 +78,26 @@ OrbitEphemerisMessage.convert("input_file.oem", "output_file.oem", "kvn")
 ```
 
 
+## OMM Support
+
+The `oem.omm` module supports CCSDS Orbit Mean-Elements Message (OMM) versions
+2.0 and 3.0. OMM 1.0 was not defined by the CCSDS standard. OMM 2.0 KVN and the
+library's compatible single-OMM XML representation are supported alongside the
+standard OMM 3.0 KVN and XML representations.
+
+```python
+from astropy import units as u
+
+from oem.omm import OrbitMeanElementsMessage
+
+omm = OrbitMeanElementsMessage.open("input_file.omm")
+oem = omm.to_oem(omm.epoch, omm.epoch + 1 * u.day, 60)
+```
+
 ## Reference Standards
 
 This implementation follows the CCSDS recommended standards for Orbit Data Messages.
 
-[1] *Orbit Data Messages*, CCSDS 502.0-B-3, 2023. Available: [local copy](specs/502x0b3e2.pdf)
+[1] *Orbit Data Messages*, CCSDS 502.0-B-3, 2023. Available: [local copy](references/502x0b3e2.pdf)
 
-[2] *XML Specification for Navigation Data Messages*, CCSDS 505.0-B-3, 2023. Available: [local copy](specs/505x0b3e2.pdf)
+[2] *XML Specification for Navigation Data Messages*, CCSDS 505.0-B-3, 2023. Available: [local copy](references/505x0b3e2.pdf)
