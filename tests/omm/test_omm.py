@@ -7,7 +7,8 @@ from astropy.time import Time
 from sgp4.api import Satrec
 from sgp4.omm import initialize
 
-from oem.omm import COVARIANCE_COMPONENTS, OrbitMeanElementsMessage
+from oem.omm import OrbitMeanElementsMessage
+from oem.omm.fields import COVARIANCE_COMPONENTS
 from oem.tools import format_epoch
 
 SAMPLE_CASE_DIR = Path(__file__).parent / "samples"
