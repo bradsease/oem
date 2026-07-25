@@ -2,7 +2,9 @@
 
 from typing import Tuple
 
+from typing_extensions import TypeAlias
+
 from astropy.time import Time
 
-Epoch = Time
+Epoch: TypeAlias = Time
 EpochSpan = Tuple[Epoch, Epoch]

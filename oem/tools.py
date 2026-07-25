@@ -119,9 +119,7 @@ def _coerce_epoch_yday(epoch: str) -> str:
     return epoch.replace("-", ":").replace("T", ":")
 
 
-def _bulk_parse_epochs(
-    epochs: Sequence[str], metadata: TimeSystemMetadata
-) -> Time:
+def _bulk_parse_epochs(epochs: Sequence[str], metadata: TimeSystemMetadata) -> Time:
     """Parse OEM standard epochs using metadata TIME_SYSTEM.
 
     Applies time-ordered constraint to input epochs. For faster comparisons,
