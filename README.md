@@ -94,6 +94,10 @@ omm = OrbitMeanElementsMessage.open("input_file.omm")
 oem = omm.to_oem(omm.epoch, omm.epoch + 1 * u.day, 60)
 ```
 
+## JPL Horizons Support
+The `oem.horizons` module creates ICRF OEMs directly from JPL Horizons vector
+ephemerides. See the [Horizons guide](docs/horizons.md) for usage.
+
 ## Reference Standards
 
 This implementation follows the CCSDS recommended standards for Orbit Data Messages.
