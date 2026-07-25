@@ -1,6 +1,9 @@
+from typing import Any, Dict
+
 from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
+from oem._types import Epoch
 from oem.base import Constraint, ConstraintSpecification, HeaderField, KeyValueSection
 from oem.tools import (
     format_epoch,
@@ -17,7 +20,7 @@ class ConstrainMetaDataTime(Constraint):
 
     versions = ["*"]
 
-    def func(self, metadata):
+    def func(self, metadata: "MetaDataSection") -> None:
         require_field("START_TIME", metadata)
         require_field("STOP_TIME", metadata)
         require(
@@ -31,7 +34,7 @@ class ConstrainMetadataUseableTime(Constraint):
 
     versions = ["*"]
 
-    def func(self, metadata):
+    def func(self, metadata: "MetaDataSection") -> None:
         if "USEABLE_START_TIME" in metadata or "USEABLE_STOP_TIME" in metadata:
             require(
                 "USEABLE_START_TIME" in metadata,
@@ -60,7 +63,7 @@ class ConstrainMetaDataInterpolation(Constraint):
 
     versions = ["*"]
 
-    def func(self, metadata):
+    def func(self, metadata: "MetaDataSection") -> None:
         if "INTERPOLATION" in metadata:
             require_field("INTERPOLATION_DEGREE", metadata)
             require(
@@ -74,7 +77,7 @@ class ConstrainMetaDataRefFrameEpoch(Constraint):
 
     versions = ["1.0"]
 
-    def func(self, metadata):
+    def func(self, metadata: "MetaDataSection") -> None:
         require(
             "REF_FRAME_EPOCH" not in metadata,
             "Metadata keyword 'REF_FRAME_EPOCH' not supported in OEM v1.0",
@@ -86,7 +89,7 @@ class ConstrainMetaDataMessageId(Constraint):
 
     versions = ["1.0", "2.0"]
 
-    def func(self, metadata):
+    def func(self, metadata: "MetaDataSection") -> None:
         require(
             "MESSAGE_ID" not in metadata,
             "Metadata keyword 'MESSAGE_ID' not supported in OEM v1.0 and v2.0",
@@ -136,43 +139,45 @@ class MetaDataSection(KeyValueSection):
         ConstrainMetaDataMessageId,
     )
 
-    def __init__(self, metadata, version=CURRENT_VERSION):
+    def __init__(
+        self, metadata: Dict[str, str], version: str = CURRENT_VERSION
+    ) -> None:
         self.version = version
         self._parse_fields(metadata)
         self._constraint_spec.apply(self)
 
-    def __eq__(self, other):
-        return (
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, MetaDataSection) and (
             self.version == other.version
             and self._fields.keys() == other._fields.keys()
             and all(self[key] == other[key] for key in self)
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         start = str(self.useable_start_time)
         stop = str(self.useable_stop_time)
         return f"MetaDataSection({start}, {stop})"
 
     @classmethod
-    def _from_raw_data(cls, segment, version):
+    def _from_raw_data(cls, segment: Dict[str, str], version: str) -> "MetaDataSection":
         return cls(segment, version=version)
 
-    def _to_string(self):
+    def _to_string(self) -> str:
         lines = "META_START\n"
         lines += "\n".join(self._format_fields()) + "\n"
         lines += "META_STOP\n"
         return lines
 
-    def _to_xml(self, parent):
+    def _to_xml(self, parent: Any) -> None:
         for key, value in self._fields.items():
             SubElement(parent, key).text = value
 
-    def copy(self):
+    def copy(self) -> "MetaDataSection":
         """Create an independent copy of this instance."""
         return MetaDataSection(self._fields.copy(), version=self.version)
 
     @property
-    def useable_start_time(self):
+    def useable_start_time(self) -> Epoch:
         """Return epoch of start of useable state data range"""
         return (
             self["USEABLE_START_TIME"]
@@ -181,7 +186,7 @@ class MetaDataSection(KeyValueSection):
         )
 
     @property
-    def useable_stop_time(self):
+    def useable_stop_time(self) -> Epoch:
         """Return epoch of end of useable state data range"""
         return (
             self["USEABLE_STOP_TIME"]

@@ -1,16 +1,19 @@
 """OMM KVN and XML parsing."""
 
+from typing import Dict, TextIO, Tuple
+from xml.etree.ElementTree import Element
+
 from defusedxml.ElementTree import parse as parse_xml
 
 from .fields import HEADER_FIELDS, METADATA_FIELDS
 
 
-def _local_name(element):
+def _local_name(element: Element) -> str:
     return element.tag.rpartition("}")[-1]
 
 
-def _xml_fields(parent):
-    fields = {}
+def _xml_fields(parent: Element) -> Dict[str, str]:
+    fields: Dict[str, str] = {}
     for child in parent:
         key = _local_name(child)
         if key == "COMMENT":
@@ -21,15 +24,15 @@ def _xml_fields(parent):
     return fields
 
 
-def _add_fields(target, fields):
+def _add_fields(target: Dict[str, str], fields: Dict[str, str]) -> None:
     duplicate = next((key for key in fields if key in target), None)
     if duplicate:
         raise ValueError(f"Duplicate OMM field: {duplicate}")
     target.update(fields)
 
 
-def _parse_xml_user_defined(parent):
-    fields = {}
+def _parse_xml_user_defined(parent: Element) -> Dict[str, str]:
+    fields: Dict[str, str] = {}
     for child in parent:
         if _local_name(child) != "USER_DEFINED":
             raise ValueError("Invalid OMM XML user-defined parameter")
@@ -40,8 +43,10 @@ def _parse_xml_user_defined(parent):
     return fields
 
 
-def _parse_kvn(file_obj):
-    sections = {"header": {}, "metadata": {}, "data": {}}
+def _parse_kvn(
+    file_obj: TextIO,
+) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, str]]:
+    sections: Dict[str, Dict[str, str]] = {"header": {}, "metadata": {}, "data": {}}
     phase = "header"
     for number, raw_line in enumerate(file_obj, start=1):
         line = raw_line.strip()
@@ -70,7 +75,9 @@ def _parse_kvn(file_obj):
     return sections["header"], sections["metadata"], sections["data"]
 
 
-def _parse_xml(file_obj):
+def _parse_xml(
+    file_obj: TextIO,
+) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, str]]:
     root = parse_xml(file_obj).getroot()
     if _local_name(root) != "omm":
         raise ValueError("XML document is not an OMM")
@@ -94,7 +101,7 @@ def _parse_xml(file_obj):
 
     header = _xml_fields(header_element)
     _add_fields(header, {"CCSDS_OMM_VERS": root.attrib.get("version", "")})
-    data = {}
+    data: Dict[str, str] = {}
     expected_sections = {
         "meanElements",
         "spacecraftParameters",

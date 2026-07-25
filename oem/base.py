@@ -1,5 +1,7 @@
 """Base classes"""
 
+from typing import Any, Callable, Dict, Iterator, List, Sequence, Tuple, Type
+
 
 class HeaderField(object):
     """Base header field specification.
@@ -12,7 +14,12 @@ class HeaderField(object):
         required (bool): Indication of whether or not this field is required.
     """
 
-    def __init__(self, parser, formatter, required=False):
+    def __init__(
+        self,
+        parser: Callable[[str, "KeyValueSection"], Any],
+        formatter: Callable[[Any], str],
+        required: bool = False,
+    ) -> None:
         self.parser = parser
         self.formatter = formatter
         self.required = required
@@ -24,9 +31,9 @@ class KeyValueSection(object):
     Base class for OEM Key-Value based sections.
     """
 
-    _field_spec = {}
+    _field_spec: Dict[str, HeaderField] = {}
 
-    def _validate_fields(self, fields):
+    def _validate_fields(self, fields: Dict[str, str]) -> None:
         for key in self.required_keys:
             if key not in fields:
                 raise KeyError(f"Missing required header: {key}")
@@ -34,33 +41,33 @@ class KeyValueSection(object):
             if key not in self._field_spec:
                 raise KeyError(f"Invalid header key: {key}")
 
-    def _parse_fields(self, fields):
+    def _parse_fields(self, fields: Dict[str, str]) -> None:
         self._validate_fields(fields)
         self._fields = fields
 
-    def _format_fields(self):
+    def _format_fields(self) -> List[str]:
         return [f"{key} = {value}" for key, value in self._fields.items()]
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         return self._field_spec[key].parser(self._fields[key], self)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: str) -> None:
         if key in self._field_spec:
             self._fields[key] = value
         else:
             raise ValueError(f"Invalid key: '{key}'")
 
-    def __contains__(self, key):
+    def __contains__(self, key: object) -> bool:
         return key in self._fields
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._fields)
 
-    def items(self):
+    def items(self) -> List[Tuple[str, Any]]:
         return [(key, self[key]) for key in self]
 
     @property
-    def required_keys(self):
+    def required_keys(self) -> List[str]:
         """Return list of keys required by this section."""
         return [
             key for key, header_spec in self._field_spec.items() if header_spec.required
@@ -70,7 +77,12 @@ class KeyValueSection(object):
 class Constraint(object):
     """Base constraint type."""
 
-    def apply(self, obj):
+    versions: Sequence[str]
+
+    def func(self, obj: Any) -> None:
+        raise NotImplementedError
+
+    def apply(self, obj: Any) -> None:
         """Apply constraint.
 
         Args:
@@ -83,10 +95,10 @@ class Constraint(object):
 class ConstraintSpecification(object):
     """Base constraint group type."""
 
-    def __init__(self, *constraints):
+    def __init__(self, *constraints: Type[Constraint]) -> None:
         self.constraints = constraints
 
-    def apply(self, obj):
+    def apply(self, obj: Any) -> None:
         """Apply all constraints in specification.
 
         Args:

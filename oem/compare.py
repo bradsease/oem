@@ -1,8 +1,18 @@
+from __future__ import annotations
+
 import warnings
+from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, cast
 
 import numpy as np
 
 from oem.tools import epoch_span_contains, epoch_span_overlap, time_range
+
+if TYPE_CHECKING:
+    from astropy.time import Time
+
+    from oem.components.segment import EphemerisSegment
+    from oem.components.types import State
+    from oem.interface import OrbitEphemerisMessage
 
 REFERENCE_FRAMES = {
     "inertial": ["EME2000", "GCRF", "ICRF", "MCI", "TEME", "TOD"],
@@ -53,7 +63,9 @@ class EphemerisCompare(object):
         ...     pass
     """
 
-    def __init__(self, origin, target):
+    def __init__(
+        self, origin: "OrbitEphemerisMessage", target: "OrbitEphemerisMessage"
+    ) -> None:
         """Create an EphemerisCompare.
 
         Args:
@@ -67,23 +79,23 @@ class EphemerisCompare(object):
                 segments.append(target_segment - origin_segment)
         self._segments = [entry for entry in segments if not entry.is_empty]
 
-    def __call__(self, epoch):
+    def __call__(self, epoch: Time) -> "StateCompare":
         for segment in self:
             if epoch in segment:
                 return segment(epoch)
         else:
             raise ValueError(f"Epoch {epoch} not contained in EphemerisCompare.")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["SegmentCompare"]:
         return iter(self._segments)
 
-    def __contains__(self, epoch):
+    def __contains__(self, epoch: Time) -> bool:
         return any(epoch in segment for segment in self._segments)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"EphemerisCompare(segments: {len(self.segments)})"
 
-    def steps(self, step_size):
+    def steps(self, step_size: float) -> Iterator["StateCompare"]:
         """Sample EphemerisCompare at equal time intervals.
 
         This method returns a generator producing state compares at equal time
@@ -100,11 +112,11 @@ class EphemerisCompare(object):
                 yield state
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return len(self._segments) == 0
 
     @property
-    def segments(self):
+    def segments(self) -> List["SegmentCompare"]:
         return self._segments
 
 
@@ -122,7 +134,7 @@ class SegmentCompare(object):
             to True if there is no overlap.
     """
 
-    def __init__(self, origin, target):
+    def __init__(self, origin: "EphemerisSegment", target: "EphemerisSegment") -> None:
         """Create a SegmentCompare.
 
         Args:
@@ -135,24 +147,27 @@ class SegmentCompare(object):
             origin.metadata["REF_FRAME"] == target.metadata["REF_FRAME"]
             and origin.metadata["CENTER_NAME"] == target.metadata["CENTER_NAME"]
         ):
-            self._span = epoch_span_overlap(origin.span, target.span)
+            self._span: Optional[Tuple[Time, Time]] = epoch_span_overlap(
+                origin.span, target.span
+            )
             self._origin = origin
             self._target = target
         else:
             raise ValueError("Incompatible states: frame or central body mismatch.")
 
-    def __contains__(self, epoch):
+    def __contains__(self, epoch: Time) -> bool:
         return self._span is not None and epoch_span_contains(self._span, epoch)
 
-    def __call__(self, epoch):
+    def __call__(self, epoch: Time) -> "StateCompare":
         if epoch not in self:
             raise ValueError(f"Epoch {epoch} not contained in SegmentCompare.")
         return self._target(epoch) - self._origin(epoch)
 
-    def __repr__(self):
-        return f"SegmentCompare({str(self._span[0])}, {str(self._span[1])})"
+    def __repr__(self) -> str:
+        span = cast("Tuple[Time, Time]", self._span)
+        return f"SegmentCompare({str(span[0])}, {str(span[1])})"
 
-    def steps(self, step_size):
+    def steps(self, step_size: float) -> Iterator["StateCompare"]:
         """Sample SegmentCompare at equal time intervals.
 
         This method returns a generator producing state compares at equal time
@@ -164,27 +179,28 @@ class SegmentCompare(object):
         Yields:
             state_compare: Sampled StateCompare.
         """
-        for epoch in time_range(*self._span, step_size):
+        span = cast("Tuple[Time, Time]", self._span)
+        for epoch in time_range(*span, step_size):
             yield self(epoch)
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return self._span is None
 
     @property
-    def start_time(self):
+    def start_time(self) -> Time:
         if self.is_empty:
             raise ValueError("This SegmentCompare contains no overlapping state")
-        return self._span[0]
+        return cast("Tuple[Time, Time]", self._span)[0]
 
     @property
-    def stop_time(self):
+    def stop_time(self) -> Time:
         if self.is_empty:
             raise ValueError("This SegmentCompare contains no overlapping state")
-        return self._span[1]
+        return cast("Tuple[Time, Time]", self._span)[1]
 
     @property
-    def span(self):
+    def span(self) -> Optional[Tuple[Time, Time]]:
         return self._span
 
 
@@ -217,7 +233,7 @@ class StateCompare(object):
         >>> compare = origin - target
     """
 
-    def __init__(self, origin, target):
+    def __init__(self, origin: "State", target: "State") -> None:
         """Create a StateCompare.
 
         Args:
@@ -251,17 +267,17 @@ class StateCompare(object):
                 "Incompatible states: epoch, frame, or central body mismatch."
             )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"StateCompare({str(self.epoch)})"
 
-    def _require_inertial(self):
+    def _require_inertial(self) -> None:
         if not self._inertial:
             raise NotImplementedError(
                 "Velocity compares not supported for non-inertial frames. "
                 "To override, set ._inertial=True."
             )
 
-    def _to_ric(self, vector):
+    def _to_ric(self, vector: np.ndarray) -> np.ndarray:
         self._require_inertial()
         cross_track = np.cross(self._origin.position, self._origin.velocity)
         in_track = np.cross(cross_track, self._origin.position)
@@ -275,33 +291,33 @@ class StateCompare(object):
         return R.dot(vector)
 
     @property
-    def epoch(self):
+    def epoch(self) -> Time:
         return self._origin.epoch
 
     @property
-    def range(self):
+    def range(self) -> float:
         return np.linalg.norm(self._target.position - self._origin.position)
 
     @property
-    def range_rate(self):
+    def range_rate(self) -> float:
         self._require_inertial()
         return np.linalg.norm(self._target.velocity - self._origin.velocity)
 
     @property
-    def position(self):
+    def position(self) -> np.ndarray:
         return self._target.position - self._origin.position
 
     @property
-    def velocity(self):
+    def velocity(self) -> np.ndarray:
         self._require_inertial()
         return self._target.velocity - self._origin.velocity
 
     @property
-    def position_ric(self):
+    def position_ric(self) -> np.ndarray:
         return self._to_ric(self.position)
 
     @property
-    def velocity_ric(self):
+    def velocity_ric(self) -> np.ndarray:
         w = self._to_ric(
             np.cross(self._origin.position, self._origin.velocity)
             / np.linalg.norm(self._origin.position) ** 2

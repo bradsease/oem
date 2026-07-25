@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from typing import Any, Dict, List, TextIO, Tuple
 
 from defusedxml.ElementTree import parse
 
@@ -36,13 +37,16 @@ COV_XML_KEYS = (
 )
 
 
-def err(line_number, message):
+def err(line_number: int, message: str) -> None:
     raise ValueError(f"Error on line {line_number + 2}: {message}")
 
 
-def parse_kvn_oem(ephem_file):
+def parse_kvn_oem(
+    ephem_file: TextIO,
+) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
     section = Section.HEADER
-    header, segments = {}, []
+    header: Dict[str, str] = {}
+    segments: List[Dict[str, Any]] = []
     covdata = None
     data_length = None
 
@@ -66,15 +70,15 @@ def parse_kvn_oem(ephem_file):
                 section = Section.COVARIANCE
                 continue
 
-            date, *values = line.split()
+            date, *raw_values = line.split()
             if data_length is None:
-                data_length = len(values)
+                data_length = len(raw_values)
                 if data_length not in (6, 9):
                     err(idx, "Malformed data entry")
-            elif len(values) != data_length:
+            elif len(raw_values) != data_length:
                 err(idx, "Data contains mix of data lengths.")
             try:
-                values = tuple(float(entry) for entry in values)
+                values = tuple(float(entry) for entry in raw_values)
             except Exception:
                 err(idx, "Malformed data entry")
             segments[-1]["data"].append((date, *values))
@@ -167,7 +171,7 @@ def parse_kvn_oem(ephem_file):
     return header, segments
 
 
-def parse_xml_oem(ephem_file):
+def parse_xml_oem(ephem_file: TextIO) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
     parts = parse(ephem_file).getroot()
 
     header = {
@@ -177,18 +181,18 @@ def parse_xml_oem(ephem_file):
     }
     header["CCSDS_OEM_VERS"] = parts.attrib["version"]
 
-    segments = []
+    segments: List[Dict[str, Any]] = []
     for raw_segment in parts[1]:
         raw_metadata, raw_data = raw_segment
 
-        segment = {}
+        segment: Dict[str, Any] = {}
         segment["header"] = {
             entry.tag.rpartition("}")[-1]: entry.text
             for entry in raw_metadata
             if entry.tag.rpartition("}")[-1] != "COMMENT"
         }
 
-        keys = ("X", "Y", "Z", "X_DOT", "Y_DOT", "Z_DOT")
+        keys: Tuple[str, ...] = ("X", "Y", "Z", "X_DOT", "Y_DOT", "Z_DOT")
         try:
             if raw_data.find("stateVector").find("X_DDOT") is not None:
                 keys = keys + ("X_DDOT", "Y_DDOT", "Z_DDOT")
@@ -203,7 +207,7 @@ def parse_xml_oem(ephem_file):
 
         ref_frame = raw_metadata.find("REF_FRAME")
 
-        def cov_ref_frame(entry):
+        def cov_ref_frame(entry: Any) -> str:
             entry_ref_frame = entry.find("COV_REF_FRAME")
             return (entry_ref_frame if entry_ref_frame is not None else ref_frame).text
 

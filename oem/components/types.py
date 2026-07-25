@@ -1,6 +1,9 @@
+from typing import Any, Optional, Sequence, Union
+
 import numpy as np
 
 from oem import CURRENT_VERSION
+from oem._types import Epoch
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import StateCompare
 from oem.tools import require
@@ -33,7 +36,7 @@ COV_XML_ENTRY_MAP = {
 class ConstrainStateType(Constraint):
     versions = ["1.0"]
 
-    def func(self, state):
+    def func(self, state: "State") -> None:
         require(
             state.acceleration is None,
             "State in v1.0 OEM cannot have acceleration entries",
@@ -43,7 +46,7 @@ class ConstrainStateType(Constraint):
 class ConstrainStateDimension(Constraint):
     versions = ["*"]
 
-    def func(self, state):
+    def func(self, state: "State") -> None:
         require(state.position.size == 3, "State position size != 3")
         require(state.velocity.size == 3, "State velocity size != 3")
         if state.acceleration is not None:
@@ -69,25 +72,27 @@ class State(object):
 
     def __init__(
         self,
-        epoch,
-        frame,
-        center,
-        position,
-        velocity,
-        acceleration=None,
-        version=CURRENT_VERSION,
-    ):
+        epoch: Epoch,
+        frame: str,
+        center: str,
+        position: Sequence[float],
+        velocity: Sequence[float],
+        acceleration: Optional[Sequence[float]] = None,
+        version: str = CURRENT_VERSION,
+    ) -> None:
         self.version = version
         self.epoch = epoch
         self.frame = frame
         self.center = center
         self.position = np.array(position)
         self.velocity = np.array(velocity)
-        self.acceleration = np.array(acceleration) if acceleration is not None else None
+        self.acceleration: Optional[np.ndarray] = (
+            np.array(acceleration) if acceleration is not None else None
+        )
         self._constraint_spec.apply(self)
 
-    def __eq__(self, other):
-        return (
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, State) and (
             self.version == other.version
             and self.epoch == other.epoch
             and (self.position == other.position).all()
@@ -95,14 +100,14 @@ class State(object):
             and np.array([self.acceleration == other.acceleration]).all()
         )
 
-    def __sub__(self, other):
+    def __sub__(self, other: "State") -> StateCompare:
         return StateCompare(other, self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"State({str(self.epoch)})"
 
     @classmethod
-    def _from_raw_data(cls, data, version, metadata):
+    def _from_raw_data(cls, data: Any, version: str, metadata: Any) -> "State":
         epoch, *state = data
         return cls(
             epoch,
@@ -114,7 +119,7 @@ class State(object):
             version=version,
         )
 
-    def copy(self):
+    def copy(self) -> "State":
         """Create an independent copy of this instance."""
         return State(
             self.epoch,
@@ -122,16 +127,16 @@ class State(object):
             self.center,
             self.position.copy(),
             self.velocity.copy(),
-            self.acceleration.copy() if self.has_accel else None,
+            self.acceleration.copy() if self.acceleration is not None else None,
             version=self.version,
         )
 
     @property
-    def has_accel(self):
+    def has_accel(self) -> bool:
         return True if self.acceleration is not None else False
 
     @property
-    def vector(self):
+    def vector(self) -> np.ndarray:
         if self.has_accel:
             vec = np.hstack((self.position, self.velocity, self.acceleration))
         else:
@@ -148,25 +153,31 @@ class Covariance(object):
         matrix (ndarray): 6x6 covariance matrix.
     """
 
-    def __init__(self, epoch, frame, matrix, version=CURRENT_VERSION):
+    def __init__(
+        self,
+        epoch: Epoch,
+        frame: str,
+        matrix: Union[np.ndarray, Sequence[Sequence[float]]],
+        version: str = CURRENT_VERSION,
+    ) -> None:
         self.version = version
         self.epoch = epoch
         self.frame = frame
         self.matrix = np.array(matrix)
 
-    def __eq__(self, other):
-        return (
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Covariance) and (
             self.version == other.version
             and self.epoch == other.epoch
             and self.frame == other.frame
             and (self.matrix == other.matrix).all()
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Covariance({str(self.epoch)})"
 
     @classmethod
-    def _from_raw_data(cls, data, version):
+    def _from_raw_data(cls, data: Any, version: str) -> "Covariance":
         epoch, frame, *s = data
         matrix = np.array(
             (
@@ -180,7 +191,7 @@ class Covariance(object):
         )
         return cls(epoch, frame, matrix, version=version)
 
-    def copy(self):
+    def copy(self) -> "Covariance":
         """Create an independent copy of this instance."""
         return Covariance(
             self.epoch, self.frame, self.matrix.copy(), version=self.version

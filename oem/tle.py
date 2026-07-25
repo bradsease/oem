@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Sequence, Tuple
 from astropy import units as u
 from astropy.coordinates import (
     GCRS,
@@ -14,7 +15,7 @@ from oem.components import EphemerisSegment, HeaderSection, MetaDataSection
 from oem.tools import time_range
 
 
-def _build_header():
+def _build_header() -> HeaderSection:
     return HeaderSection(
         {
             "CCSDS_OEM_VERS": "2.0",
@@ -24,7 +25,9 @@ def _build_header():
     )
 
 
-def _build_metadata(satrec, start_epoch, stop_epoch, frame):
+def _build_metadata(
+    satrec: Satrec, start_epoch: Time, stop_epoch: Time, frame: str
+) -> MetaDataSection:
     return MetaDataSection(
         {
             "OBJECT_NAME": str(satrec.satnum),
@@ -38,7 +41,9 @@ def _build_metadata(satrec, start_epoch, stop_epoch, frame):
     )
 
 
-def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
+def _build_segment(
+    satrec: Satrec, start_epoch: Time, stop_epoch: Time, step: float, frame: str
+) -> EphemerisSegment:
     epoch_range = list(time_range(start_epoch, stop_epoch, step))
     position, velocity = _sample_tle_at_epoch_array(satrec, epoch_range, frame)
     return EphemerisSegment(
@@ -47,13 +52,17 @@ def _build_segment(satrec, start_epoch, stop_epoch, step, frame):
     )
 
 
-def _build_oem(satrec, start_epoch, stop_epoch, step, frame):
+def _build_oem(
+    satrec: Satrec, start_epoch: Time, stop_epoch: Time, step: float, frame: str
+) -> OrbitEphemerisMessage:
     return OrbitEphemerisMessage(
         _build_header(), [_build_segment(satrec, start_epoch, stop_epoch, step, frame)]
     )
 
 
-def _sample_tle_at_epoch_array(satrec, epochs, frame):
+def _sample_tle_at_epoch_array(
+    satrec: Satrec, epochs: Sequence[Time], frame: str
+) -> Tuple[np.ndarray, np.ndarray]:
     if frame not in ("TEME", "ICRF"):
         raise ValueError(f"Unsupported frame: {frame}")
     jd1 = np.array([epoch.jd1 for epoch in epochs])
@@ -74,7 +83,13 @@ def _sample_tle_at_epoch_array(satrec, epochs, frame):
         )
 
 
-def tle_to_oem(tle, start_epoch, stop_epoch, step, frame="ICRF"):
+def tle_to_oem(
+    tle: Sequence[str],
+    start_epoch: Time,
+    stop_epoch: Time,
+    step: float,
+    frame: str = "ICRF",
+) -> OrbitEphemerisMessage:
     """Create an OEM instance from a Two-Line Element set.
 
     Args:
@@ -95,7 +110,13 @@ def tle_to_oem(tle, start_epoch, stop_epoch, step, frame="ICRF"):
     return satrec_to_oem(satrec, start_epoch, stop_epoch, step, frame=frame)
 
 
-def satrec_to_oem(satrec, start_epoch, stop_epoch, step, frame="ICRF"):
+def satrec_to_oem(
+    satrec: Satrec,
+    start_epoch: Time,
+    stop_epoch: Time,
+    step: float,
+    frame: str = "ICRF",
+) -> OrbitEphemerisMessage:
     """Create an OEM instance from an sgp4.api.Satrec instance.
 
     Args:
