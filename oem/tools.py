@@ -14,7 +14,6 @@ from typing import (
     Sequence,
     TextIO,
     TYPE_CHECKING,
-    Tuple,
     Union,
     overload,
 )
@@ -80,7 +79,18 @@ def parse_utc(epoch: str, metadata: "KeyValueSection") -> Time:
     return Time(parse_datetime(epoch), format="datetime", scale="utc", precision=6)
 
 
-def parse_epoch(epoch: str, metadata: TimeSystemMetadata) -> Epoch:
+def _get_time_scale(metadata: TimeSystemMetadata) -> str:
+    time_system = metadata["TIME_SYSTEM"].lower()
+    if time_system not in Time.SCALES:
+        warnings.warn(
+            f"Unsupported TIME_SYSTEM '{time_system}', falling back to astropy "
+            "Time scale 'local'. Use caution with time calculations."
+        )
+        time_system = "local"
+    return time_system
+
+
+def parse_epoch(epoch: str, metadata: TimeSystemMetadata) -> Time:
     """Parse OEM standard epoch using metadata TIME_SYSTEM.
 
     Args:
@@ -90,20 +100,11 @@ def parse_epoch(epoch: str, metadata: TimeSystemMetadata) -> Epoch:
     Returns:
         parsed_epoch (Time): Parsed epoch with assigned time scale. If the
             timescale indicated by TIME_SYSTEM is not supported by astropy,
-            then parsed_epoch will warn the user and fall back to DateTime. In
-            this case, time calculations may be inaccurate.
+            then parsed_epoch will warn the user and use the local time scale.
     """
-    time_system = metadata["TIME_SYSTEM"].lower()
+    time_system = _get_time_scale(metadata)
     dt_epoch = parse_datetime(epoch)
-    if time_system in Time.SCALES:
-        parsed_epoch = Time(dt_epoch, format="datetime", scale=time_system, precision=6)
-    else:
-        warnings.warn(
-            f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
-            f"DateTime. Use caution with time calculations."
-        )
-        parsed_epoch = dt_epoch
-    return parsed_epoch
+    return Time(dt_epoch, format="datetime", scale=time_system, precision=6)
 
 
 def _identify_epoch_format(epoch: str) -> str:
@@ -120,7 +121,7 @@ def _coerce_epoch_yday(epoch: str) -> str:
 
 def _bulk_parse_epochs(
     epochs: Sequence[str], metadata: TimeSystemMetadata
-) -> Union[Time, Tuple[Epoch, ...]]:
+) -> Time:
     """Parse OEM standard epochs using metadata TIME_SYSTEM.
 
     Applies time-ordered constraint to input epochs. For faster comparisons,
@@ -131,23 +132,14 @@ def _bulk_parse_epochs(
         metadata (MetaDataSection): Metadata corresponding to this epoch.
 
     Returns:
-        parsed_epochs (list of Time):
+        parsed_epochs (Time):
     """
-    time_system = metadata["TIME_SYSTEM"].lower()
+    time_system = _get_time_scale(metadata)
     fmt = _identify_epoch_format(epochs[0])
     if fmt != "isot":
         epochs = tuple(_coerce_epoch_yday(epoch) for epoch in epochs)
 
-    if time_system in Time.SCALES:
-        parsed_epochs = Time(epochs, format=fmt, scale=time_system, precision=6)
-    else:
-        warnings.warn(
-            f"Unsupported TIME_SYSTEM '{time_system}', falling back to "
-            f"DateTime. Use caution with time calculations."
-        )
-        parsed_epochs = tuple(parse_epoch(epoch, metadata) for epoch in epochs)
-
-    return parsed_epochs
+    return Time(epochs, format=fmt, scale=time_system, precision=6)
 
 
 def parse_integer(input: str, metadata: "KeyValueSection") -> int:

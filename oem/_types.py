@@ -1,9 +1,8 @@
 """Shared type aliases for OEM values."""
 
-import datetime as dt
-from typing import Tuple, Union
+from typing import Tuple
 
 from astropy.time import Time
 
-Epoch = Union[Time, dt.datetime]
+Epoch = Time
 EpochSpan = Tuple[Epoch, Epoch]
