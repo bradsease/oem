@@ -98,6 +98,6 @@ oem = omm.to_oem(omm.epoch, omm.epoch + 1 * u.day, 60)
 
 This implementation follows the CCSDS recommended standards for Orbit Data Messages.
 
-[1] *Orbit Data Messages*, CCSDS 502.0-B-3, 2023. Available: [local copy](specs/502x0b3e2.pdf)
+[1] *Orbit Data Messages*, CCSDS 502.0-B-3, 2023. Available: [local copy](references/502x0b3e2.pdf)
 
-[2] *XML Specification for Navigation Data Messages*, CCSDS 505.0-B-3, 2023. Available: [local copy](specs/505x0b3e2.pdf)
+[2] *XML Specification for Navigation Data Messages*, CCSDS 505.0-B-3, 2023. Available: [local copy](references/505x0b3e2.pdf)
