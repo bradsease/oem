@@ -7,6 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "MIT"}
+
 classifiers = [
     "Development Status :: 4 - Beta",
     'Programming Language :: Python',
@@ -21,8 +22,12 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Astronomy"
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 requires-python = ">=3.8"
@@ -34,10 +39,18 @@ dependencies = [
     "defusedxml>=0.6.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/bradsease/oem"
+Repository = "https://github.com/bradsease/oem"
+Documentation = "https://github.com/bradsease/oem/tree/main/docs"
+Issues = "https://github.com/bradsease/oem/issues"
+Changelog = "https://github.com/bradsease/oem/releases"
+
 [project.optional-dependencies]
 test = [
     "pytest",
     "flake8",
+    "black",
 ]
 
 coverage = [
