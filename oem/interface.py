@@ -1,6 +1,9 @@
 from lxml.etree import Element, ElementTree, SubElement
+from pathlib import Path
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from oem import components
+from oem._types import Epoch, EpochSpan
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
@@ -13,12 +16,12 @@ from oem.tools import (
     require,
 )
 
-NUMBER_FORMATERS = {
+NUMBER_FORMATERS: Dict[str, Callable[[float], str]] = {
     "scientific": format_float_scientific,
     "fixed_cm": format_float_decimal,
 }
 
-EPOCH_FORMATERS = {
+EPOCH_FORMATERS: Dict[str, Callable[[Epoch], str]] = {
     "iso": format_epoch,
 }
 
@@ -28,7 +31,7 @@ class ConstrainOemTimeSystem(Constraint):
 
     versions = ["*"]
 
-    def func(self, oem):
+    def func(self, oem: "OrbitEphemerisMessage") -> None:
         time_system = None
         for segment in oem:
             if time_system is None:
@@ -45,7 +48,7 @@ class ConstrainOemObject(Constraint):
 
     versions = ["*"]
 
-    def func(self, oem):
+    def func(self, oem: "OrbitEphemerisMessage") -> None:
         object_name = oem._segments[0].metadata["OBJECT_NAME"]
         object_id = oem._segments[0].metadata["OBJECT_ID"]
         for segment in oem:
@@ -63,13 +66,13 @@ class ConstrainOemStates(Constraint):
 
     versions = ["*"]
 
-    def func(self, oem):
+    def func(self, oem: "OrbitEphemerisMessage") -> None:
         if oem.version == "1.0":
             self.v1_0(oem)
         else:
             self.v2_0(oem)
 
-    def v1_0(self, oem):
+    def v1_0(self, oem: "OrbitEphemerisMessage") -> None:
         require(
             all(
                 (
@@ -81,7 +84,7 @@ class ConstrainOemStates(Constraint):
             "Data section state epochs overlap",
         )
 
-    def v2_0(self, oem):
+    def v2_0(self, oem: "OrbitEphemerisMessage") -> None:
         require(
             all(
                 (
@@ -153,7 +156,11 @@ class OrbitEphemerisMessage(object):
         ConstrainOemTimeSystem, ConstrainOemObject, ConstrainOemStates
     )
 
-    def __init__(self, header, segments):
+    def __init__(
+        self,
+        header: "components.HeaderSection",
+        segments: List["components.EphemerisSegment"],
+    ) -> None:
         """Create an Orbit Ephemeris Message.
 
         Args:
@@ -165,21 +172,21 @@ class OrbitEphemerisMessage(object):
         self._segments = segments
         self._constraint_spec.apply(self)
 
-    def __call__(self, epoch):
+    def __call__(self, epoch: Epoch) -> "components.State":
         for segment in self:
             if epoch in segment:
                 return segment(epoch)
         else:
             raise ValueError(f"Epoch {epoch} not contained in this ephemeris.")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["components.EphemerisSegment"]:
         return iter(self._segments)
 
-    def __contains__(self, epoch):
+    def __contains__(self, epoch: Epoch) -> bool:
         return any(epoch in segment for segment in self._segments)
 
-    def __eq__(self, other):
-        return (
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, OrbitEphemerisMessage) and (
             self.version == other.version
             and self.header == other.header
             and len(self._segments) == len(other._segments)
@@ -189,24 +196,26 @@ class OrbitEphemerisMessage(object):
             )
         )
 
-    def __sub__(self, other):
+    def __sub__(self, other: "OrbitEphemerisMessage") -> EphemerisCompare:
         return EphemerisCompare(other, self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"OrbitEphemerisMessage(v{self.version})"
 
     @classmethod
-    def _from_kvn_oem(cls, file_path):
+    def _from_kvn_oem(cls, file_path: Union[str, Path]) -> "OrbitEphemerisMessage":
         with _open(file_path, "rt") as ephem_file:
             return cls._from_raw_data(parse_kvn_oem(ephem_file))
 
     @classmethod
-    def _from_xml_oem(cls, file_path):
+    def _from_xml_oem(cls, file_path: Union[str, Path]) -> "OrbitEphemerisMessage":
         with _open(file_path, "rt") as ephem_file:
             return cls._from_raw_data(parse_xml_oem(ephem_file))
 
     @classmethod
-    def _from_raw_data(cls, data):
+    def _from_raw_data(
+        cls, data: Tuple[Dict[str, str], List[Dict[str, Any]]]
+    ) -> "OrbitEphemerisMessage":
         raw_header, raw_segments = data
         header = components.HeaderSection._from_raw_data(raw_header)
         segments = [
@@ -216,7 +225,7 @@ class OrbitEphemerisMessage(object):
         return cls(header, segments)
 
     @classmethod
-    def open(cls, file_path):
+    def open(cls, file_path: Union[str, Path]) -> "OrbitEphemerisMessage":
         """Open an Orbit Ephemeris Message file.
 
         This method supports both KVN and XML formats.
@@ -234,7 +243,13 @@ class OrbitEphemerisMessage(object):
         return oem
 
     @classmethod
-    def convert(cls, in_file_path, out_file_path, file_format, **save_args):
+    def convert(
+        cls,
+        in_file_path: Union[str, Path],
+        out_file_path: Union[str, Path],
+        file_format: str,
+        **save_args: Any,
+    ) -> None:
         """Convert an OEM to a particular file format.
 
         This method will succeed and produce an output file even if the input
@@ -252,13 +267,13 @@ class OrbitEphemerisMessage(object):
             out_file_path, file_format=file_format, **save_args
         )
 
-    def copy(self):
+    def copy(self) -> "OrbitEphemerisMessage":
         """Create an independent copy of this instance."""
         return OrbitEphemerisMessage(
             self.header.copy(), [segment.copy() for segment in self]
         )
 
-    def steps(self, step_size):
+    def steps(self, step_size: float) -> Iterator["components.State"]:
         """Sample Ephemeris at equal time intervals.
 
         This method returns a generator producing states at equal time
@@ -290,7 +305,9 @@ class OrbitEphemerisMessage(object):
             for state in segment.steps(step_size):
                 yield state
 
-    def resample(self, step_size, in_place=False):
+    def resample(
+        self, step_size: float, in_place: bool = False
+    ) -> "OrbitEphemerisMessage":
         """Resample ephemeris data.
 
         Replaces the existing ephemeris state data in this OEM with new states
@@ -329,12 +346,12 @@ class OrbitEphemerisMessage(object):
 
     def save_as(
         self,
-        file_path,
-        file_format="kvn",
-        compression=None,
-        epoch_format="iso",
-        number_format="scientific",
-    ):
+        file_path: Union[str, Path],
+        file_format: str = "kvn",
+        compression: Optional[str] = None,
+        epoch_format: str = "iso",
+        number_format: str = "scientific",
+    ) -> None:
         """Write OEM to file.
 
         Args:
@@ -378,7 +395,11 @@ class OrbitEphemerisMessage(object):
             else:
                 raise ValueError(f"Unrecognized file type: '{file_format}'")
 
-    def _to_kvn_oem(self, epoch_formatter, number_formatter):
+    def _to_kvn_oem(
+        self,
+        epoch_formatter: Callable[[Epoch], str],
+        number_formatter: Callable[[float], str],
+    ) -> str:
         lines = self.header._to_string() + "\n"
         lines += "".join(
             entry._to_string(epoch_formatter, number_formatter)
@@ -386,7 +407,11 @@ class OrbitEphemerisMessage(object):
         )
         return lines
 
-    def _to_xml_oem(self, epoch_formatter, number_formatter):
+    def _to_xml_oem(
+        self,
+        epoch_formatter: Callable[[Epoch], str],
+        number_formatter: Callable[[float], str],
+    ) -> ElementTree:
         oem = Element("oem", id="CCSDS_OEM_VERS", version=self.version)
         self.header._to_xml(SubElement(oem, "header"))
         body = SubElement(oem, "body")
@@ -397,21 +422,21 @@ class OrbitEphemerisMessage(object):
         return ElementTree(oem)
 
     @property
-    def states(self):
+    def states(self) -> List["components.State"]:
         """Return a list of states in all segments."""
         return [state for segment in self for state in segment.states]
 
     @property
-    def covariances(self):
+    def covariances(self) -> List["components.Covariance"]:
         """Return a list of covariances in all segments."""
         return [covariance for segment in self for covariance in segment.covariances]
 
     @property
-    def segments(self):
+    def segments(self) -> List["components.EphemerisSegment"]:
         return self._segments
 
     @property
-    def span(self):
+    def span(self) -> EpochSpan:
         return (
             min(segment.useable_start_time for segment in self),
             max(segment.useable_stop_time for segment in self),

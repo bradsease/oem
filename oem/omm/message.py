@@ -1,5 +1,8 @@
 """OMM message representation and serialization."""
 
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, List, Mapping, Optional, Sequence, Union
+
 from astropy.time import Time
 from lxml.etree import Element, ElementTree, SubElement
 
@@ -16,7 +19,11 @@ from .fields import (
     TLE_PARAMETER_FIELDS,
 )
 from .parsers import _parse_kvn, _parse_xml
-from .sections import OmmData, OmmHeader, OmmMetadata
+from .sections import OmmData, OmmHeader, OmmKeyValueSection, OmmMetadata
+
+if TYPE_CHECKING:
+    from oem.interface import OrbitEphemerisMessage
+    from sgp4.api import Satrec
 
 
 class OrbitMeanElementsMessage(object):
@@ -26,12 +33,17 @@ class OrbitMeanElementsMessage(object):
     data block contains the five logical OMM data groups defined by CCSDS.
     """
 
-    def __init__(self, header, metadata, data):
+    def __init__(
+        self,
+        header: Mapping[str, object],
+        metadata: Mapping[str, object],
+        data: Mapping[str, object],
+    ) -> None:
         self.header = OmmHeader(header)
         self.metadata = OmmMetadata(metadata, version=self.header.version)
         self.data = OmmData(data, self.metadata, version=self.header.version)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, OrbitMeanElementsMessage)
             and self.header == other.header
@@ -39,25 +51,31 @@ class OrbitMeanElementsMessage(object):
             and self.data == other.data
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"OrbitMeanElementsMessage(v{self.version})"
 
-    def __call__(self, epoch):
+    def __call__(self, epoch: Time) -> State:
         return self.at(epoch)
 
     @classmethod
-    def open(cls, file_path):
+    def open(cls, file_path: Union[str, Path]) -> "OrbitMeanElementsMessage":
         """Open a KVN or XML OMM file."""
         with _open(file_path, "rt") as omm_file:
             parts = _parse_kvn(omm_file) if is_kvn(file_path) else _parse_xml(omm_file)
         return cls(*parts)
 
     @classmethod
-    def convert(cls, in_file_path, out_file_path, file_format, **save_args):
+    def convert(
+        cls,
+        in_file_path: Union[str, Path],
+        out_file_path: Union[str, Path],
+        file_format: str,
+        **save_args: Any,
+    ) -> None:
         """Convert an OMM between KVN and XML formats."""
         cls.open(in_file_path).save_as(out_file_path, file_format, **save_args)
 
-    def at(self, epoch, frame="ICRF"):
+    def at(self, epoch: Time, frame: str = "ICRF") -> State:
         """Propagate an SGP4 OMM at a scalar Astropy :class:`~astropy.time.Time`.
 
         For better performance, convert to an OEM with :meth:`to_oem` before
@@ -83,7 +101,9 @@ class OrbitMeanElementsMessage(object):
             version=self.version,
         )
 
-    def to_oem(self, start_epoch, stop_epoch, step, frame="ICRF"):
+    def to_oem(
+        self, start_epoch: Time, stop_epoch: Time, step: float, frame: str = "ICRF"
+    ) -> "OrbitEphemerisMessage":
         """Create an OEM by propagating this OMM with SGP4.
 
         Args:
@@ -100,7 +120,7 @@ class OrbitMeanElementsMessage(object):
 
         return satrec_to_oem(self._satrec(), start_epoch, stop_epoch, step, frame)
 
-    def _satrec(self):
+    def _satrec(self) -> "Satrec":
         if self.metadata["MEAN_ELEMENT_THEORY"].upper() not in ("SGP4", "SGP/SGP4"):
             raise ValueError("SGP4 propagation requires an SGP4 mean element theory")
         try:
@@ -124,7 +144,12 @@ class OrbitMeanElementsMessage(object):
         initialize(satellite, fields)
         return satellite
 
-    def save_as(self, file_path, file_format="kvn", compression=None):
+    def save_as(
+        self,
+        file_path: Union[str, Path],
+        file_format: str = "kvn",
+        compression: Optional[str] = None,
+    ) -> None:
         """Write this OMM as KVN or XML."""
         with _open(file_path, "wb", compression) as output_file:
             if file_format == "kvn":
@@ -139,7 +164,7 @@ class OrbitMeanElementsMessage(object):
             else:
                 raise ValueError(f"Unrecognized file type: {file_format!r}")
 
-    def copy(self):
+    def copy(self) -> "OrbitMeanElementsMessage":
         """Create an independent copy of this OMM."""
         return OrbitMeanElementsMessage(
             self.header._fields.copy(),
@@ -147,7 +172,7 @@ class OrbitMeanElementsMessage(object):
             self.data._fields.copy(),
         )
 
-    def _to_kvn(self):
+    def _to_kvn(self) -> str:
         lines = self._format_fields(self.header, HEADER_FIELDS)
         lines.append("")
         lines.extend(self._format_fields(self.metadata, METADATA_FIELDS))
@@ -164,10 +189,10 @@ class OrbitMeanElementsMessage(object):
         return "\n".join(lines) + "\n"
 
     @staticmethod
-    def _format_fields(section, order):
+    def _format_fields(section: OmmKeyValueSection, order: Sequence[str]) -> List[str]:
         return [f"{key} = {section._fields[key]}" for key in order if key in section]
 
-    def _to_xml(self):
+    def _to_xml(self) -> ElementTree:
         root = Element("omm", id="CCSDS_OMM_VERS", version=self.version)
         self._xml_section(
             root, "header", self.header, HEADER_FIELDS, omit=("CCSDS_OMM_VERS",)
@@ -198,7 +223,13 @@ class OrbitMeanElementsMessage(object):
         return ElementTree(root)
 
     @staticmethod
-    def _xml_section(parent, name, section, fields, omit=()):
+    def _xml_section(
+        parent: Any,
+        name: str,
+        section: OmmKeyValueSection,
+        fields: Sequence[str],
+        omit: Sequence[str] = (),
+    ) -> Any:
         element = SubElement(parent, name)
         for key in fields:
             if key in section and key not in omit:
@@ -206,11 +237,11 @@ class OrbitMeanElementsMessage(object):
         return element
 
     @property
-    def epoch(self):
+    def epoch(self) -> Time:
         """The mean-element epoch as an Astropy ``Time``."""
         return self.data["EPOCH"]
 
     @property
-    def version(self):
+    def version(self) -> str:
         """The CCSDS OMM version."""
         return self.header.version

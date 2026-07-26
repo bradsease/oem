@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
+    "Typing :: Typed",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
@@ -53,6 +54,10 @@ test = [
     "black",
 ]
 
+type = [
+    "mypy==1.12.1",
+]
+
 coverage = [
     "pytest-cov",
     "coveralls",
@@ -64,3 +69,19 @@ tle = [
 
 [tool.setuptools.packages.find]
 include = ["oem*"]
+
+[tool.setuptools.package-data]
+oem = ["py.typed"]
+
+[tool.black]
+target-version = ["py38"]
+
+[tool.mypy]
+python_version = "3.8"
+files = ["oem"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+follow_imports = "skip"
+follow_imports_for_stubs = true
+ignore_missing_imports = true

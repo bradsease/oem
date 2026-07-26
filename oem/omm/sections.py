@@ -1,5 +1,8 @@
 """Typed OMM sections and validation constraints."""
 
+from typing import Dict, Mapping, Union, cast
+
+from oem._types import Epoch
 from oem.base import Constraint, ConstraintSpecification, HeaderField, KeyValueSection
 from oem.tools import (
     format_epoch,
@@ -19,13 +22,13 @@ from .fields import (
 )
 
 
-def _parse_float(value, metadata):
+def _parse_float(value: str, metadata: object) -> float:
     """Parse an OMM number while accepting its optional unit annotation."""
     return float(value.partition("[")[0].strip())
 
 
-def _parse_data_epoch(value, data):
-    return parse_epoch(value, data.metadata)
+def _parse_data_epoch(value: str, data: KeyValueSection) -> Epoch:
+    return parse_epoch(value, cast("OmmData", data).metadata)
 
 
 class OmmKeyValueSection(KeyValueSection):
@@ -33,27 +36,28 @@ class OmmKeyValueSection(KeyValueSection):
 
     _constraint_spec = ConstraintSpecification()
 
-    def __init__(self, fields, version=VERSION):
+    def __init__(self, fields: Mapping[str, object], version: str = VERSION) -> None:
         self._version = version
         self._parse_fields({key: str(value).strip() for key, value in fields.items()})
         self._constraint_spec.apply(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return (
-            type(self) is type(other)
+            isinstance(other, OmmKeyValueSection)
+            and type(self) is type(other)
             and self._fields.keys() == other._fields.keys()
             and all(self[key] == other[key] for key in self)
         )
 
     @property
-    def version(self):
+    def version(self) -> str:
         return self._version
 
 
 class ConstrainOmmVersion(Constraint):
     versions = ["*"]
 
-    def func(self, header):
+    def func(self, header: "OmmHeader") -> None:
         require(
             header.version in SUPPORTED_VERSIONS,
             f"Unsupported OMM version: {header.version}",
@@ -63,7 +67,7 @@ class ConstrainOmmVersion(Constraint):
 class ConstrainOmmV2Header(Constraint):
     versions = ["2.0"]
 
-    def func(self, header):
+    def func(self, header: "OmmHeader") -> None:
         for field in ("CLASSIFICATION", "MESSAGE_ID"):
             require(
                 field not in header,
@@ -83,13 +87,13 @@ class OmmHeader(OmmKeyValueSection):
         ConstrainOmmVersion, ConstrainOmmV2Header
     )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Union[str, Epoch]:
         if key == "CREATION_DATE" and not self._fields[key]:
             return ""
         return super().__getitem__(key)
 
     @property
-    def version(self):
+    def version(self) -> str:
         return self["CCSDS_OMM_VERS"]
 
 
@@ -108,7 +112,7 @@ class OmmMetadata(OmmKeyValueSection):
 class ConstrainOmmData(Constraint):
     versions = SUPPORTED_VERSIONS
 
-    def func(self, data):
+    def func(self, data: "OmmData") -> None:
         has_axis = "SEMI_MAJOR_AXIS" in data
         has_motion = "MEAN_MOTION" in data
         require(
@@ -116,13 +120,19 @@ class ConstrainOmmData(Constraint):
             "Exactly one of SEMI_MAJOR_AXIS or MEAN_MOTION is required",
         )
         require(
-            0 <= data["ECCENTRICITY"] < 1,
+            0 <= cast(float, data["ECCENTRICITY"]) < 1,
             "ECCENTRICITY must be greater than or equal to zero and less than one",
         )
         if has_axis:
-            require(data["SEMI_MAJOR_AXIS"] > 0, "SEMI_MAJOR_AXIS must be positive")
+            require(
+                cast(float, data["SEMI_MAJOR_AXIS"]) > 0,
+                "SEMI_MAJOR_AXIS must be positive",
+            )
         if has_motion:
-            require(data["MEAN_MOTION"] > 0, "MEAN_MOTION must be positive")
+            require(
+                cast(float, data["MEAN_MOTION"]) > 0,
+                "MEAN_MOTION must be positive",
+            )
 
         covariance = [key for key in COVARIANCE_COMPONENTS if key in data]
         if covariance:
@@ -131,7 +141,9 @@ class ConstrainOmmData(Constraint):
                 "All covariance matrix elements are required when any are provided",
             )
         if "COV_REF_FRAME" in data:
-            require(covariance, "COV_REF_FRAME requires covariance matrix elements")
+            require(
+                bool(covariance), "COV_REF_FRAME requires covariance matrix elements"
+            )
 
         theory = data.metadata["MEAN_ELEMENT_THEORY"].upper()
         sgp_theories = ("SGP", "SGP4", "SGP/SGP4", "SGP4-XP")
@@ -158,7 +170,7 @@ class ConstrainOmmData(Constraint):
 
         if "CLASSIFICATION_TYPE" in data:
             require(
-                len(data["CLASSIFICATION_TYPE"]) == 1,
+                len(cast(str, data["CLASSIFICATION_TYPE"])) == 1,
                 "CLASSIFICATION_TYPE must be one character",
             )
 
@@ -166,7 +178,7 @@ class ConstrainOmmData(Constraint):
 class ConstrainOmmV2Data(Constraint):
     versions = ["2.0"]
 
-    def func(self, data):
+    def func(self, data: "OmmData") -> None:
         for field in ("BTERM", "AGOM"):
             require(
                 field not in data,
@@ -190,7 +202,7 @@ class ConstrainOmmV2Data(Constraint):
 class ConstrainOmmV3Data(Constraint):
     versions = [VERSION]
 
-    def func(self, data):
+    def func(self, data: "OmmData") -> None:
         theory = data.metadata["MEAN_ELEMENT_THEORY"].upper()
         if theory == "SGP4-XP":
             require("BTERM" in data, "BTERM is required for SGP4-XP OMMs")
@@ -250,22 +262,27 @@ class OmmData(OmmKeyValueSection):
         ConstrainOmmData, ConstrainOmmV2Data, ConstrainOmmV3Data
     )
 
-    def __init__(self, fields, metadata, version=VERSION):
+    def __init__(
+        self,
+        fields: Mapping[str, object],
+        metadata: OmmMetadata,
+        version: str = VERSION,
+    ) -> None:
         self.metadata = metadata
         super().__init__(fields, version=version)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Union[str, int, float, Epoch]:
         if key.startswith("USER_DEFINED_"):
             return self._fields[key]
         return super().__getitem__(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Union[str, int, float, Epoch]) -> None:
         if key.startswith("USER_DEFINED_"):
             self._fields[key] = str(value)
         else:
-            super().__setitem__(key, value)
+            super().__setitem__(key, str(value))
 
-    def _validate_fields(self, fields):
+    def _validate_fields(self, fields: Dict[str, str]) -> None:
         invalid = [
             key
             for key in fields

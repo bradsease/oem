@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import re
+from typing import Dict, Tuple, cast
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -13,18 +14,27 @@ from oem import OrbitEphemerisMessage
 from oem.components import EphemerisSegment, HeaderSection, MetaDataSection
 
 HORIZONS_URL = "https://ssd.jpl.nasa.gov/api/horizons.api"
-TIME_SYSTEMS = {
+TIME_SYSTEMS: Dict[str, Tuple[str, str, str]] = {
     "UT": ("UT", "utc", "UTC"),
     "TT": ("TT", "tt", "TT"),
     "TDB": ("TDB", "tdb", "TDB"),
 }
+VectorData = Tuple[
+    Tuple[Time, ...],
+    Tuple[float, ...],
+    Tuple[float, ...],
+    Tuple[float, ...],
+    Tuple[float, ...],
+    Tuple[float, ...],
+    Tuple[float, ...],
+]
 
 
-def _quoted(value):
+def _quoted(value: str) -> str:
     return f"'{value}'"
 
 
-def _body_details(result, label, fallback):
+def _body_details(result: str, label: str, fallback: str) -> Tuple[str, str]:
     match = re.search(rf"^{label}:\s*(.+?)\s+\{{", result, re.MULTILINE)
     if not match:
         return fallback, fallback
@@ -36,7 +46,7 @@ def _body_details(result, label, fallback):
     return description, fallback
 
 
-def _parse_vectors(result, time_scale):
+def _parse_vectors(result: str, time_scale: str) -> VectorData:
     try:
         data = result.split("$$SOE", 1)[1].split("$$EOE", 1)[0]
     except IndexError:
@@ -59,12 +69,18 @@ def _parse_vectors(result, time_scale):
 
     if not rows:
         raise ValueError("Horizons returned no vector data.")
-    return tuple(zip(*rows))
+    return cast(VectorData, tuple(zip(*rows)))
 
 
 def _request_vectors(
-    target, center, start_epoch, stop_epoch, step_size, time_system, timeout
-):
+    target: str,
+    center: str,
+    start_epoch: Time,
+    stop_epoch: Time,
+    step_size: str,
+    time_system: Tuple[str, str, str],
+    timeout: float,
+) -> str:
     if "@" not in center:
         center = f"500@{center}"
 
@@ -99,14 +115,14 @@ def _request_vectors(
 
 
 def horizons_to_oem(
-    target,
-    center,
-    start_epoch,
-    stop_epoch,
-    step_size="1h",
-    time_system="UT",
-    timeout=30,
-):
+    target: str,
+    center: str,
+    start_epoch: Time,
+    stop_epoch: Time,
+    step_size: str = "1h",
+    time_system: str = "UT",
+    timeout: float = 30,
+) -> OrbitEphemerisMessage:
     """Create an OEM from a JPL Horizons vector ephemeris.
 
     Args:
@@ -137,7 +153,7 @@ def horizons_to_oem(
     if start_epoch > stop_epoch:
         raise ValueError("start_epoch must not be after stop_epoch.")
     try:
-        time_system = TIME_SYSTEMS[time_system.upper()]
+        time_system_data = TIME_SYSTEMS[time_system.upper()]
     except (AttributeError, KeyError):
         raise ValueError("time_system must be 'UT', 'TT', or 'TDB'.")
 
@@ -147,10 +163,10 @@ def horizons_to_oem(
         start_epoch,
         stop_epoch,
         str(step_size),
-        time_system,
+        time_system_data,
         timeout,
     )
-    state_data = _parse_vectors(result, time_system[1])
+    state_data = _parse_vectors(result, time_system_data[1])
     object_name, object_id = _body_details(result, "Target body name", str(target))
     center_name, _ = _body_details(result, "Center body name", str(center))
     start_time, stop_time = state_data[0][0], state_data[0][-1]
@@ -161,7 +177,7 @@ def horizons_to_oem(
             "OBJECT_ID": object_id,
             "CENTER_NAME": center_name,
             "REF_FRAME": "ICRF",
-            "TIME_SYSTEM": time_system[2],
+            "TIME_SYSTEM": time_system_data[2],
             "START_TIME": start_time.isot,
             "STOP_TIME": stop_time.isot,
         }

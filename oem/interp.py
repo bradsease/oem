@@ -1,7 +1,10 @@
 import numpy as np
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
+
+from oem._types import Epoch
 
 
-def lagrange(x, y):
+def lagrange(x: np.ndarray, y: np.ndarray) -> np.poly1d:
     """Create a Lagrange interpolation polynomial.
 
     Create a Lagrange interpolation polynomial of order N-1 where N is the
@@ -20,7 +23,7 @@ def lagrange(x, y):
     return np.poly1d(a[::-1])
 
 
-def hermite(x, y, dy):
+def hermite(x: np.ndarray, y: np.ndarray, dy: np.ndarray) -> np.poly1d:
     """Create a Hermite interpolation polynomial.
 
     Create a Hermite interpolation polynomial of order N-1 where N is the
@@ -48,11 +51,19 @@ def hermite(x, y, dy):
 
 
 class Interpolator(object):
-    def __init__(self, states):
+    _state_polynomials: List[np.poly1d]
+
+    @classmethod
+    def _samples_required(cls, order: int) -> int:
+        raise NotImplementedError
+
+    def __init__(self, states: Tuple[Sequence[Any], ...]) -> None:
         self._reference_epoch = states[0][0]
         self._setup(states)
 
-    def __call__(self, epoch):
+    def __call__(
+        self, epoch: Epoch
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         t = (epoch - self.reference_epoch).sec
         raw_state = np.array([poly(t) for poly in self._state_polynomials])
         position = raw_state[:3]
@@ -63,25 +74,28 @@ class Interpolator(object):
             acceleration = None
         return position, velocity, acceleration
 
-    def _elapsed_times(self, states):
+    def _elapsed_times(self, states: Tuple[Sequence[Any], ...]) -> np.ndarray:
         reference = self.reference_epoch
         return np.array(tuple((epoch - reference).sec for epoch in states[0]))
 
+    def _setup(self, states: Tuple[Sequence[Any], ...]) -> None:
+        raise NotImplementedError
+
     @property
-    def reference_epoch(self):
+    def reference_epoch(self) -> Epoch:
         return self._reference_epoch
 
 
 class LagrangeStateInterpolator(Interpolator):
     @classmethod
-    def _samples_required(cls, order):
+    def _samples_required(cls, order: int) -> int:
         count = order + 1
         if count % 1 != 0:
             raise ValueError("Unachievable order: {order}")
         else:
             return int(count)
 
-    def _setup(self, states):
+    def _setup(self, states: Tuple[Sequence[Any], ...]) -> None:
         t = self._elapsed_times(states)
         state_vectors = np.column_stack(states[1:])
         self._state_polynomials = [
@@ -91,14 +105,14 @@ class LagrangeStateInterpolator(Interpolator):
 
 class HermiteStateInterpolator(Interpolator):
     @classmethod
-    def _samples_required(cls, order):
+    def _samples_required(cls, order: int) -> int:
         count = (order + 1) / 2
         if count % 1 != 0:
             raise ValueError("Unachievable order: {order}")
         else:
             return int(count)
 
-    def _setup(self, states):
+    def _setup(self, states: Tuple[Sequence[Any], ...]) -> None:
         t = self._elapsed_times(states)
         state_vectors = np.column_stack(states[1:])
         self._state_polynomials = [
@@ -122,22 +136,26 @@ class HermiteStateInterpolator(Interpolator):
 
 
 class EphemerisInterpolator(object):
-    method_map = {
+    method_map: Dict[str, Type[Interpolator]] = {
         "lagrange": LagrangeStateInterpolator,
         "hermite": HermiteStateInterpolator,
     }
 
-    def __init__(self, states, method, order):
+    def __init__(
+        self, states: Tuple[Sequence[Any], ...], method: str, order: int
+    ) -> None:
         self.base_interpolator = self.method_map[method.lower()]
         self._states = states
         self._order = order
         self._populate_interpolator_nodes(states[0], order)
 
-    def __call__(self, epoch):
+    def __call__(
+        self, epoch: Epoch
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         interpolator = self._get_best_interpolator(epoch)
         return interpolator(epoch)
 
-    def _populate_interpolator_nodes(self, epochs, order):
+    def _populate_interpolator_nodes(self, epochs: Sequence[Epoch], order: int) -> None:
         samples = self.base_interpolator._samples_required(order)
         elapsed_times = np.array(
             [(entry - self.reference_epoch).sec for entry in epochs]
@@ -149,7 +167,7 @@ class EphemerisInterpolator(object):
             ]
         )
 
-    def _get_best_interpolator(self, epoch):
+    def _get_best_interpolator(self, epoch: Epoch) -> Interpolator:
         elapsed_time = (epoch - self.reference_epoch).sec
         best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
         samples = self.base_interpolator._samples_required(self.order)
@@ -158,9 +176,9 @@ class EphemerisInterpolator(object):
         )
 
     @property
-    def reference_epoch(self):
+    def reference_epoch(self) -> Epoch:
         return self._states[0][0]
 
     @property
-    def order(self):
+    def order(self) -> int:
         return self._order

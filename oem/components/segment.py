@@ -1,8 +1,10 @@
 from itertools import chain
+from typing import Any, Callable, Iterator, Optional, Sequence, Tuple, Union
 
 from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
+from oem._types import Epoch, EpochSpan
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import SegmentCompare
 from oem.components.metadata import MetaDataSection
@@ -22,7 +24,7 @@ class ConstrainEphemerisSegmentCovariance(Constraint):
 
     versions = ["1.0"]
 
-    def func(self, ephemeris_segment):
+    def func(self, ephemeris_segment: "EphemerisSegment") -> None:
         require(
             ephemeris_segment._covariance_data is None,
             "Covariance data block not supported in OEM v1.0",
@@ -34,14 +36,14 @@ class ConstrainEphemerisSegmentStateVectors(Constraint):
 
     versions = ["1.0"]
 
-    def func(self, ephemeris_segment):
+    def func(self, ephemeris_segment: "EphemerisSegment") -> None:
         require(
             not ephemeris_segment.has_accel,
             "Acceleration is not supported in v1.0 OEMs",
         )
 
 
-def _process_states(metadata, raw_data_rows):
+def _process_states(metadata: Any, raw_data_rows: Any) -> Tuple[Tuple[Any, ...], ...]:
     if len(raw_data_rows) == 0:
         raise ValueError("Empty data section.")
 
@@ -55,7 +57,9 @@ def _process_states(metadata, raw_data_rows):
     return (epochs, *raw_data_columns[1:])
 
 
-def _process_covariances(metadata, raw_data_rows):
+def _process_covariances(
+    metadata: Any, raw_data_rows: Any
+) -> Tuple[Tuple[Any, ...], ...]:
     if len(raw_data_rows) == 0:
         raise ValueError("Empty covariance section.")
     raw_data_columns = tuple(zip(*raw_data_rows))
@@ -76,20 +80,25 @@ class EphemerisSegment(object):
     )
 
     def __init__(
-        self, metadata, state_data, covariance_data=None, version=CURRENT_VERSION
-    ):
+        self,
+        metadata: MetaDataSection,
+        state_data: Tuple[Sequence[Any], ...],
+        covariance_data: Optional[Tuple[Sequence[Any], ...]] = None,
+        version: str = CURRENT_VERSION,
+    ) -> None:
         self.version = version
         self.metadata = metadata
         self._state_data = state_data
         self._covariance_data = covariance_data
         self._constraint_spec.apply(self)
-        self._interpolator = None
+        self._interpolator: Optional[EphemerisInterpolator] = None
 
-    def __call__(self, epoch):
+    def __call__(self, epoch: Epoch) -> State:
         if epoch not in self:
             raise ValueError(f"Epoch {epoch} not contained in segment.")
         if not self._interpolator:
             self._init_interpolator()
+        assert self._interpolator is not None
         position, velocity, acceleration = self._interpolator(epoch)
         return State(
             epoch,
@@ -101,30 +110,30 @@ class EphemerisSegment(object):
             version=self.version,
         )
 
-    def __contains__(self, epoch):
+    def __contains__(self, epoch: Epoch) -> bool:
         return epoch_span_contains(self.span, epoch)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[State]:
         return self.states
 
-    def __eq__(self, other):
-        return (
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, EphemerisSegment) and (
             self.version == other.version
             and self.metadata == other.metadata
             and self._state_data == other._state_data
             and self._covariance_data == other._covariance_data
         )
 
-    def __sub__(self, other):
+    def __sub__(self, other: "EphemerisSegment") -> SegmentCompare:
         return SegmentCompare(other, self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         start = str(self.useable_start_time)
         stop = str(self.useable_stop_time)
         return f"EphemerisSegment({start}, {stop})"
 
     @classmethod
-    def _from_raw_data(cls, segment, version):
+    def _from_raw_data(cls, segment: Any, version: str) -> "EphemerisSegment":
         metadata = MetaDataSection._from_raw_data(segment["header"], version)
 
         try:
@@ -142,7 +151,9 @@ class EphemerisSegment(object):
 
         return cls(metadata, state_data, cov_data, version=version)
 
-    def _to_string(self, format_epoch, format_float):
+    def _to_string(
+        self, format_epoch: Callable[[Epoch], str], format_float: Callable[[float], str]
+    ) -> str:
         lines = self.metadata._to_string() + "\n"
         for epoch, *state in zip(*self._state_data):
             lines += f"{format_epoch(epoch)} "
@@ -166,7 +177,12 @@ class EphemerisSegment(object):
 
         return lines
 
-    def _to_xml(self, parent, format_epoch, format_float):
+    def _to_xml(
+        self,
+        parent: Any,
+        format_epoch: Callable[[Epoch], str],
+        format_float: Callable[[float], str],
+    ) -> None:
         self.metadata._to_xml(SubElement(parent, "metadata"))
         data = SubElement(parent, "data")
         fields = ("X", "Y", "Z", "X_DOT", "Y_DOT", "Z_DOT")
@@ -188,7 +204,7 @@ class EphemerisSegment(object):
                 for idx, key in enumerate(COV_XML_KEYS):
                     SubElement(covdata, key).text = format_float(cov[idx])
 
-    def _init_interpolator(self):
+    def _init_interpolator(self) -> None:
         if "INTERPOLATION" in self.metadata:
             method = self.metadata["INTERPOLATION"]
             order = self.metadata["INTERPOLATION_DEGREE"]
@@ -197,7 +213,7 @@ class EphemerisSegment(object):
             order = 5
         self._interpolator = EphemerisInterpolator(self._state_data, method, order)
 
-    def copy(self):
+    def copy(self) -> "EphemerisSegment":
         """Create an independent copy of this instance."""
         return EphemerisSegment(
             self.metadata.copy(),
@@ -206,7 +222,7 @@ class EphemerisSegment(object):
             version=self.version,
         )
 
-    def steps(self, step_size):
+    def steps(self, step_size: float) -> Iterator[State]:
         """Sample Segment at equal time intervals.
 
         This method returns a generator producing states at equal time
@@ -230,7 +246,7 @@ class EphemerisSegment(object):
         ):
             yield self(epoch)
 
-    def resample(self, step_size, in_place=False):
+    def resample(self, step_size: float, in_place: bool = False) -> "EphemerisSegment":
         """Resample ephemeris data.
 
         Replaces the existing ephemeris state data in this EphemerisSegment
@@ -247,6 +263,7 @@ class EphemerisSegment(object):
         """
         if not self._interpolator:
             self._init_interpolator()
+        assert self._interpolator is not None
 
         epochs = time_range(self.useable_start_time, self.useable_stop_time, step_size)
 
@@ -267,7 +284,7 @@ class EphemerisSegment(object):
         return segment if not in_place else self
 
     @property
-    def states(self):
+    def states(self) -> Iterator[State]:
         """Return list of States in this segment."""
         return (
             State._from_raw_data(entry, self.version, self.metadata)
@@ -275,7 +292,7 @@ class EphemerisSegment(object):
         )
 
     @property
-    def covariances(self):
+    def covariances(self) -> Union[Iterator[Covariance], Tuple[()]]:
         """Return list of Covariances in this segment."""
         if self._covariance_data:
             return (
@@ -286,25 +303,25 @@ class EphemerisSegment(object):
             return ()
 
     @property
-    def has_accel(self):
+    def has_accel(self) -> bool:
         """Evaluate if segment contains acceleration data."""
         return len(self._state_data) == 10
 
     @property
-    def has_covariance(self):
+    def has_covariance(self) -> bool:
         """Evaluate if segment contains covariance data."""
         return True if self._covariance_data else False
 
     @property
-    def useable_start_time(self):
+    def useable_start_time(self) -> Epoch:
         """Return epoch of start of useable state data range"""
         return self.metadata.useable_start_time
 
     @property
-    def useable_stop_time(self):
+    def useable_stop_time(self) -> Epoch:
         """Return epoch of end of useable state data range"""
         return self.metadata.useable_stop_time
 
     @property
-    def span(self):
+    def span(self) -> EpochSpan:
         return (self.useable_start_time, self.useable_stop_time)

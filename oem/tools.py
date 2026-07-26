@@ -3,12 +3,38 @@ import datetime as dt
 import gzip
 import lzma
 import warnings
+from pathlib import Path
+from typing import (
+    BinaryIO,
+    Container,
+    Iterator,
+    Literal,
+    Optional,
+    Protocol,
+    Sequence,
+    TextIO,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+    overload,
+)
 
 import numpy as np
 from astropy.time import Time, TimeDelta
 
+from oem._types import Epoch, EpochSpan
 
-def parse_str(input_string, metadata):
+if TYPE_CHECKING:
+    from oem.base import KeyValueSection
+
+
+class TimeSystemMetadata(Protocol):
+    """Metadata exposing the CCSDS time system."""
+
+    def __getitem__(self, key: str) -> str: ...
+
+
+def parse_str(input_string: str, metadata: "KeyValueSection") -> str:
     """Parse string input.
 
     Args:
@@ -21,7 +47,7 @@ def parse_str(input_string, metadata):
     return str(input_string)
 
 
-def parse_datetime(epoch):
+def parse_datetime(epoch: str) -> dt.datetime:
     """Convert OEM standard epoch to a DateTime.
 
     Args:
@@ -42,7 +68,7 @@ def parse_datetime(epoch):
         )
 
 
-def parse_utc(epoch, metadata):
+def parse_utc(epoch: str, metadata: "KeyValueSection") -> Time:
     """Parse OEM standard UTC epoch.
 
     Args:
@@ -54,7 +80,7 @@ def parse_utc(epoch, metadata):
     return Time(parse_datetime(epoch), format="datetime", scale="utc", precision=6)
 
 
-def parse_epoch(epoch, metadata):
+def parse_epoch(epoch: str, metadata: TimeSystemMetadata) -> Epoch:
     """Parse OEM standard epoch using metadata TIME_SYSTEM.
 
     Args:
@@ -80,7 +106,7 @@ def parse_epoch(epoch, metadata):
     return parsed_epoch
 
 
-def _identify_epoch_format(epoch):
+def _identify_epoch_format(epoch: str) -> str:
     if epoch.count("-") == 2:
         fmt = "isot"
     else:
@@ -88,11 +114,13 @@ def _identify_epoch_format(epoch):
     return fmt
 
 
-def _coerce_epoch_yday(epoch):
+def _coerce_epoch_yday(epoch: str) -> str:
     return epoch.replace("-", ":").replace("T", ":")
 
 
-def _bulk_parse_epochs(epochs, metadata):
+def _bulk_parse_epochs(
+    epochs: Sequence[str], metadata: TimeSystemMetadata
+) -> Union[Time, Tuple[Epoch, ...]]:
     """Parse OEM standard epochs using metadata TIME_SYSTEM.
 
     Applies time-ordered constraint to input epochs. For faster comparisons,
@@ -122,7 +150,7 @@ def _bulk_parse_epochs(epochs, metadata):
     return parsed_epochs
 
 
-def parse_integer(input, metadata):
+def parse_integer(input: str, metadata: "KeyValueSection") -> int:
     """Parse integer value.
 
     Args:
@@ -140,7 +168,7 @@ def parse_integer(input, metadata):
         raise ValueError(f"Invalid integer: '{input}'")
 
 
-def format_float_scientific(value):
+def format_float_scientific(value: float) -> str:
     """Convert float to a common string format.
 
     Args:
@@ -152,7 +180,7 @@ def format_float_scientific(value):
     return f"{value:.14e}"
 
 
-def format_float_decimal(value):
+def format_float_decimal(value: float) -> str:
     """Convert float to a common string format.
 
     Args:
@@ -164,7 +192,7 @@ def format_float_decimal(value):
     return f"{value:.6f}"
 
 
-def format_epoch(epoch):
+def format_epoch(epoch: Union[Time, dt.datetime]) -> str:
     """Format an epoch in the standard OEM format.
 
     Args:
@@ -176,7 +204,7 @@ def format_epoch(epoch):
     return epoch.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
 
-def require(boolean, message):
+def require(boolean: bool, message: str) -> None:
     """Require a boolean condition.
 
     Args:
@@ -190,7 +218,7 @@ def require(boolean, message):
         raise ValueError(message)
 
 
-def require_field(field, metadata):
+def require_field(field: str, metadata: Container[str]) -> None:
     """Require a field in a dict.
 
     Args:
@@ -203,7 +231,7 @@ def require_field(field, metadata):
     require(field in metadata, f"Missing required header: {field}")
 
 
-def is_kvn(file_path):
+def is_kvn(file_path: Union[str, Path]) -> bool:
     """Determine if an OEM file is KVN or XML.
 
     Args:
@@ -220,7 +248,7 @@ def is_kvn(file_path):
     return result
 
 
-def time_range(start_time, stop_time, step_sec):
+def time_range(start_time: Time, stop_time: Time, step_sec: float) -> Iterator[Time]:
     """Sample a range of astropy Times.
 
     Args:
@@ -236,7 +264,7 @@ def time_range(start_time, stop_time, step_sec):
         yield start_time + TimeDelta(elapsed, format="sec")
 
 
-def epoch_span_contains(span, epoch):
+def epoch_span_contains(span: EpochSpan, epoch: Epoch) -> bool:
     """Determine if a given epoch falls within a given timespan.
 
     Args:
@@ -250,7 +278,7 @@ def epoch_span_contains(span, epoch):
     return epoch >= span[0] and epoch <= span[1]
 
 
-def epoch_span_overlap(span1, span2):
+def epoch_span_overlap(span1: EpochSpan, span2: EpochSpan) -> Optional[EpochSpan]:
     """Find the overlap between two epoch spans.
 
     Args:
@@ -270,7 +298,7 @@ def epoch_span_overlap(span1, span2):
     return overlap_range
 
 
-def _get_compression(path):
+def _get_compression(path: Union[str, Path]) -> Optional[str]:
     headers = {
         b"\x1f\x8b": "gzip",
         b"\x42\x5a\x68": "bz2",
@@ -287,7 +315,27 @@ def _get_compression(path):
     return compression
 
 
-def _open(path, mode, compression=None):
+@overload
+def _open(
+    path: Union[str, Path], mode: Literal["rt"], compression: Optional[str] = None
+) -> TextIO: ...
+
+
+@overload
+def _open(
+    path: Union[str, Path], mode: Literal["wb"], compression: Optional[str] = None
+) -> BinaryIO: ...
+
+
+@overload
+def _open(
+    path: Union[str, Path], mode: str, compression: Optional[str] = None
+) -> Union[TextIO, BinaryIO]: ...
+
+
+def _open(
+    path: Union[str, Path], mode: str, compression: Optional[str] = None
+) -> Union[TextIO, BinaryIO]:
     if mode == "rt":
         compression = _get_compression(path)
     openers = {"gzip": gzip.open, "bz2": bz2.open, "lzma": lzma.open, None: open}

@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from lxml.etree import SubElement
 
 from oem.base import HeaderField, KeyValueSection
@@ -30,37 +32,39 @@ class HeaderSection(KeyValueSection):
         "ORIGINATOR": HeaderField(parse_str, str, required=True),
     }
 
-    def __init__(self, fields):
+    def __init__(self, fields: Dict[str, str]) -> None:
         self._parse_fields(fields)
 
-    def __eq__(self, other):
-        return self._fields.keys() == other._fields.keys() and all(
-            self[key] == other[key] for key in self
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, HeaderSection)
+            and self._fields.keys() == other._fields.keys()
+            and all(self[key] == other[key] for key in self)
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"HeaderSection(v{self.version})"
 
     @classmethod
-    def _from_raw_data(cls, segment):
+    def _from_raw_data(cls, segment: Dict[str, str]) -> "HeaderSection":
         return cls(segment)
 
-    def _to_string(self):
+    def _to_string(self) -> str:
         lines = f"CCSDS_OEM_VERS = {self.version}\n"
         lines += "\n".join(
             [entry for entry in self._format_fields() if "CCSDS_OEM_VERS" not in entry]
         )
         return lines + "\n"
 
-    def _to_xml(self, parent):
+    def _to_xml(self, parent: Any) -> None:
         for key, value in self._fields.items():
             if key != "CCSDS_OEM_VERS":
                 SubElement(parent, key).text = value
 
-    def copy(self):
+    def copy(self) -> "HeaderSection":
         """Create an independent copy of this instance."""
         return HeaderSection(self._fields.copy())
 
     @property
-    def version(self):
+    def version(self) -> str:
         return self["CCSDS_OEM_VERS"]
