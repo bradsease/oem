@@ -1,9 +1,9 @@
 from typing import Any, Optional, Sequence, Union
 
 import numpy as np
+from astropy.time import Time
 
 from oem import CURRENT_VERSION
-from oem._types import Epoch
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import StateCompare
 from oem.tools import require
@@ -57,7 +57,7 @@ class State(object):
     """Basic Cartesian state.
 
     Attributes:
-        epoch (DateTime): Epoch date and time.
+        epoch (Time): Epoch date and time.
         frame (str): Reference frame.
         center (str): Central body.
         position (ndarray): 3-element array describing the position at epoch.
@@ -72,7 +72,7 @@ class State(object):
 
     def __init__(
         self,
-        epoch: Epoch,
+        epoch: Time,
         frame: str,
         center: str,
         position: Sequence[float],
@@ -148,14 +148,14 @@ class Covariance(object):
     """Basic 6x6 covariance.
 
     Attributes:
-        epoch (DateTime): Epoch date and time.
+        epoch (Time): Epoch date and time.
         frame (str): Reference from of this covariance.
         matrix (ndarray): 6x6 covariance matrix.
     """
 
     def __init__(
         self,
-        epoch: Epoch,
+        epoch: Time,
         frame: str,
         matrix: Union[np.ndarray, Sequence[Sequence[float]]],
         version: str = CURRENT_VERSION,

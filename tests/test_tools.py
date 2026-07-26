@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pytest
 from astropy.time import Time
 
@@ -15,10 +13,6 @@ def test_parse_integer():
 
 def test_format_epoch():
     assert (
-        tools.format_epoch(datetime.fromisoformat("2024-02-08T19:46:03.597928"))
-        == "2024-02-08T19:46:03.597928"
-    )
-    assert (
         tools.format_epoch(Time("2024-02-08T19:46:03.597928", precision=6))
         == "2024-02-08T19:46:03.597928"
     )
@@ -30,7 +24,8 @@ def test_parse_epoch_unsupported_time_system_warns():
     with pytest.warns(UserWarning, match="Unsupported TIME_SYSTEM 'abcd'"):
         parsed_epoch = tools.parse_epoch("2024-02-08T19:46:03.597928", metadata)
 
-    assert isinstance(parsed_epoch, datetime)
+    assert isinstance(parsed_epoch, Time)
+    assert parsed_epoch.scale == "local"
 
 
 def test_bulk_parse_epochs_unsupported_time_system_warns():
@@ -40,4 +35,6 @@ def test_bulk_parse_epochs_unsupported_time_system_warns():
     with pytest.warns(UserWarning, match="Unsupported TIME_SYSTEM 'abcd'"):
         parsed_epochs = tools._bulk_parse_epochs(epochs, metadata)
 
+    assert isinstance(parsed_epochs, Time)
+    assert parsed_epochs.scale == "local"
     assert len(parsed_epochs) == len(epochs)

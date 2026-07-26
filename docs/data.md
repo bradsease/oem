@@ -16,7 +16,7 @@ for segment in ephemeris:
         print(covariance.epoch, covariance.matrix)
 ```
 
-Epochs are represented as `astropy.time.Time` objects if the time system is supported by `astropy` or `datetime` otherwise. Positions, velocities, and accelerations are `numpy` arrays.
+Epochs are represented as `astropy.time.Time` objects. Unsupported time systems use Astropy's `local` scale, which cannot be converted to a defined time scale. Positions, velocities, and accelerations are `numpy` arrays.
 
 Address specific segments through the `.segments` attribute.
 

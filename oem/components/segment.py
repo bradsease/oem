@@ -1,10 +1,10 @@
 from itertools import chain
 from typing import Any, Callable, Iterator, Optional, Sequence, Tuple, Union
 
+from astropy.time import Time
 from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
-from oem._types import Epoch, EpochSpan
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import SegmentCompare
 from oem.components.metadata import MetaDataSection
@@ -93,7 +93,7 @@ class EphemerisSegment(object):
         self._constraint_spec.apply(self)
         self._interpolator: Optional[EphemerisInterpolator] = None
 
-    def __call__(self, epoch: Epoch) -> State:
+    def __call__(self, epoch: Time) -> State:
         if epoch not in self:
             raise ValueError(f"Epoch {epoch} not contained in segment.")
         if not self._interpolator:
@@ -110,7 +110,7 @@ class EphemerisSegment(object):
             version=self.version,
         )
 
-    def __contains__(self, epoch: Epoch) -> bool:
+    def __contains__(self, epoch: Time) -> bool:
         return epoch_span_contains(self.span, epoch)
 
     def __iter__(self) -> Iterator[State]:
@@ -152,7 +152,7 @@ class EphemerisSegment(object):
         return cls(metadata, state_data, cov_data, version=version)
 
     def _to_string(
-        self, format_epoch: Callable[[Epoch], str], format_float: Callable[[float], str]
+        self, format_epoch: Callable[[Time], str], format_float: Callable[[float], str]
     ) -> str:
         lines = self.metadata._to_string() + "\n"
         for epoch, *state in zip(*self._state_data):
@@ -180,7 +180,7 @@ class EphemerisSegment(object):
     def _to_xml(
         self,
         parent: Any,
-        format_epoch: Callable[[Epoch], str],
+        format_epoch: Callable[[Time], str],
         format_float: Callable[[float], str],
     ) -> None:
         self.metadata._to_xml(SubElement(parent, "metadata"))
@@ -313,15 +313,15 @@ class EphemerisSegment(object):
         return True if self._covariance_data else False
 
     @property
-    def useable_start_time(self) -> Epoch:
+    def useable_start_time(self) -> Time:
         """Return epoch of start of useable state data range"""
         return self.metadata.useable_start_time
 
     @property
-    def useable_stop_time(self) -> Epoch:
+    def useable_stop_time(self) -> Time:
         """Return epoch of end of useable state data range"""
         return self.metadata.useable_stop_time
 
     @property
-    def span(self) -> EpochSpan:
+    def span(self) -> Tuple[Time, Time]:
         return (self.useable_start_time, self.useable_stop_time)

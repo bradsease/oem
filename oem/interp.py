@@ -1,7 +1,6 @@
 import numpy as np
+from astropy.time import Time
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
-
-from oem._types import Epoch
 
 
 def lagrange(x: np.ndarray, y: np.ndarray) -> np.poly1d:
@@ -62,7 +61,7 @@ class Interpolator(object):
         self._setup(states)
 
     def __call__(
-        self, epoch: Epoch
+        self, epoch: Time
     ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         t = (epoch - self.reference_epoch).sec
         raw_state = np.array([poly(t) for poly in self._state_polynomials])
@@ -82,7 +81,7 @@ class Interpolator(object):
         raise NotImplementedError
 
     @property
-    def reference_epoch(self) -> Epoch:
+    def reference_epoch(self) -> Time:
         return self._reference_epoch
 
 
@@ -150,12 +149,12 @@ class EphemerisInterpolator(object):
         self._populate_interpolator_nodes(states[0], order)
 
     def __call__(
-        self, epoch: Epoch
+        self, epoch: Time
     ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         interpolator = self._get_best_interpolator(epoch)
         return interpolator(epoch)
 
-    def _populate_interpolator_nodes(self, epochs: Sequence[Epoch], order: int) -> None:
+    def _populate_interpolator_nodes(self, epochs: Sequence[Time], order: int) -> None:
         samples = self.base_interpolator._samples_required(order)
         elapsed_times = np.array(
             [(entry - self.reference_epoch).sec for entry in epochs]
@@ -167,7 +166,7 @@ class EphemerisInterpolator(object):
             ]
         )
 
-    def _get_best_interpolator(self, epoch: Epoch) -> Interpolator:
+    def _get_best_interpolator(self, epoch: Time) -> Interpolator:
         elapsed_time = (epoch - self.reference_epoch).sec
         best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
         samples = self.base_interpolator._samples_required(self.order)
@@ -176,7 +175,7 @@ class EphemerisInterpolator(object):
         )
 
     @property
-    def reference_epoch(self) -> Epoch:
+    def reference_epoch(self) -> Time:
         return self._states[0][0]
 
     @property

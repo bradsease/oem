@@ -2,8 +2,9 @@ from lxml.etree import Element, ElementTree, SubElement
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
+from astropy.time import Time
+
 from oem import components
-from oem._types import Epoch, EpochSpan
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
@@ -21,7 +22,7 @@ NUMBER_FORMATERS: Dict[str, Callable[[float], str]] = {
     "fixed_cm": format_float_decimal,
 }
 
-EPOCH_FORMATERS: Dict[str, Callable[[Epoch], str]] = {
+EPOCH_FORMATERS: Dict[str, Callable[[Time], str]] = {
     "iso": format_epoch,
 }
 
@@ -172,7 +173,7 @@ class OrbitEphemerisMessage(object):
         self._segments = segments
         self._constraint_spec.apply(self)
 
-    def __call__(self, epoch: Epoch) -> "components.State":
+    def __call__(self, epoch: Time) -> "components.State":
         for segment in self:
             if epoch in segment:
                 return segment(epoch)
@@ -182,7 +183,7 @@ class OrbitEphemerisMessage(object):
     def __iter__(self) -> Iterator["components.EphemerisSegment"]:
         return iter(self._segments)
 
-    def __contains__(self, epoch: Epoch) -> bool:
+    def __contains__(self, epoch: Time) -> bool:
         return any(epoch in segment for segment in self._segments)
 
     def __eq__(self, other: object) -> bool:
@@ -397,7 +398,7 @@ class OrbitEphemerisMessage(object):
 
     def _to_kvn_oem(
         self,
-        epoch_formatter: Callable[[Epoch], str],
+        epoch_formatter: Callable[[Time], str],
         number_formatter: Callable[[float], str],
     ) -> str:
         lines = self.header._to_string() + "\n"
@@ -409,7 +410,7 @@ class OrbitEphemerisMessage(object):
 
     def _to_xml_oem(
         self,
-        epoch_formatter: Callable[[Epoch], str],
+        epoch_formatter: Callable[[Time], str],
         number_formatter: Callable[[float], str],
     ) -> ElementTree:
         oem = Element("oem", id="CCSDS_OEM_VERS", version=self.version)
@@ -436,7 +437,7 @@ class OrbitEphemerisMessage(object):
         return self._segments
 
     @property
-    def span(self) -> EpochSpan:
+    def span(self) -> Tuple[Time, Time]:
         return (
             min(segment.useable_start_time for segment in self),
             max(segment.useable_stop_time for segment in self),
