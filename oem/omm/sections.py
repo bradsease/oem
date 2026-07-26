@@ -2,7 +2,8 @@
 
 from typing import Dict, Mapping, Union, cast
 
-from oem._types import Epoch
+from astropy.time import Time
+
 from oem.base import Constraint, ConstraintSpecification, HeaderField, KeyValueSection
 from oem.tools import (
     format_epoch,
@@ -27,7 +28,7 @@ def _parse_float(value: str, metadata: object) -> float:
     return float(value.partition("[")[0].strip())
 
 
-def _parse_data_epoch(value: str, data: KeyValueSection) -> Epoch:
+def _parse_data_epoch(value: str, data: KeyValueSection) -> Time:
     return parse_epoch(value, cast("OmmData", data).metadata)
 
 
@@ -87,7 +88,7 @@ class OmmHeader(OmmKeyValueSection):
         ConstrainOmmVersion, ConstrainOmmV2Header
     )
 
-    def __getitem__(self, key: str) -> Union[str, Epoch]:
+    def __getitem__(self, key: str) -> Union[str, Time]:
         if key == "CREATION_DATE" and not self._fields[key]:
             return ""
         return super().__getitem__(key)
@@ -271,12 +272,12 @@ class OmmData(OmmKeyValueSection):
         self.metadata = metadata
         super().__init__(fields, version=version)
 
-    def __getitem__(self, key: str) -> Union[str, int, float, Epoch]:
+    def __getitem__(self, key: str) -> Union[str, int, float, Time]:
         if key.startswith("USER_DEFINED_"):
             return self._fields[key]
         return super().__getitem__(key)
 
-    def __setitem__(self, key: str, value: Union[str, int, float, Epoch]) -> None:
+    def __setitem__(self, key: str, value: Union[str, int, float, Time]) -> None:
         if key.startswith("USER_DEFINED_"):
             self._fields[key] = str(value)
         else:

@@ -14,14 +14,13 @@ from typing import (
     Sequence,
     TextIO,
     TYPE_CHECKING,
+    Tuple,
     Union,
     overload,
 )
 
 import numpy as np
 from astropy.time import Time, TimeDelta
-
-from oem._types import Epoch, EpochSpan
 
 if TYPE_CHECKING:
     from oem.base import KeyValueSection
@@ -182,11 +181,11 @@ def format_float_decimal(value: float) -> str:
     return f"{value:.6f}"
 
 
-def format_epoch(epoch: Union[Time, dt.datetime]) -> str:
+def format_epoch(epoch: Time) -> str:
     """Format an epoch in the standard OEM format.
 
     Args:
-        epoch (Time, DateTime): Epoch to convert to string.
+        epoch (Time): Epoch to convert to string.
 
     Returns:
         formatted_epoch (str): Epoch in YYYY-MM-DDTHH:MM:SS.ssssss format.
@@ -254,7 +253,7 @@ def time_range(start_time: Time, stop_time: Time, step_sec: float) -> Iterator[T
         yield start_time + TimeDelta(elapsed, format="sec")
 
 
-def epoch_span_contains(span: EpochSpan, epoch: Epoch) -> bool:
+def epoch_span_contains(span: Tuple[Time, Time], epoch: Time) -> bool:
     """Determine if a given epoch falls within a given timespan.
 
     Args:
@@ -268,7 +267,9 @@ def epoch_span_contains(span: EpochSpan, epoch: Epoch) -> bool:
     return epoch >= span[0] and epoch <= span[1]
 
 
-def epoch_span_overlap(span1: EpochSpan, span2: EpochSpan) -> Optional[EpochSpan]:
+def epoch_span_overlap(
+    span1: Tuple[Time, Time], span2: Tuple[Time, Time]
+) -> Optional[Tuple[Time, Time]]:
     """Find the overlap between two epoch spans.
 
     Args:

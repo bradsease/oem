@@ -1,9 +1,9 @@
 from typing import Any, Dict
 
+from astropy.time import Time
 from lxml.etree import SubElement
 
 from oem import CURRENT_VERSION
-from oem._types import Epoch
 from oem.base import Constraint, ConstraintSpecification, HeaderField, KeyValueSection
 from oem.tools import (
     format_epoch,
@@ -177,7 +177,7 @@ class MetaDataSection(KeyValueSection):
         return MetaDataSection(self._fields.copy(), version=self.version)
 
     @property
-    def useable_start_time(self) -> Epoch:
+    def useable_start_time(self) -> Time:
         """Return epoch of start of useable state data range"""
         return (
             self["USEABLE_START_TIME"]
@@ -186,7 +186,7 @@ class MetaDataSection(KeyValueSection):
         )
 
     @property
-    def useable_stop_time(self) -> Epoch:
+    def useable_stop_time(self) -> Time:
         """Return epoch of end of useable state data range"""
         return (
             self["USEABLE_STOP_TIME"]
