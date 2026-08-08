@@ -216,7 +216,8 @@ class StateCompare(object):
     Attributes:
         epoch (Time): Epoch of the state compare.
         range (float): Absolute distance between the two states.
-        range_rate (float): Absolute velocity between the two states.
+        range_rate (float): Signed rate of change of the distance between the
+            two states. Returns zero when the states have identical positions.
         position (ndarray): Relative position vector in the input frame.
         velocity (ndarray): Relative velocity vector in the input frame.
         position_ric (ndarray): Relative position vector in the RIC frame.
@@ -301,7 +302,11 @@ class StateCompare(object):
     @property
     def range_rate(self) -> float:
         self._require_inertial()
-        return np.linalg.norm(self._target.velocity - self._origin.velocity)
+        relative_position = self.position
+        distance = np.linalg.norm(relative_position)
+        if distance == 0:
+            return 0.0
+        return np.dot(relative_position, self.velocity) / distance
 
     @property
     def position(self) -> np.ndarray:
