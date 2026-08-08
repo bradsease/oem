@@ -50,6 +50,7 @@ Changelog = "https://github.com/bradsease/oem/releases"
 [project.optional-dependencies]
 test = [
     "pytest",
+    "pytest-benchmark",
     "flake8",
     "black",
 ]

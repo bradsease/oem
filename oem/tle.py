@@ -44,6 +44,8 @@ def _build_metadata(
 def _build_segment(
     satrec: Satrec, start_epoch: Time, stop_epoch: Time, step: float, frame: str
 ) -> EphemerisSegment:
+    start_epoch = start_epoch.utc
+    stop_epoch = stop_epoch.utc
     epoch_range = list(time_range(start_epoch, stop_epoch, step))
     position, velocity = _sample_tle_at_epoch_array(satrec, epoch_range, frame)
     return EphemerisSegment(
@@ -65,8 +67,8 @@ def _sample_tle_at_epoch_array(
 ) -> Tuple[np.ndarray, np.ndarray]:
     if frame not in ("TEME", "ICRF"):
         raise ValueError(f"Unsupported frame: {frame}")
-    jd1 = np.array([epoch.jd1 for epoch in epochs])
-    jd2 = np.array([epoch.jd2 for epoch in epochs])
+    jd1 = np.array([epoch.utc.jd1 for epoch in epochs])
+    jd2 = np.array([epoch.utc.jd2 for epoch in epochs])
     err, r, v = satrec.sgp4_array(jd1, jd2)
     if any(err):
         detail = SGP4_ERRORS.get(err[0], "unknown error")

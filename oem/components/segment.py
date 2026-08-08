@@ -281,6 +281,7 @@ class EphemerisSegment(object):
                 for epoch in epochs
             )
             self._state_data = tuple(zip(*states))
+            self._interpolator = None
         else:
             segment = self.copy().resample(step_size, in_place=True)
 

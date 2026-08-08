@@ -14,7 +14,10 @@ for diff_state in diff.steps(60):
     print(diff_state.epoch, diff_state.position, diff_state.velocity)
 ```
 
-Range and range-rate calculations are also supported.
+Range and geometric range-rate calculations are also supported. Range rate is
+the signed radial projection of relative velocity: positive when the states are
+moving apart and negative when they are moving together. It is zero for
+identical positions, where the radial direction is undefined.
 
 ```python
 for diff_state in diff.steps(60):

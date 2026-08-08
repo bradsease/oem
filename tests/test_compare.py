@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 from astropy.time import Time
@@ -8,7 +6,7 @@ from oem import OrbitEphemerisMessage
 from oem.compare import StateCompare
 from oem.components import State
 
-SAMPLE_DIR = Path(__file__).parent / "samples"
+from .test_samples import SAMPLE_DIR
 
 
 def test_state_self_difference():
@@ -20,6 +18,37 @@ def test_state_self_difference():
     assert all(compare.velocity == 0)
     assert all(compare.position_ric == 0)
     assert all(compare.velocity_ric == 0)
+
+
+def test_state_compare_transverse_range_rate():
+    epoch = Time.now()
+    origin = State(epoch, "ICRF", "EARTH", [0, 0, 0], [0, 0, 0])
+    target = State(epoch, "ICRF", "EARTH", [1, 0, 0], [0, 2, 0])
+
+    compare = StateCompare(origin, target)
+
+    assert np.linalg.norm(compare.velocity) == 2
+    assert compare.range_rate == 0
+
+
+@pytest.mark.parametrize(
+    ("target_position", "target_velocity", "expected"),
+    [([2, 0, 0], [3, 0, 0], 3), ([2, 0, 0], [-3, 0, 0], -3)],
+)
+def test_state_compare_radial_range_rate(target_position, target_velocity, expected):
+    epoch = Time.now()
+    origin = State(epoch, "ICRF", "EARTH", [0, 0, 0], [0, 0, 0])
+    target = State(epoch, "ICRF", "EARTH", target_position, target_velocity)
+
+    assert StateCompare(origin, target).range_rate == expected
+
+
+def test_state_compare_zero_range_rate():
+    epoch = Time.now()
+    origin = State(epoch, "ICRF", "EARTH", [1, 2, 3], [0, 0, 0])
+    target = State(epoch, "ICRF", "EARTH", [1, 2, 3], [1, 2, 3])
+
+    assert StateCompare(origin, target).range_rate == 0
 
 
 def test_state_compare_frame_mismatch():

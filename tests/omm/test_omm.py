@@ -209,6 +209,18 @@ def test_at_defaults_to_icrf(omm):
     assert omm.at(omm.epoch).frame == "ICRF"
 
 
+def test_at_equivalent_time_scales_preserves_epoch(omm):
+    utc_epoch = omm.epoch + 600 * u.s
+    tt_epoch = utc_epoch.tt
+
+    utc_state = omm.at(utc_epoch, frame="TEME")
+    tt_state = omm.at(tt_epoch, frame="TEME")
+
+    assert tt_state.epoch is tt_epoch
+    np.testing.assert_allclose(tt_state.position, utc_state.position)
+    np.testing.assert_allclose(tt_state.velocity, utc_state.velocity)
+
+
 def test_to_oem_rejects_unsupported_frame(omm):
     with pytest.raises(ValueError, match="Unsupported frame"):
         omm.to_oem(omm.epoch, omm.epoch + 600 * u.s, 600, frame="INVALID")
