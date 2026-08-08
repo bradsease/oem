@@ -3,6 +3,7 @@ from astropy import units
 from astropy.time import Time, TimeDelta
 
 from oem.tle import tle_to_oem
+from oem.tools import format_epoch
 
 SAMPLE_TLE = (
     "1 25544U 98067A   19343.69339541  .00001764  00000-0  38792-4 0  9991",
@@ -17,6 +18,20 @@ def test_sample(frame):
     oem = tle_to_oem(SAMPLE_TLE, start_epoch, stop_epoch, 3600, frame=frame)
     assert len(oem._segments) == 1
     assert oem.segments[0].metadata["REF_FRAME"] == frame
+
+
+def test_generated_oem_data_reaches_metadata_stop():
+    start_epoch = Time("2019-12-09T20:42:09.000", scale="utc", precision=6)
+    stop_epoch = start_epoch + TimeDelta(650, format="sec")
+
+    oem = tle_to_oem(SAMPLE_TLE, start_epoch, stop_epoch, 600, frame="TEME")
+    segment = oem.segments[0]
+
+    final_state = list(segment.states)[-1]
+    assert final_state.epoch == stop_epoch
+    assert format_epoch(final_state.epoch) == format_epoch(
+        segment.metadata["STOP_TIME"]
+    )
 
 
 @pytest.mark.parametrize("frame", ("TEME", "ICRF"))
