@@ -73,6 +73,49 @@ COVARIANCE_FIELDS = (
     "CZ_DOT_Z_DOT",
 )
 COVARIANCE_COMPONENTS = COVARIANCE_FIELDS[1:]
+_KVN_UNITS = {
+    "SEMI_MAJOR_AXIS": "km",
+    "MEAN_MOTION": "rev/day",
+    "INCLINATION": "deg",
+    "RA_OF_ASC_NODE": "deg",
+    "ARG_OF_PERICENTER": "deg",
+    "MEAN_ANOMALY": "deg",
+    "GM": "km**3/s**2",
+    "MASS": "kg",
+    "SOLAR_RAD_AREA": "m**2",
+    "DRAG_AREA": "m**2",
+    "BSTAR": "1/ER",
+    "BTERM": "m**2/kg",
+    "MEAN_MOTION_DOT": "rev/day**2",
+    "MEAN_MOTION_DDOT": "rev/day**3",
+    "AGOM": "m**2/kg",
+    **{field: "km**2" for field in COVARIANCE_COMPONENTS[:6]},
+    **{
+        field: "km**2/s"
+        for field in (
+            "CX_DOT_X",
+            "CX_DOT_Y",
+            "CX_DOT_Z",
+            "CY_DOT_X",
+            "CY_DOT_Y",
+            "CY_DOT_Z",
+            "CZ_DOT_X",
+            "CZ_DOT_Y",
+            "CZ_DOT_Z",
+        )
+    },
+    **{
+        field: "km**2/s**2"
+        for field in (
+            "CX_DOT_X_DOT",
+            "CY_DOT_X_DOT",
+            "CY_DOT_Y_DOT",
+            "CZ_DOT_X_DOT",
+            "CZ_DOT_Y_DOT",
+            "CZ_DOT_Z_DOT",
+        )
+    },
+}
 NUMERIC_DATA_FIELDS = (
     set(MEAN_ELEMENT_FIELDS)
     | set(SPACECRAFT_PARAMETER_FIELDS)

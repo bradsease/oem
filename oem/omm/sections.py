@@ -1,5 +1,6 @@
 """Typed OMM sections and validation constraints."""
 
+import re
 from typing import Dict, Mapping, Union, cast
 
 from astropy.time import Time
@@ -17,15 +18,46 @@ from oem.tools import (
 from .fields import (
     COVARIANCE_COMPONENTS,
     COVARIANCE_FIELDS,
+    MEAN_ELEMENT_FIELDS,
     SPACECRAFT_PARAMETER_FIELDS,
     SUPPORTED_VERSIONS,
+    TLE_PARAMETER_FIELDS,
     VERSION,
+    _KVN_UNITS,
 )
 
 
 def _parse_float(value: str, metadata: object) -> float:
-    """Parse an OMM number while accepting its optional unit annotation."""
-    return float(value.partition("[")[0].strip())
+    return float(value)
+
+
+_DATA_FIELDS = set(
+    MEAN_ELEMENT_FIELDS
+    + SPACECRAFT_PARAMETER_FIELDS
+    + TLE_PARAMETER_FIELDS
+    + COVARIANCE_FIELDS
+)
+_UNIT_ANNOTATION = re.compile(r"(\S+)\s+\[([^\[\]]+)\]")
+
+
+def _discard_unit_annotation(key: str, value: str) -> str:
+    if "[" not in value and "]" not in value:
+        return value
+    if key not in _DATA_FIELDS:
+        return value
+    match = _UNIT_ANNOTATION.fullmatch(value)
+    if match is None:
+        raise ValueError(f"Invalid unit annotation for OMM field '{key}'")
+    if key not in _KVN_UNITS:
+        raise ValueError(f"Unit annotation is not allowed for OMM field '{key}'")
+    numeric, unit = match.groups()
+    expected = _KVN_UNITS[key]
+    if unit != expected:
+        raise ValueError(
+            f"Invalid unit annotation for OMM field '{key}': "
+            f"expected [{expected}], got [{unit}]"
+        )
+    return numeric
 
 
 def _parse_data_epoch(value: str, data: KeyValueSection) -> Time:
@@ -270,7 +302,13 @@ class OmmData(OmmKeyValueSection):
         version: str = VERSION,
     ) -> None:
         self.metadata = metadata
-        super().__init__(fields, version=version)
+        super().__init__(
+            {
+                key: _discard_unit_annotation(key, str(value).strip())
+                for key, value in fields.items()
+            },
+            version=version,
+        )
 
     def __getitem__(self, key: str) -> Union[str, int, float, Time]:
         if key.startswith("USER_DEFINED_"):
@@ -281,7 +319,8 @@ class OmmData(OmmKeyValueSection):
         if key.startswith("USER_DEFINED_"):
             self._fields[key] = str(value)
         else:
-            super().__setitem__(key, str(value))
+            text = str(value).strip()
+            super().__setitem__(key, _discard_unit_annotation(key, text))
 
     def _validate_fields(self, fields: Dict[str, str]) -> None:
         invalid = [

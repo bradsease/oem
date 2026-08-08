@@ -20,16 +20,16 @@ MEAN_ANOMALY = 30.0
 
 COMMENT All lower-triangular covariance elements are present
 COV_REF_FRAME = EME2000
-CX_X = 1
+CX_X = 1 [km**2]
 CY_X = 2
 CY_Y = 3
 CZ_X = 4
 CZ_Y = 5
 CZ_Z = 6
-CX_DOT_X = 7
+CX_DOT_X = 7 [km**2/s]
 CX_DOT_Y = 8
 CX_DOT_Z = 9
-CX_DOT_X_DOT = 10
+CX_DOT_X_DOT = 10 [km**2/s**2]
 CY_DOT_X = 11
 CY_DOT_Y = 12
 CY_DOT_Z = 13
