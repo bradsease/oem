@@ -272,79 +272,22 @@ class OrbitEphemerisMessage(object):
         states = tuple(states)
         if not states:
             raise ValueError("Cannot create an OEM without states")
-        if not all(isinstance(state, components.State) for state in states):
-            raise TypeError("states must contain only State objects")
-        if any(_is_aware_datetime(state.epoch) for state in states):
-            raise ValueError("State epochs cannot be timezone-aware datetime objects")
-        if any(isinstance(state.epoch, Time) for state in states) and not all(
-            isinstance(state.epoch, Time) for state in states
-        ):
-            raise ValueError("State epochs must all use the same type")
-        if not all(
-            states[index].epoch < states[index + 1].epoch
-            for index in range(len(states) - 1)
-        ):
-            raise ValueError("States must be ordered by increasing epoch")
-
         first = states[0]
-        if any(state.frame != first.frame for state in states):
-            raise ValueError("All states in a segment must use the same frame")
-        if any(state.center != first.center for state in states):
-            raise ValueError("All states in a segment must use the same center")
-        if any(state.has_accel != first.has_accel for state in states):
-            raise ValueError("States cannot mix acceleration data within a segment")
-
         covariances = tuple(covariances) if covariances is not None else ()
-        if not all(
-            isinstance(covariance, components.Covariance) for covariance in covariances
-        ):
-            raise TypeError("covariances must contain only Covariance objects")
-        for covariance in covariances:
-            if _is_aware_datetime(covariance.epoch):
-                raise ValueError(
-                    "Covariance epochs cannot be timezone-aware datetime objects"
-                )
-            if covariance.matrix.shape != (6, 6):
-                raise ValueError("Covariance matrices must have shape (6, 6)")
-            if not (covariance.matrix == covariance.matrix.T).all():
-                raise ValueError("Covariance matrices must be symmetric")
-        if not all(
-            covariances[index].epoch < covariances[index + 1].epoch
-            for index in range(len(covariances) - 1)
-        ):
-            raise ValueError("Covariances must be ordered by increasing epoch")
 
         header_fields, metadata_fields = _split_fields(fields)
-        provided_metadata = set(metadata_fields)
         version = str(header_fields.get("CCSDS_OEM_VERS", CURRENT_VERSION))
 
-        astropy_epochs = all(isinstance(state.epoch, Time) for state in states)
         if "TIME_SYSTEM" not in metadata_fields:
-            if not astropy_epochs:
+            try:
+                metadata_fields["TIME_SYSTEM"] = first.epoch.scale.upper()
+            except AttributeError:
                 raise ValueError(
                     "time_system is required when state epochs are not Astropy Time objects"
                 )
-            scales = {state.epoch.scale.upper() for state in states}
-            if len(scales) != 1:
-                raise ValueError(
-                    "All states in a segment must use the same time system"
-                )
-            metadata_fields["TIME_SYSTEM"] = scales.pop()
-
-        if astropy_epochs and any(
-            not isinstance(covariance.epoch, Time) for covariance in covariances
-        ):
-            raise ValueError(
-                "Covariance epochs must be Astropy Time objects when state epochs are"
-                " Astropy Time objects"
-            )
-        if not astropy_epochs and any(
-            isinstance(covariance.epoch, Time) for covariance in covariances
-        ):
-            raise ValueError("Covariance and state epochs must use the same type")
 
         time_system = str(metadata_fields["TIME_SYSTEM"]).lower()
-        if not astropy_epochs and time_system in Time.SCALES:
+        if not isinstance(first.epoch, Time) and time_system in Time.SCALES:
             state_epochs = tuple(
                 Time(state.epoch, format="datetime", scale=time_system, precision=6)
                 for state in states
@@ -388,13 +331,11 @@ class OrbitEphemerisMessage(object):
             ):
                 if key in metadata_fields and isinstance(metadata_fields[key], Time):
                     metadata_fields[key] = getattr(metadata_fields[key], time_system)
-                elif key in metadata_fields and _is_aware_datetime(
-                    metadata_fields[key]
+                elif (
+                    key in metadata_fields
+                    and _is_aware_datetime(metadata_fields[key])
+                    and time_system == "utc"
                 ):
-                    if time_system != "utc":
-                        raise ValueError(
-                            "Timezone-aware metadata epochs require the UTC time system"
-                        )
                     metadata_fields[key] = (
                         metadata_fields[key]
                         .astimezone(dt.timezone.utc)
@@ -405,45 +346,11 @@ class OrbitEphemerisMessage(object):
         )
         metadata = components.MetaDataSection(metadata_fields, version=version)
 
-        if (
-            "CENTER_NAME" in provided_metadata
-            and metadata["CENTER_NAME"] != first.center
-        ):
-            raise ValueError("center_name conflicts with the state center")
-        if "REF_FRAME" in provided_metadata and metadata["REF_FRAME"] != first.frame:
-            raise ValueError("ref_frame conflicts with the state frame")
-        if astropy_epochs and any(
-            state.epoch.scale.upper() != metadata["TIME_SYSTEM"].upper()
-            for state in states
-        ):
-            raise ValueError("time_system conflicts with the state epochs")
-        if astropy_epochs and any(
-            covariance.epoch.scale.upper() != metadata["TIME_SYSTEM"].upper()
-            for covariance in covariances
-        ):
-            raise ValueError("time_system conflicts with the covariance epochs")
-        if "START_TIME" in provided_metadata and format_epoch(
-            metadata["START_TIME"]
-        ) != format_epoch(start_time):
-            raise ValueError("start_time conflicts with the first data epoch")
-        if "STOP_TIME" in provided_metadata and format_epoch(
-            metadata["STOP_TIME"]
-        ) != format_epoch(stop_time):
-            raise ValueError("stop_time conflicts with the last data epoch")
-        if (
-            "USEABLE_START_TIME" in provided_metadata
-            and metadata["USEABLE_START_TIME"] < state_epochs[0]
-        ):
-            raise ValueError("useable_start_time cannot precede the first state epoch")
-        if (
-            "USEABLE_STOP_TIME" in provided_metadata
-            and metadata["USEABLE_STOP_TIME"] > state_epochs[-1]
-        ):
-            raise ValueError("useable_stop_time cannot follow the last state epoch")
-
-        state_rows = (
+        state_rows = tuple(
             (epoch, *state.vector) for epoch, state in zip(state_epochs, states)
         )
+        if any(len(row) != len(state_rows[0]) for row in state_rows[1:]):
+            raise ValueError("States cannot mix acceleration data within a segment")
         state_data = tuple(zip(*state_rows))
 
         covariance_rows = (
@@ -484,10 +391,6 @@ class OrbitEphemerisMessage(object):
         segments = list(segments)
         if not segments:
             raise ValueError("Cannot create an OEM without segments")
-        if not all(
-            isinstance(segment, components.EphemerisSegment) for segment in segments
-        ):
-            raise TypeError("segments must contain only EphemerisSegment objects")
 
         header_fields, metadata_fields = _split_fields(fields)
         if metadata_fields:

@@ -132,18 +132,15 @@ def test_from_segments_converts_aware_creation_datetime_to_utc():
 
 
 @pytest.mark.parametrize(
-    "fields, message",
+    "fields",
     [
-        ({"unexpected": "value"}, "Unknown OEM field"),
-        ({"center_name": "Mars"}, "center_name conflicts"),
-        ({"ref_frame": "TEME"}, "ref_frame conflicts"),
-        ({"time_system": "TAI"}, "time_system conflicts"),
-        ({"usable_stop_time": Time("2026-01-01")}, "Unknown OEM field"),
-        ({"version": "2.0"}, "Unknown OEM field"),
+        {"unexpected": "value"},
+        {"usable_stop_time": Time("2026-01-01")},
+        {"version": "2.0"},
     ],
 )
-def test_from_states_rejects_invalid_fields(fields, message):
-    with pytest.raises((TypeError, ValueError), match=message):
+def test_from_states_rejects_invalid_fields(fields):
+    with pytest.raises(TypeError, match="Unknown OEM field"):
         _from_states(_states(), **fields)
 
 
@@ -167,55 +164,22 @@ def test_from_states_converts_datetime_epochs_for_supported_time_system():
     assert oem.states[0].epoch.datetime == states[0].epoch
 
 
-def test_from_states_rejects_timezone_aware_datetime_epochs():
+def test_from_states_converts_timezone_aware_datetime_epochs():
     states = _states()
     for state in states:
         state.epoch = state.epoch.to_datetime(timezone=dt.timezone.utc)
 
-    with pytest.raises(ValueError, match="cannot be timezone-aware"):
-        _from_states(states, time_system="UTC")
+    oem = _from_states(states, time_system="UTC")
+
+    assert all(isinstance(state.epoch, Time) for state in oem.states)
 
 
-def test_from_states_rejects_covariance_time_system_conflict():
+def test_from_states_rejects_mixed_state_vector_widths():
     states = _states()
-    covariance = Covariance(states[0].epoch.tai, "EME2000", np.eye(6))
+    states[-1].acceleration = np.zeros(3)
 
-    with pytest.raises(ValueError, match="covariance epochs"):
-        _from_states(states, covariances=[covariance])
-
-
-def test_from_states_rejects_asymmetric_covariance():
-    states = _states()
-    matrix = np.eye(6)
-    matrix[0, 1] = 1
-    covariance = Covariance(states[0].epoch, "EME2000", matrix)
-
-    with pytest.raises(ValueError, match="must be symmetric"):
-        _from_states(states, covariances=[covariance])
-
-
-def test_from_states_rejects_unordered_covariances():
-    states = _states()
-    covariances = [
-        Covariance(states[1].epoch, "EME2000", np.eye(6)),
-        Covariance(states[0].epoch, "EME2000", np.eye(6)),
-    ]
-
-    with pytest.raises(ValueError, match="ordered by increasing epoch"):
-        _from_states(states, covariances=covariances)
-
-
-def test_from_states_restricts_useable_bounds_to_state_span():
-    states = _states()
-    covariance = Covariance(states[-1].epoch + 60 * u.s, "EME2000", np.eye(6))
-
-    with pytest.raises(ValueError, match="useable_stop_time"):
-        _from_states(
-            states,
-            covariances=[covariance],
-            useable_start_time=states[0].epoch,
-            useable_stop_time=covariance.epoch,
-        )
+    with pytest.raises(ValueError, match="mix acceleration"):
+        _from_states(states)
 
 
 def test_from_segments_rejects_segment_metadata():

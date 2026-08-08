@@ -93,5 +93,5 @@ ephemeris = OrbitEphemerisMessage.from_segments(
 )
 ```
 
-Unknown fields and values that conflict with inferred state properties raise
-an exception rather than silently changing the state data.
+Unknown fields and values that violate the existing OEM component constraints
+raise an exception.
