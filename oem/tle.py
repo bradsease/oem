@@ -146,8 +146,6 @@ def satrec_to_oem(
     stop_epoch: Time,
     step: float,
     frame: str = "ICRF",
-    object_name: Optional[str] = None,
-    object_id: Optional[str] = None,
 ) -> OrbitEphemerisMessage:
     """Create an OEM instance from an sgp4.api.Satrec instance.
 
@@ -158,10 +156,6 @@ def satrec_to_oem(
         step (float): Output OEM step time in seconds.
         frame (str, optional): Desired output frame. Currently supported
             options are "ICRF" and "TEME". Default is "ICRF".
-        object_name (str, optional): Output OEM object name. Defaults to the
-            satellite catalog number.
-        object_id (str, optional): Output OEM object ID. Defaults to the
-            satellite catalog number.
 
     Returns:
         oem (OrbitEphemerisMessage): Converted OEM instance.
@@ -169,6 +163,4 @@ def satrec_to_oem(
     Raises:
         ValueError: Unsupported frame.
     """
-    return _build_oem(
-        satrec, start_epoch, stop_epoch, step, frame, object_name, object_id
-    )
+    return _build_oem(satrec, start_epoch, stop_epoch, step, frame)

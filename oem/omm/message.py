@@ -116,9 +116,9 @@ class OrbitMeanElementsMessage(object):
         Returns:
             OrbitEphemerisMessage: Converted OEM instance.
         """
-        from oem.tle import satrec_to_oem
+        from oem.tle import _build_oem
 
-        return satrec_to_oem(
+        return _build_oem(
             self._satrec(),
             start_epoch,
             stop_epoch,
