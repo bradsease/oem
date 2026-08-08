@@ -1,8 +1,9 @@
 import pytest
 from astropy import units
 from astropy.time import Time, TimeDelta
+from sgp4.api import Satrec
 
-from oem.tle import tle_to_oem
+from oem.tle import satrec_to_oem, tle_to_oem
 
 SAMPLE_TLE = (
     "1 25544U 98067A   19343.69339541  .00001764  00000-0  38792-4 0  9991",
@@ -43,3 +44,20 @@ def test_bad_tle():
     stop_epoch = start_epoch + TimeDelta(1 * units.day)
     with pytest.raises(ValueError):
         tle_to_oem(["", ""], start_epoch, stop_epoch, 3600)
+
+
+@pytest.mark.parametrize(
+    "convert",
+    (
+        lambda start, stop: tle_to_oem(SAMPLE_TLE, start, stop, 3600),
+        lambda start, stop: satrec_to_oem(
+            Satrec.twoline2rv(*SAMPLE_TLE), start, stop, 3600
+        ),
+    ),
+)
+def test_direct_tle_and_satrec_conversion_use_catalog_number_identity(convert):
+    start_epoch = Time("2019-12-09T20:42:09.000", scale="utc")
+    oem = convert(start_epoch, start_epoch + TimeDelta(1 * units.day))
+
+    assert oem.segments[0].metadata["OBJECT_NAME"] == "25544"
+    assert oem.segments[0].metadata["OBJECT_ID"] == "25544"

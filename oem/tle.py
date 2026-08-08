@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 from astropy import units as u
 from astropy.coordinates import (
     GCRS,
@@ -26,12 +26,19 @@ def _build_header() -> HeaderSection:
 
 
 def _build_metadata(
-    satrec: Satrec, start_epoch: Time, stop_epoch: Time, frame: str
+    satrec: Satrec,
+    start_epoch: Time,
+    stop_epoch: Time,
+    frame: str,
+    object_name: Optional[str] = None,
+    object_id: Optional[str] = None,
 ) -> MetaDataSection:
     return MetaDataSection(
         {
-            "OBJECT_NAME": str(satrec.satnum),
-            "OBJECT_ID": str(satrec.satnum),
+            "OBJECT_NAME": (
+                object_name if object_name is not None else str(satrec.satnum)
+            ),
+            "OBJECT_ID": object_id if object_id is not None else str(satrec.satnum),
             "CENTER_NAME": "Earth",
             "REF_FRAME": frame.upper(),
             "TIME_SYSTEM": "UTC",
@@ -42,21 +49,44 @@ def _build_metadata(
 
 
 def _build_segment(
-    satrec: Satrec, start_epoch: Time, stop_epoch: Time, step: float, frame: str
+    satrec: Satrec,
+    start_epoch: Time,
+    stop_epoch: Time,
+    step: float,
+    frame: str,
+    object_name: Optional[str] = None,
+    object_id: Optional[str] = None,
 ) -> EphemerisSegment:
     epoch_range = list(time_range(start_epoch, stop_epoch, step))
     position, velocity = _sample_tle_at_epoch_array(satrec, epoch_range, frame)
     return EphemerisSegment(
-        _build_metadata(satrec, start_epoch, stop_epoch, frame),
+        _build_metadata(satrec, start_epoch, stop_epoch, frame, object_name, object_id),
         (epoch_range, *zip(*position), *zip(*velocity)),
     )
 
 
 def _build_oem(
-    satrec: Satrec, start_epoch: Time, stop_epoch: Time, step: float, frame: str
+    satrec: Satrec,
+    start_epoch: Time,
+    stop_epoch: Time,
+    step: float,
+    frame: str,
+    object_name: Optional[str] = None,
+    object_id: Optional[str] = None,
 ) -> OrbitEphemerisMessage:
     return OrbitEphemerisMessage(
-        _build_header(), [_build_segment(satrec, start_epoch, stop_epoch, step, frame)]
+        _build_header(),
+        [
+            _build_segment(
+                satrec,
+                start_epoch,
+                stop_epoch,
+                step,
+                frame,
+                object_name,
+                object_id,
+            )
+        ],
     )
 
 
@@ -116,6 +146,8 @@ def satrec_to_oem(
     stop_epoch: Time,
     step: float,
     frame: str = "ICRF",
+    object_name: Optional[str] = None,
+    object_id: Optional[str] = None,
 ) -> OrbitEphemerisMessage:
     """Create an OEM instance from an sgp4.api.Satrec instance.
 
@@ -126,6 +158,10 @@ def satrec_to_oem(
         step (float): Output OEM step time in seconds.
         frame (str, optional): Desired output frame. Currently supported
             options are "ICRF" and "TEME". Default is "ICRF".
+        object_name (str, optional): Output OEM object name. Defaults to the
+            satellite catalog number.
+        object_id (str, optional): Output OEM object ID. Defaults to the
+            satellite catalog number.
 
     Returns:
         oem (OrbitEphemerisMessage): Converted OEM instance.
@@ -133,4 +169,6 @@ def satrec_to_oem(
     Raises:
         ValueError: Unsupported frame.
     """
-    return _build_oem(satrec, start_epoch, stop_epoch, step, frame)
+    return _build_oem(
+        satrec, start_epoch, stop_epoch, step, frame, object_name, object_id
+    )
