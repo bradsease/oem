@@ -78,6 +78,101 @@ def test_open_v2_xml_matches_kvn(omm_v2):
     assert OrbitMeanElementsMessage.open(V2_SAMPLE_DIR / "sample.xml") == omm_v2
 
 
+def test_kvn_unit_annotations_are_discarded(tmp_path):
+    source = SAMPLE_DIR / "comments-and-units.omm"
+    annotated = OrbitMeanElementsMessage.open(source)
+
+    assert annotated.data._fields["MEAN_MOTION"] == "15.0"
+    assert annotated.data._fields["INCLINATION"] == "98.0"
+    assert annotated.data._fields["BSTAR"] == "0.00001"
+
+    output = tmp_path / "output.omm"
+    annotated.save_as(output)
+    text = output.read_text()
+    assert "MEAN_MOTION = 15.0\n" in text
+    assert "[" not in text
+
+
+def test_kvn_unit_annotations_preserve_numeric_spelling(omm):
+    assert omm.data._fields["MEAN_MOTION"] == "15.50103472000000"
+    assert omm.data._fields["MASS"] == "419725.0"
+
+
+def test_kvn_to_xml_writes_unannotated_numeric_text(tmp_path):
+    annotated = OrbitMeanElementsMessage.open(SAMPLE_DIR / "comments-and-units.omm")
+    output = tmp_path / "output.xml"
+    annotated.save_as(output, file_format="xml")
+
+    text = output.read_text()
+    assert "<MEAN_MOTION>15.0</MEAN_MOTION>" in text
+    assert "[rev/day]" not in text
+    assert " units=" not in text
+
+
+def test_xml_units_are_discarded_on_xml_output(tmp_path):
+    source = SAMPLE_DIR / "sample.xml"
+    parsed = OrbitMeanElementsMessage.open(source)
+    output = tmp_path / "output.xml"
+    parsed.save_as(output, file_format="xml")
+
+    assert parsed.data._fields["MASS"] == "419725.0"
+    assert " units=" not in output.read_text()
+
+
+@pytest.mark.parametrize(
+    "field, value, unit",
+    (
+        ("SEMI_MAJOR_AXIS", "7.0000e3", "km"),
+        ("MASS", "1.00e2", "kg"),
+        ("BTERM", "1.0e-2", "m**2/kg"),
+        ("AGOM", "1.0e-3", "m**2/kg"),
+        ("CX_X", "1.0", "km**2"),
+        ("CX_DOT_X", "2.0", "km**2/s"),
+        ("CX_DOT_X_DOT", "3.0", "km**2/s**2"),
+    ),
+)
+def test_canonical_unit_annotations_are_discarded_on_mutation(omm, field, value, unit):
+    omm.data[field] = f"{value} [{unit}]"
+    assert omm.data._fields[field] == value
+
+
+@pytest.mark.parametrize(
+    "field, value, message",
+    (
+        ("MEAN_MOTION", "15.0[rev/day]", "Invalid unit annotation"),
+        ("MEAN_MOTION", "15.0 [REV/DAY]", r"expected \[rev/day\]"),
+        ("ECCENTRICITY", "0.001 [1]", "not allowed"),
+        ("NORAD_CAT_ID", "25544 [1]", "not allowed"),
+        ("CLASSIFICATION_TYPE", "U [1]", "not allowed"),
+        ("COV_REF_FRAME", "TEME [1]", "not allowed"),
+    ),
+)
+def test_invalid_kvn_unit_annotations_are_rejected(tmp_path, field, value, message):
+    lines = (SAMPLE_DIR / "comments-and-units.omm").read_text().splitlines()
+    prefix = f"{field} = "
+    for index, line in enumerate(lines):
+        if line.startswith(prefix):
+            lines[index] = prefix + value
+            break
+    else:
+        lines.append(prefix + value)
+    source = tmp_path / "invalid.omm"
+    source.write_text("\n".join(lines) + "\n")
+
+    with pytest.raises(ValueError, match=message):
+        OrbitMeanElementsMessage.open(source)
+
+
+def test_copy_keeps_units_discarded_and_unrelated_brackets(omm):
+    omm.data["MEAN_MOTION"] = "1.5000e1 [rev/day]"
+    omm.data["USER_DEFINED_NOTE"] = "value [as supplied]"
+
+    copied = omm.copy()
+
+    assert copied.data._fields["MEAN_MOTION"] == "1.5000e1"
+    assert copied.data._fields["USER_DEFINED_NOTE"] == "value [as supplied]"
+
+
 @pytest.mark.parametrize("file_path", _sample_cases("valid"))
 def test_valid_sample_cases(file_path):
     omm = OrbitMeanElementsMessage.open(file_path)
