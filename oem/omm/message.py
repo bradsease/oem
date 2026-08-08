@@ -161,6 +161,9 @@ class OrbitMeanElementsMessage(object):
         compression: Optional[str] = None,
     ) -> None:
         """Write this OMM as KVN or XML."""
+        if file_format not in ("kvn", "xml"):
+            raise ValueError(f"Unrecognized file type: {file_format!r}")
+
         with _open(file_path, "wb", compression) as output_file:
             if file_format == "kvn":
                 output_file.write(self._to_kvn().encode("utf-8"))
@@ -171,8 +174,6 @@ class OrbitMeanElementsMessage(object):
                     encoding="utf-8",
                     xml_declaration=True,
                 )
-            else:
-                raise ValueError(f"Unrecognized file type: {file_format!r}")
 
     def copy(self) -> "OrbitMeanElementsMessage":
         """Create an independent copy of this OMM."""
