@@ -26,17 +26,10 @@ EPOCH_FORMATERS = {
 }
 
 
-FIELD_ALIASES = {
-    "VERSION": "CCSDS_OEM_VERS",
-    "USABLE_START_TIME": "USEABLE_START_TIME",
-    "USABLE_STOP_TIME": "USEABLE_STOP_TIME",
-}
-
-
 def _normalize_fields(fields):
     normalized = {}
     for key, value in fields.items():
-        field = FIELD_ALIASES.get(key.upper(), key.upper())
+        field = key.upper()
         if field in normalized:
             raise TypeError(f"OEM field provided more than once: {field!r}")
         normalized[field] = value
@@ -441,12 +434,12 @@ class OrbitEphemerisMessage(object):
             "USEABLE_START_TIME" in provided_metadata
             and metadata["USEABLE_START_TIME"] < state_epochs[0]
         ):
-            raise ValueError("usable_start_time cannot precede the first state epoch")
+            raise ValueError("useable_start_time cannot precede the first state epoch")
         if (
             "USEABLE_STOP_TIME" in provided_metadata
             and metadata["USEABLE_STOP_TIME"] > state_epochs[-1]
         ):
-            raise ValueError("usable_stop_time cannot follow the last state epoch")
+            raise ValueError("useable_stop_time cannot follow the last state epoch")
 
         state_rows = (
             (epoch, *state.vector) for epoch, state in zip(state_epochs, states)

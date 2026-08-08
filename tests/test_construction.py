@@ -47,8 +47,8 @@ def test_from_states_infers_segment_fields():
         iter(states),
         interpolation="LAGRANGE",
         interpolation_degree=1,
-        usable_start_time=states[0].epoch,
-        usable_stop_time=states[-1].epoch,
+        useable_start_time=states[0].epoch,
+        useable_stop_time=states[-1].epoch,
     )
 
     assert oem.version == "2.0"
@@ -138,6 +138,8 @@ def test_from_segments_converts_aware_creation_datetime_to_utc():
         ({"center_name": "Mars"}, "center_name conflicts"),
         ({"ref_frame": "TEME"}, "ref_frame conflicts"),
         ({"time_system": "TAI"}, "time_system conflicts"),
+        ({"usable_stop_time": Time("2026-01-01")}, "Unknown OEM field"),
+        ({"version": "2.0"}, "Unknown OEM field"),
     ],
 )
 def test_from_states_rejects_invalid_fields(fields, message):
@@ -203,16 +205,16 @@ def test_from_states_rejects_unordered_covariances():
         _from_states(states, covariances=covariances)
 
 
-def test_from_states_restricts_usable_bounds_to_state_span():
+def test_from_states_restricts_useable_bounds_to_state_span():
     states = _states()
     covariance = Covariance(states[-1].epoch + 60 * u.s, "EME2000", np.eye(6))
 
-    with pytest.raises(ValueError, match="usable_stop_time"):
+    with pytest.raises(ValueError, match="useable_stop_time"):
         _from_states(
             states,
             covariances=[covariance],
-            usable_start_time=states[0].epoch,
-            usable_stop_time=covariance.epoch,
+            useable_start_time=states[0].epoch,
+            useable_stop_time=covariance.epoch,
         )
 
 

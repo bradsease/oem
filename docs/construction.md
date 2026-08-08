@@ -44,9 +44,9 @@ ephemeris.save_as("example.oem")
 
 Header and metadata keywords are case-insensitive. They may use the CCSDS name
 or a lowercase, snake-case equivalent. For example, `object_name` and
-`OBJECT_NAME` both set the `OBJECT_NAME` metadata field. The more conventional
-`usable_start_time` and `usable_stop_time` spellings are also accepted as
-aliases for the CCSDS `USEABLE_START_TIME` and `USEABLE_STOP_TIME` fields.
+`OBJECT_NAME` both set the `OBJECT_NAME` metadata field. Keyword names must map
+directly to CCSDS fields, so the standard `useable_start_time` and
+`useable_stop_time` spellings are required.
 
 Covariances can be supplied with the states:
 
@@ -89,7 +89,7 @@ ephemeris = OrbitEphemerisMessage.from_segments(
     segments,
     originator="EXAMPLE",
     creation_date=Time("2026-01-01T12:00:00", scale="utc"),
-    version="2.0",
+    ccsds_oem_vers="2.0",
 )
 ```
 
