@@ -141,6 +141,16 @@ def test_kvn_output_uses_no_section_delimiters(omm, tmp_path):
     assert "COVARIANCE_START" not in output
 
 
+def test_save_as_invalid_file_format_preserves_existing_file(omm, tmp_path):
+    output_path = tmp_path / "output.omm"
+    output_path.write_text("existing output")
+
+    with pytest.raises(ValueError, match="Unrecognized file type"):
+        omm.save_as(output_path, file_format="unsupported")
+
+    assert output_path.read_text() == "existing output"
+
+
 def test_convert_and_compress(omm, tmp_path):
     source = tmp_path / "source.omm"
     output = tmp_path / "output.xml.gz"

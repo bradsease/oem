@@ -380,6 +380,8 @@ class OrbitEphemerisMessage(object):
                 f"Unrecognized number format: '{number_format}'. "
                 f"Options are {list(NUMBER_FORMATERS.keys())}"
             )
+        if file_format not in ("kvn", "xml"):
+            raise ValueError(f"Unrecognized file type: '{file_format}'")
         epoch_formatter = EPOCH_FORMATERS[epoch_format]
         number_formatter = NUMBER_FORMATERS[number_format]
 
@@ -395,8 +397,6 @@ class OrbitEphemerisMessage(object):
                     encoding="utf-8",
                     xml_declaration=True,
                 )
-            else:
-                raise ValueError(f"Unrecognized file type: '{file_format}'")
 
     def _to_kvn_oem(
         self,

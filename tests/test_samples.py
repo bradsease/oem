@@ -123,3 +123,22 @@ def test_open_declaration_free_compressed_xml(tmp_path):
         compressed_file.write(contents)
 
     assert OrbitEphemerisMessage.open(xml_path) == oem
+
+
+@pytest.mark.parametrize("file_format", ("kvn", "xml"))
+def test_save_as(file_format, tmp_path):
+    oem = OrbitEphemerisMessage.open(_get_test_files(validity="valid")[0])
+    output_path = tmp_path / f"output.{file_format}"
+    oem.save_as(output_path, file_format=file_format)
+    assert OrbitEphemerisMessage.open(output_path) == oem
+
+
+def test_save_as_invalid_file_format_preserves_existing_file(tmp_path):
+    oem = OrbitEphemerisMessage.open(_get_test_files(validity="valid")[0])
+    output_path = tmp_path / "output.oem"
+    output_path.write_text("existing output")
+
+    with pytest.raises(ValueError, match="Unrecognized file type"):
+        oem.save_as(output_path, file_format="unsupported")
+
+    assert output_path.read_text() == "existing output"
