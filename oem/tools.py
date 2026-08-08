@@ -1,5 +1,4 @@
 import bz2
-import datetime as dt
 import gzip
 import lzma
 import warnings
@@ -45,25 +44,13 @@ def parse_str(input_string: str, metadata: "KeyValueSection") -> str:
     return str(input_string)
 
 
-def parse_datetime(epoch: str) -> dt.datetime:
-    """Convert OEM standard epoch to a DateTime.
-
-    Args:
-        epoch (str): OEM epoch string.
-
-    Returns:
-        parsed_epoch (DateTime):  Parsed epoch.
-    """
-    ymd_fmt = "%Y-%m-%d" if epoch.count("-") == 2 else "%Y-%j"
-    if "." in epoch:
-        return dt.datetime.strptime(
-            epoch.replace("Z", "")[: epoch.index(".") + 7].strip(),
-            f"{ymd_fmt}T%H:%M:%S.%f",
-        )
-    else:
-        return dt.datetime.strptime(
-            epoch.replace("Z", "").strip(), f"{ymd_fmt}T%H:%M:%S"
-        )
+def _parse_time(epoch: str, time_system: str) -> Time:
+    epoch = epoch.strip()
+    epoch = epoch[:-1] if epoch.endswith("Z") else epoch
+    fmt = _identify_epoch_format(epoch)
+    if fmt == "yday":
+        epoch = _coerce_epoch_yday(epoch)
+    return Time(epoch, format=fmt, scale=time_system, precision=6)
 
 
 def parse_utc(epoch: str, metadata: "KeyValueSection") -> Time:
@@ -75,7 +62,7 @@ def parse_utc(epoch: str, metadata: "KeyValueSection") -> Time:
     Returns:
         parsed_epoch (Time): UTC epoch.
     """
-    return Time(parse_datetime(epoch), format="datetime", scale="utc", precision=6)
+    return _parse_time(epoch, "utc")
 
 
 def _get_time_scale(metadata: TimeSystemMetadata) -> str:
@@ -102,8 +89,7 @@ def parse_epoch(epoch: str, metadata: TimeSystemMetadata) -> Time:
             then parsed_epoch will warn the user and use the local time scale.
     """
     time_system = _get_time_scale(metadata)
-    dt_epoch = parse_datetime(epoch)
-    return Time(dt_epoch, format="datetime", scale=time_system, precision=6)
+    return _parse_time(epoch, time_system)
 
 
 def _identify_epoch_format(epoch: str) -> str:
@@ -132,6 +118,10 @@ def _bulk_parse_epochs(epochs: Sequence[str], metadata: TimeSystemMetadata) -> T
         parsed_epochs (Time):
     """
     time_system = _get_time_scale(metadata)
+    epochs = tuple(
+        epoch.strip()[:-1] if epoch.strip().endswith("Z") else epoch.strip()
+        for epoch in epochs
+    )
     fmt = _identify_epoch_format(epochs[0])
     if fmt != "isot":
         epochs = tuple(_coerce_epoch_yday(epoch) for epoch in epochs)
