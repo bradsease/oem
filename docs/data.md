@@ -26,7 +26,7 @@ for state in segment:
     ...
 ```
 
-Both the ephemeris and segment objects support interpolation of states. If the requested epoch is not within the usable date range specified in the OEM file headers, this action will raise an exception.
+Both the ephemeris and segment objects support interpolation of states. If a segment has fewer state vectors than its declared interpolation degree requires, sampling uses all available states at the highest supported degree. If the requested epoch is not within the usable date range specified in the OEM file headers, this action will raise an exception.
 
 ```python
 from astropy.time import Time
