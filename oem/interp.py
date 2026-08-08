@@ -26,12 +26,6 @@ class HermitePolynomial(object):
     """Hermite interpolating polynomial in Newton divided-difference form."""
 
     def __init__(self, x: np.ndarray, y: np.ndarray, dy: np.ndarray) -> None:
-        x = np.asarray(x)
-        y = np.asarray(y)
-        dy = np.asarray(dy)
-        if y.shape != dy.shape or y.shape[0] != x.size:
-            raise ValueError("x, y, and dy must contain the same number of samples")
-
         count = 2 * x.size
         self._nodes = np.repeat(x, 2)
         table = np.zeros(
