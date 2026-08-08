@@ -118,9 +118,17 @@ class OrbitMeanElementsMessage(object):
         Returns:
             OrbitEphemerisMessage: Converted OEM instance.
         """
-        from oem.tle import satrec_to_oem
+        from oem.tle import _build_oem
 
-        return satrec_to_oem(self._satrec(), start_epoch, stop_epoch, step, frame)
+        return _build_oem(
+            self._satrec(),
+            start_epoch,
+            stop_epoch,
+            step,
+            frame,
+            self.metadata["OBJECT_NAME"],
+            self.metadata["OBJECT_ID"],
+        )
 
     def _satrec(self) -> "Satrec":
         if self.metadata["MEAN_ELEMENT_THEORY"].upper() not in ("SGP4", "SGP/SGP4"):

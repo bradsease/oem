@@ -87,3 +87,13 @@ def test_bad_tle():
     stop_epoch = start_epoch + TimeDelta(1 * units.day)
     with pytest.raises(ValueError):
         tle_to_oem(["", ""], start_epoch, stop_epoch, 3600)
+
+
+def test_tle_conversion_uses_catalog_number_identity():
+    start_epoch = Time("2019-12-09T20:42:09.000", scale="utc")
+    oem = tle_to_oem(
+        SAMPLE_TLE, start_epoch, start_epoch + TimeDelta(1 * units.day), 3600
+    )
+
+    assert oem.segments[0].metadata["OBJECT_NAME"] == "25544"
+    assert oem.segments[0].metadata["OBJECT_ID"] == "25544"

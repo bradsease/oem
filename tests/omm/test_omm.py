@@ -259,6 +259,13 @@ def test_to_oem_matches_at(omm, frame):
     )
 
 
+def test_to_oem_preserves_object_identity(omm):
+    oem = omm.to_oem(omm.epoch, omm.epoch + 600 * u.s, 600)
+
+    assert oem.segments[0].metadata["OBJECT_NAME"] == "ISS (ZARYA)"
+    assert oem.segments[0].metadata["OBJECT_ID"] == "1998-067A"
+
+
 @pytest.mark.parametrize(
     "section, changes, message",
     (
