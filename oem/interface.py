@@ -1,6 +1,9 @@
+import datetime as dt
+
+from astropy.time import Time
 from lxml.etree import Element, ElementTree, SubElement
 
-from oem import components
+from oem import CURRENT_VERSION, components
 from oem.base import Constraint, ConstraintSpecification
 from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
@@ -21,6 +24,47 @@ NUMBER_FORMATERS = {
 EPOCH_FORMATERS = {
     "iso": format_epoch,
 }
+
+
+FIELD_ALIASES = {
+    "VERSION": "CCSDS_OEM_VERS",
+    "USABLE_START_TIME": "USEABLE_START_TIME",
+    "USABLE_STOP_TIME": "USEABLE_STOP_TIME",
+}
+
+
+def _normalize_fields(fields):
+    normalized = {}
+    for key, value in fields.items():
+        field = FIELD_ALIASES.get(key.upper(), key.upper())
+        if field in normalized:
+            raise TypeError(f"OEM field provided more than once: {field!r}")
+        normalized[field] = value
+    return normalized
+
+
+def _format_fields(fields, field_spec):
+    return {
+        key: value if isinstance(value, str) else field_spec[key].formatter(value)
+        for key, value in fields.items()
+    }
+
+
+def _is_aware_datetime(value):
+    return isinstance(value, dt.datetime) and value.utcoffset() is not None
+
+
+def _split_fields(fields):
+    header = {}
+    metadata = {}
+    for key, value in _normalize_fields(fields).items():
+        if key in components.HeaderSection._field_spec:
+            header[key] = value
+        elif key in components.MetaDataSection._field_spec:
+            metadata[key] = value
+        else:
+            raise TypeError(f"Unknown OEM field: {key!r}")
+    return header, metadata
 
 
 class ConstrainOemTimeSystem(Constraint):
@@ -214,6 +258,274 @@ class OrbitEphemerisMessage(object):
             for raw_segment in raw_segments
         ]
         return cls(header, segments)
+
+    @classmethod
+    def from_states(cls, states, *, covariances=None, **fields):
+        """Create a single-segment OEM from state and covariance objects.
+
+        Header and metadata fields may be supplied as case-insensitive keyword
+        arguments using either CCSDS names or their snake-case equivalents.
+        The center, reference frame, time system, and data bounds are inferred
+        from the data when omitted.
+
+        Args:
+            states (iterable): Ordered iterable of State objects.
+            covariances (iterable, optional): Iterable of Covariance objects.
+            **fields: OEM header and segment metadata fields.
+
+        Returns:
+            OrbitEphemerisMessage: New single-segment OEM instance.
+        """
+        states = tuple(states)
+        if not states:
+            raise ValueError("Cannot create an OEM without states")
+        if not all(isinstance(state, components.State) for state in states):
+            raise TypeError("states must contain only State objects")
+        if any(_is_aware_datetime(state.epoch) for state in states):
+            raise ValueError("State epochs cannot be timezone-aware datetime objects")
+        if any(isinstance(state.epoch, Time) for state in states) and not all(
+            isinstance(state.epoch, Time) for state in states
+        ):
+            raise ValueError("State epochs must all use the same type")
+        if not all(
+            states[index].epoch < states[index + 1].epoch
+            for index in range(len(states) - 1)
+        ):
+            raise ValueError("States must be ordered by increasing epoch")
+
+        first = states[0]
+        if any(state.frame != first.frame for state in states):
+            raise ValueError("All states in a segment must use the same frame")
+        if any(state.center != first.center for state in states):
+            raise ValueError("All states in a segment must use the same center")
+        if any(state.has_accel != first.has_accel for state in states):
+            raise ValueError("States cannot mix acceleration data within a segment")
+
+        covariances = tuple(covariances) if covariances is not None else ()
+        if not all(
+            isinstance(covariance, components.Covariance) for covariance in covariances
+        ):
+            raise TypeError("covariances must contain only Covariance objects")
+        for covariance in covariances:
+            if _is_aware_datetime(covariance.epoch):
+                raise ValueError(
+                    "Covariance epochs cannot be timezone-aware datetime objects"
+                )
+            if covariance.matrix.shape != (6, 6):
+                raise ValueError("Covariance matrices must have shape (6, 6)")
+            if not (covariance.matrix == covariance.matrix.T).all():
+                raise ValueError("Covariance matrices must be symmetric")
+        if not all(
+            covariances[index].epoch < covariances[index + 1].epoch
+            for index in range(len(covariances) - 1)
+        ):
+            raise ValueError("Covariances must be ordered by increasing epoch")
+
+        header_fields, metadata_fields = _split_fields(fields)
+        provided_metadata = set(metadata_fields)
+        version = str(header_fields.get("CCSDS_OEM_VERS", CURRENT_VERSION))
+
+        astropy_epochs = all(isinstance(state.epoch, Time) for state in states)
+        if "TIME_SYSTEM" not in metadata_fields:
+            if not astropy_epochs:
+                raise ValueError(
+                    "time_system is required when state epochs are not Astropy Time objects"
+                )
+            scales = {state.epoch.scale.upper() for state in states}
+            if len(scales) != 1:
+                raise ValueError(
+                    "All states in a segment must use the same time system"
+                )
+            metadata_fields["TIME_SYSTEM"] = scales.pop()
+
+        if astropy_epochs and any(
+            not isinstance(covariance.epoch, Time) for covariance in covariances
+        ):
+            raise ValueError(
+                "Covariance epochs must be Astropy Time objects when state epochs are"
+                " Astropy Time objects"
+            )
+        if not astropy_epochs and any(
+            isinstance(covariance.epoch, Time) for covariance in covariances
+        ):
+            raise ValueError("Covariance and state epochs must use the same type")
+
+        time_system = str(metadata_fields["TIME_SYSTEM"]).lower()
+        if not astropy_epochs and time_system in Time.SCALES:
+            state_epochs = tuple(
+                Time(state.epoch, format="datetime", scale=time_system, precision=6)
+                for state in states
+            )
+            covariance_epochs = tuple(
+                Time(
+                    covariance.epoch,
+                    format="datetime",
+                    scale=time_system,
+                    precision=6,
+                )
+                for covariance in covariances
+            )
+        else:
+            state_epochs = tuple(state.epoch for state in states)
+            covariance_epochs = tuple(covariance.epoch for covariance in covariances)
+
+        data_epochs = list(state_epochs)
+        data_epochs.extend(covariance_epochs)
+        start_time = min(data_epochs)
+        stop_time = max(data_epochs)
+        metadata_fields.setdefault("CENTER_NAME", first.center)
+        metadata_fields.setdefault("REF_FRAME", first.frame)
+        metadata_fields.setdefault("START_TIME", format_epoch(start_time))
+        metadata_fields.setdefault("STOP_TIME", format_epoch(stop_time))
+        if start_time < state_epochs[0] or stop_time > state_epochs[-1]:
+            metadata_fields.setdefault(
+                "USEABLE_START_TIME", format_epoch(state_epochs[0])
+            )
+            metadata_fields.setdefault(
+                "USEABLE_STOP_TIME", format_epoch(state_epochs[-1])
+            )
+
+        if time_system in Time.SCALES:
+            for key in (
+                "START_TIME",
+                "STOP_TIME",
+                "USEABLE_START_TIME",
+                "USEABLE_STOP_TIME",
+                "REF_FRAME_EPOCH",
+            ):
+                if key in metadata_fields and isinstance(metadata_fields[key], Time):
+                    metadata_fields[key] = getattr(metadata_fields[key], time_system)
+                elif key in metadata_fields and _is_aware_datetime(
+                    metadata_fields[key]
+                ):
+                    if time_system != "utc":
+                        raise ValueError(
+                            "Timezone-aware metadata epochs require the UTC time system"
+                        )
+                    metadata_fields[key] = (
+                        metadata_fields[key]
+                        .astimezone(dt.timezone.utc)
+                        .replace(tzinfo=None)
+                    )
+        metadata_fields = _format_fields(
+            metadata_fields, components.MetaDataSection._field_spec
+        )
+        metadata = components.MetaDataSection(metadata_fields, version=version)
+
+        if (
+            "CENTER_NAME" in provided_metadata
+            and metadata["CENTER_NAME"] != first.center
+        ):
+            raise ValueError("center_name conflicts with the state center")
+        if "REF_FRAME" in provided_metadata and metadata["REF_FRAME"] != first.frame:
+            raise ValueError("ref_frame conflicts with the state frame")
+        if astropy_epochs and any(
+            state.epoch.scale.upper() != metadata["TIME_SYSTEM"].upper()
+            for state in states
+        ):
+            raise ValueError("time_system conflicts with the state epochs")
+        if astropy_epochs and any(
+            covariance.epoch.scale.upper() != metadata["TIME_SYSTEM"].upper()
+            for covariance in covariances
+        ):
+            raise ValueError("time_system conflicts with the covariance epochs")
+        if "START_TIME" in provided_metadata and format_epoch(
+            metadata["START_TIME"]
+        ) != format_epoch(start_time):
+            raise ValueError("start_time conflicts with the first data epoch")
+        if "STOP_TIME" in provided_metadata and format_epoch(
+            metadata["STOP_TIME"]
+        ) != format_epoch(stop_time):
+            raise ValueError("stop_time conflicts with the last data epoch")
+        if (
+            "USEABLE_START_TIME" in provided_metadata
+            and metadata["USEABLE_START_TIME"] < state_epochs[0]
+        ):
+            raise ValueError("usable_start_time cannot precede the first state epoch")
+        if (
+            "USEABLE_STOP_TIME" in provided_metadata
+            and metadata["USEABLE_STOP_TIME"] > state_epochs[-1]
+        ):
+            raise ValueError("usable_stop_time cannot follow the last state epoch")
+
+        state_rows = (
+            (epoch, *state.vector) for epoch, state in zip(state_epochs, states)
+        )
+        state_data = tuple(zip(*state_rows))
+
+        covariance_rows = (
+            (
+                epoch,
+                covariance.frame,
+                *(
+                    covariance.matrix[row, column]
+                    for row in range(6)
+                    for column in range(row + 1)
+                ),
+            )
+            for epoch, covariance in zip(covariance_epochs, covariances)
+        )
+        covariance_data = tuple(zip(*covariance_rows)) if covariances else None
+
+        segment = components.EphemerisSegment(
+            metadata, state_data, covariance_data, version=version
+        )
+        return cls.from_segments([segment], **header_fields)
+
+    @classmethod
+    def from_segments(cls, segments, **fields):
+        """Create an OEM from existing ephemeris segments.
+
+        Header fields may be supplied as case-insensitive keyword arguments
+        using either CCSDS names or their snake-case equivalents. The creation
+        date defaults to the current time and the version is inferred from the
+        segments.
+
+        Args:
+            segments (iterable): Iterable of EphemerisSegment objects.
+            **fields: OEM header fields.
+
+        Returns:
+            OrbitEphemerisMessage: New OEM instance.
+        """
+        segments = list(segments)
+        if not segments:
+            raise ValueError("Cannot create an OEM without segments")
+        if not all(
+            isinstance(segment, components.EphemerisSegment) for segment in segments
+        ):
+            raise TypeError("segments must contain only EphemerisSegment objects")
+
+        header_fields, metadata_fields = _split_fields(fields)
+        if metadata_fields:
+            field = next(iter(metadata_fields))
+            raise TypeError(
+                f"Segment metadata is not accepted by from_segments: {field!r}"
+            )
+
+        versions = {segment.version for segment in segments}
+        if len(versions) != 1:
+            raise ValueError("All segments in an OEM must use the same version")
+        version = versions.pop()
+        if "CCSDS_OEM_VERS" in header_fields:
+            if str(header_fields["CCSDS_OEM_VERS"]) != version:
+                raise ValueError("version conflicts with the segment version")
+        else:
+            header_fields["CCSDS_OEM_VERS"] = version
+
+        header_fields.setdefault("CREATION_DATE", Time.now())
+        if isinstance(header_fields["CREATION_DATE"], Time):
+            header_fields["CREATION_DATE"] = header_fields["CREATION_DATE"].utc
+        elif _is_aware_datetime(header_fields["CREATION_DATE"]):
+            header_fields["CREATION_DATE"] = (
+                header_fields["CREATION_DATE"]
+                .astimezone(dt.timezone.utc)
+                .replace(tzinfo=None)
+            )
+        header_fields = _format_fields(
+            header_fields, components.HeaderSection._field_spec
+        )
+        return cls(components.HeaderSection(header_fields), segments)
 
     @classmethod
     def open(cls, file_path):

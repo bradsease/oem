@@ -19,6 +19,7 @@ pip install oem[tle]
 ## Guides
 
 - [Interacting with Files](file-io.md)
+- [Constructing Ephemerides](construction.md)
 - [Working with Data](data.md)
 - [Comparing Ephemerides](compare.md)
 - [TLE Support](tle-support.md)
