@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 from astropy.time import Time
@@ -8,7 +6,7 @@ from oem import OrbitEphemerisMessage
 from oem.compare import StateCompare
 from oem.components import State
 
-SAMPLE_DIR = Path(__file__).parent / "samples"
+from .test_samples import SAMPLE_DIR
 
 
 def test_state_self_difference():
