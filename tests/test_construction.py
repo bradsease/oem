@@ -1,5 +1,3 @@
-import datetime as dt
-
 import numpy as np
 import pytest
 from astropy import units as u
@@ -118,19 +116,6 @@ def test_from_segments_converts_creation_date_to_utc():
     assert oem.header["CREATION_DATE"] == creation_date.utc
 
 
-def test_from_segments_converts_aware_creation_datetime_to_utc():
-    segment = _from_states(_states()).segments[0]
-    creation_date = dt.datetime(
-        2026, 1, 1, 12, tzinfo=dt.timezone(dt.timedelta(hours=2))
-    )
-
-    oem = OrbitEphemerisMessage.from_segments(
-        [segment], originator="EXAMPLE", creation_date=creation_date
-    )
-
-    assert oem.header["CREATION_DATE"].datetime == dt.datetime(2026, 1, 1, 10)
-
-
 @pytest.mark.parametrize(
     "fields",
     [
@@ -144,34 +129,13 @@ def test_from_states_rejects_invalid_fields(fields):
         _from_states(_states(), **fields)
 
 
-def test_from_states_requires_time_system_for_datetime_epochs():
+def test_from_states_requires_astropy_time_epochs():
     states = _states()
     for state in states:
         state.epoch = state.epoch.datetime
 
-    with pytest.raises(ValueError, match="time_system is required"):
+    with pytest.raises(TypeError, match="must be Astropy Time objects"):
         _from_states(states)
-
-
-def test_from_states_converts_datetime_epochs_for_supported_time_system():
-    states = _states()
-    for state in states:
-        state.epoch = state.epoch.datetime
-
-    oem = _from_states(states, time_system="UTC")
-
-    assert all(isinstance(state.epoch, Time) for state in oem.states)
-    assert oem.states[0].epoch.datetime == states[0].epoch
-
-
-def test_from_states_converts_timezone_aware_datetime_epochs():
-    states = _states()
-    for state in states:
-        state.epoch = state.epoch.to_datetime(timezone=dt.timezone.utc)
-
-    oem = _from_states(states, time_system="UTC")
-
-    assert all(isinstance(state.epoch, Time) for state in oem.states)
 
 
 def test_from_states_rejects_mixed_state_vector_widths():

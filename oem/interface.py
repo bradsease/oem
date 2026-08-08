@@ -1,5 +1,3 @@
-import datetime as dt
-
 from astropy.time import Time
 from lxml.etree import Element, ElementTree, SubElement
 
@@ -41,10 +39,6 @@ def _format_fields(fields, field_spec):
         key: value if isinstance(value, str) else field_spec[key].formatter(value)
         for key, value in fields.items()
     }
-
-
-def _is_aware_datetime(value):
-    return isinstance(value, dt.datetime) and value.utcoffset() is not None
 
 
 def _split_fields(fields):
@@ -275,35 +269,21 @@ class OrbitEphemerisMessage(object):
         first = states[0]
         covariances = tuple(covariances) if covariances is not None else ()
 
+        try:
+            state_time_system = first.epoch.scale.upper()
+            if covariances:
+                covariances[0].epoch.scale
+        except AttributeError:
+            raise TypeError("State and covariance epochs must be Astropy Time objects")
+
         header_fields, metadata_fields = _split_fields(fields)
         version = str(header_fields.get("CCSDS_OEM_VERS", CURRENT_VERSION))
 
-        if "TIME_SYSTEM" not in metadata_fields:
-            try:
-                metadata_fields["TIME_SYSTEM"] = first.epoch.scale.upper()
-            except AttributeError:
-                raise ValueError(
-                    "time_system is required when state epochs are not Astropy Time objects"
-                )
+        metadata_fields.setdefault("TIME_SYSTEM", state_time_system)
 
         time_system = str(metadata_fields["TIME_SYSTEM"]).lower()
-        if not isinstance(first.epoch, Time) and time_system in Time.SCALES:
-            state_epochs = tuple(
-                Time(state.epoch, format="datetime", scale=time_system, precision=6)
-                for state in states
-            )
-            covariance_epochs = tuple(
-                Time(
-                    covariance.epoch,
-                    format="datetime",
-                    scale=time_system,
-                    precision=6,
-                )
-                for covariance in covariances
-            )
-        else:
-            state_epochs = tuple(state.epoch for state in states)
-            covariance_epochs = tuple(covariance.epoch for covariance in covariances)
+        state_epochs = tuple(state.epoch for state in states)
+        covariance_epochs = tuple(covariance.epoch for covariance in covariances)
 
         data_epochs = list(state_epochs)
         data_epochs.extend(covariance_epochs)
@@ -331,16 +311,6 @@ class OrbitEphemerisMessage(object):
             ):
                 if key in metadata_fields and isinstance(metadata_fields[key], Time):
                     metadata_fields[key] = getattr(metadata_fields[key], time_system)
-                elif (
-                    key in metadata_fields
-                    and _is_aware_datetime(metadata_fields[key])
-                    and time_system == "utc"
-                ):
-                    metadata_fields[key] = (
-                        metadata_fields[key]
-                        .astimezone(dt.timezone.utc)
-                        .replace(tzinfo=None)
-                    )
         metadata_fields = _format_fields(
             metadata_fields, components.MetaDataSection._field_spec
         )
@@ -412,12 +382,6 @@ class OrbitEphemerisMessage(object):
         header_fields.setdefault("CREATION_DATE", Time.now())
         if isinstance(header_fields["CREATION_DATE"], Time):
             header_fields["CREATION_DATE"] = header_fields["CREATION_DATE"].utc
-        elif _is_aware_datetime(header_fields["CREATION_DATE"]):
-            header_fields["CREATION_DATE"] = (
-                header_fields["CREATION_DATE"]
-                .astimezone(dt.timezone.utc)
-                .replace(tzinfo=None)
-            )
         header_fields = _format_fields(
             header_fields, components.HeaderSection._field_spec
         )

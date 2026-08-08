@@ -6,6 +6,7 @@ Use `OrbitEphemerisMessage.from_states` to construct a single-segment OEM from
 an ordered iterable of `State` objects. The constructor infers the segment's
 center, reference frame, time system, and data bounds. When covariance data
 extends beyond the state data, the usable bounds are set to the state span.
+State and covariance epochs must be Astropy `Time` objects.
 
 ```python
 from astropy.time import Time
