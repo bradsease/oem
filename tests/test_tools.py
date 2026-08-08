@@ -4,6 +4,20 @@ from astropy.time import Time, TimeDelta
 from oem import tools
 
 
+@pytest.mark.parametrize(
+    ("contents", "expected"),
+    (
+        ("<oem />", False),
+        ("\n\t<!-- leading comment -->\n<omm />", False),
+        ("CCSDS_OEM_VERS = 2.0\n", True),
+    ),
+)
+def test_is_kvn_detects_first_non_whitespace_character(tmp_path, contents, expected):
+    message_path = tmp_path / "message"
+    message_path.write_text(contents)
+    assert tools.is_kvn(message_path) is expected
+
+
 def test_parse_integer():
     tools.parse_integer(1, None)
     tools.parse_integer(1.0, None)
