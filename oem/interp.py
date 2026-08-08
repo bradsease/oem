@@ -31,8 +31,6 @@ class HermitePolynomial(object):
         dy = np.asarray(dy)
         if y.shape != dy.shape or y.shape[0] != x.size:
             raise ValueError("x, y, and dy must contain the same number of samples")
-        if np.any(np.diff(x) == 0):
-            raise ValueError("x values must be distinct")
 
         count = 2 * x.size
         self._nodes = np.repeat(x, 2)
