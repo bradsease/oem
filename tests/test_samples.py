@@ -2,7 +2,6 @@
 
 import glob
 import tempfile
-from importlib.resources import files
 from pathlib import Path
 
 import pytest
@@ -10,7 +9,7 @@ import pytest
 from oem import OrbitEphemerisMessage
 from oem.tools import is_kvn
 
-SAMPLE_DIR = files("tests").joinpath("samples")
+SAMPLE_DIR = Path(__file__).parent / "samples"
 
 pytestmark = pytest.mark.filterwarnings("ignore:Unsupported TIME_SYSTEM 'abcd'")
 
