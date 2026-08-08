@@ -95,6 +95,8 @@ class State(object):
         return isinstance(other, State) and (
             self.version == other.version
             and self.epoch == other.epoch
+            and self.frame == other.frame
+            and self.center == other.center
             and (self.position == other.position).all()
             and (self.velocity == other.velocity).all()
             and np.array([self.acceleration == other.acceleration]).all()
