@@ -74,6 +74,11 @@ def test_metadata_epoch_accepts_utc_leap_second():
     assert parsed.isot == "2016-12-31T23:59:60.000000"
 
 
+def test_metadata_epoch_rejects_z_for_non_utc_time_system():
+    with pytest.raises(ValueError):
+        tools.parse_epoch("2024-02-08T19:46:03Z", {"TIME_SYSTEM": "TAI"})
+
+
 def test_parse_epoch_unsupported_time_system_warns():
     metadata = {"TIME_SYSTEM": "ABCD"}
 

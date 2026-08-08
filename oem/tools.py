@@ -46,7 +46,6 @@ def parse_str(input_string: str, metadata: "KeyValueSection") -> str:
 
 def _parse_time(epoch: str, time_system: str) -> Time:
     epoch = epoch.strip()
-    epoch = epoch[:-1] if epoch.endswith("Z") else epoch
     fmt = _identify_epoch_format(epoch)
     if fmt == "yday":
         epoch = _coerce_epoch_yday(epoch)
@@ -118,10 +117,7 @@ def _bulk_parse_epochs(epochs: Sequence[str], metadata: TimeSystemMetadata) -> T
         parsed_epochs (Time):
     """
     time_system = _get_time_scale(metadata)
-    epochs = tuple(
-        epoch.strip()[:-1] if epoch.strip().endswith("Z") else epoch.strip()
-        for epoch in epochs
-    )
+    epochs = tuple(epoch.strip() for epoch in epochs)
     fmt = _identify_epoch_format(epochs[0])
     if fmt != "isot":
         epochs = tuple(_coerce_epoch_yday(epoch) for epoch in epochs)
