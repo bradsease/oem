@@ -59,6 +59,14 @@ def test_open_xml_matches_kvn(omm):
     assert OrbitMeanElementsMessage.open(SAMPLE_DIR / "sample.xml") == omm
 
 
+@pytest.mark.parametrize("prefix", ("", "\n<!-- leading comment -->\n"))
+def test_open_declaration_free_xml(omm, tmp_path, prefix):
+    source = SAMPLE_DIR / "sample.xml"
+    output = tmp_path / "declaration-free.xml"
+    output.write_text(prefix + source.read_text().split("\n", 1)[1])
+    assert OrbitMeanElementsMessage.open(output) == omm
+
+
 def test_open_v2_kvn(omm_v2):
     assert omm_v2.version == "2.0"
     assert omm_v2.header["ORIGINATOR"] == "TEST"

@@ -220,7 +220,7 @@ def require_field(field: str, metadata: Container[str]) -> None:
 
 
 def is_kvn(file_path: Union[str, Path]) -> bool:
-    """Determine if an OEM file is KVN or XML.
+    """Determine if a CCSDS message file is KVN or XML.
 
     Args:
         file_path (str or Path): Path of file to check.
@@ -229,11 +229,10 @@ def is_kvn(file_path: Union[str, Path]) -> bool:
         result (bool): True if file is KVN, false if XML.
     """
     with _open(file_path, "rt") as target_file:
-        if "<?xml" in target_file.readline():
-            result = False
-        else:
-            result = True
-    return result
+        character = target_file.read(1)
+        while character and character.isspace():
+            character = target_file.read(1)
+        return character != "<"
 
 
 def time_range(start_time: Time, stop_time: Time, step_sec: float) -> Iterator[Time]:

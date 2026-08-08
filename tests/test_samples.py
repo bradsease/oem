@@ -1,6 +1,7 @@
 """Test parsing sample OEMS."""
 
 import glob
+import gzip
 import tempfile
 from pathlib import Path
 
@@ -98,3 +99,27 @@ def test_compression(compression):
         oem.save_as(written_oem_path, compression=compression)
         oem_readback = OrbitEphemerisMessage.open(written_oem_path)
         assert oem == oem_readback
+
+
+@pytest.mark.parametrize("prefix", ("", "\n\t<!-- leading comment -->\n"))
+def test_open_declaration_free_xml(prefix, tmp_path):
+    source = Path(_get_test_files(validity="valid")[0])
+    xml_path = tmp_path / "declaration-free.xml"
+    OrbitEphemerisMessage.open(source).save_as(xml_path, file_format="xml")
+    xml_path.write_text(prefix + xml_path.read_text().split("\n", 1)[1])
+
+    assert OrbitEphemerisMessage.open(xml_path) == OrbitEphemerisMessage.open(source)
+
+
+def test_open_declaration_free_compressed_xml(tmp_path):
+    source = Path(_get_test_files(validity="valid")[0])
+    xml_path = tmp_path / "declaration-free.xml.gz"
+    oem = OrbitEphemerisMessage.open(source)
+    oem.save_as(xml_path, file_format="xml", compression="gzip")
+
+    with gzip.open(xml_path, "rt") as compressed_file:
+        contents = compressed_file.read().split("\n", 1)[1]
+    with gzip.open(xml_path, "wt") as compressed_file:
+        compressed_file.write(contents)
+
+    assert OrbitEphemerisMessage.open(xml_path) == oem
