@@ -172,6 +172,7 @@ class EphemerisInterpolator(object):
         self.base_interpolator = self.method_map[method.lower()]
         self._states = states
         self._order = order
+        self._cached_interpolator: Optional[Tuple[int, Interpolator]] = None
         self._populate_interpolator_nodes(states[0], order)
 
     def __call__(
@@ -194,11 +195,16 @@ class EphemerisInterpolator(object):
 
     def _get_best_interpolator(self, epoch: Time) -> Interpolator:
         elapsed_time = (epoch - self.reference_epoch).sec
-        best_idx = np.argmin(np.abs(self._nodes - elapsed_time))
-        samples = self.base_interpolator._samples_required(self.order)
-        return self.base_interpolator(
-            tuple(entry[best_idx : best_idx + samples] for entry in self._states)
-        )
+        best_idx = int(np.argmin(np.abs(self._nodes - elapsed_time)))
+        cached = self._cached_interpolator
+        if cached is None or best_idx != cached[0]:
+            samples = self.base_interpolator._samples_required(self.order)
+            interpolator = self.base_interpolator(
+                tuple(entry[best_idx : best_idx + samples] for entry in self._states)
+            )
+            self._cached_interpolator = (best_idx, interpolator)
+            return interpolator
+        return cached[1]
 
     @property
     def reference_epoch(self) -> Time:

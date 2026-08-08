@@ -170,6 +170,23 @@ def test_ephemeris_interpolator(method, order, has_accel):
             np.testing.assert_almost_equal(predict_accel, acceleration(elapsed), 6)
 
 
+@pytest.mark.parametrize("method, order", (("HERMITE", 9), ("LAGRANGE", 5)))
+def test_ephemeris_interpolator_caches_local_window(method, order):
+    states = _make_test_states(np.poly1d([0.1, 0.1, 0.1]), 30, 10, accel=False)
+    interpolator = EphemerisInterpolator(states, method, order)
+
+    first = interpolator._get_best_interpolator(states[0][0])
+    second = interpolator._get_best_interpolator(
+        states[0][0] + TimeDelta(1, format="sec")
+    )
+    last = interpolator._get_best_interpolator(states[0][-1])
+    first_again = interpolator._get_best_interpolator(states[0][0])
+
+    assert second is first
+    assert last is not first
+    assert first_again is not last
+
+
 @pytest.mark.parametrize(
     "coarse_file, fine_file",
     (
