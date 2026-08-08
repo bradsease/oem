@@ -22,31 +22,43 @@ def lagrange(x: np.ndarray, y: np.ndarray) -> np.poly1d:
     return np.poly1d(a[::-1])
 
 
-def hermite(x: np.ndarray, y: np.ndarray, dy: np.ndarray) -> np.poly1d:
-    """Create a Hermite interpolation polynomial.
+class HermitePolynomial(object):
+    """Hermite interpolating polynomial in Newton divided-difference form."""
 
-    Create a Hermite interpolation polynomial of order N-1 where N is the
-    number of (x, y, dy) entries provided.
+    def __init__(self, x: np.ndarray, y: np.ndarray, dy: np.ndarray) -> None:
+        count = 2 * x.size
+        self._nodes = np.repeat(x, 2)
+        table = np.zeros(
+            (count, count, *y.shape[1:]), dtype=np.result_type(y, dy, float)
+        )
+        table[::2, 0] = y
+        table[1::2, 0] = y
+        table[1::2, 1] = dy
 
-    Args:
-        x (ndarray): Interpolation point x values, length N.
-        y (ndarray): Interpolation point y values, length N.
-        dy (ndarray): Interpolation point dy/dx values, length N.
+        rows = np.arange(2, count, 2)
+        reshape = (-1,) + (1,) * (y.ndim - 1)
+        table[rows, 1] = (y[1:] - y[:-1]) / np.diff(x).reshape(reshape)
 
-    Returns:
-        poly (poly1d): Polynomial object called with poly(x).
-    """
-    order = 2 * x.size - 1
-    c = np.tile(x, (order + 1, 1)).T
-    Au = np.power(c, np.arange(order + 1))
-    Al = np.multiply(
-        np.power(c, np.hstack(([1], np.arange(order)))),
-        np.tile(np.hstack(([0, 1], np.arange(2, order + 1))), (x.size, 1)),
-    )
-    A = np.vstack((Au, Al))
-    b = np.hstack((y, dy))
-    a = np.linalg.solve(A, b)
-    return np.poly1d(a[::-1])
+        for column in range(2, count):
+            rows = np.arange(column, count)
+            denom = (self._nodes[rows] - self._nodes[rows - column]).reshape(reshape)
+            table[rows, column] = (
+                table[rows, column - 1] - table[rows - 1, column - 1]
+            ) / denom
+
+        diagonal = np.arange(count)
+        self._coefficients = table[diagonal, diagonal]
+
+    def __call__(self, x_eval: float) -> Tuple[Any, Any]:
+        value = self._coefficients[-1].copy()
+        derivative = np.zeros_like(value)
+
+        for idx in range(self._coefficients.shape[0] - 2, -1, -1):
+            delta = x_eval - self._nodes[idx]
+            derivative = derivative * delta + value
+            value = self._coefficients[idx] + value * delta
+
+        return value, derivative
 
 
 class Interpolator(object):
@@ -112,26 +124,32 @@ class HermiteStateInterpolator(Interpolator):
             return int(count)
 
     def _setup(self, states: Tuple[Sequence[Any], ...]) -> None:
-        t = self._elapsed_times(states)
+        times = self._elapsed_times(states)
         state_vectors = np.column_stack(states[1:])
-        self._state_polynomials = [
-            hermite(t, state_vectors[:, idx], state_vectors[:, idx + 3])
-            for idx in range(3)
-        ]
-
-        if state_vectors.shape[1] == 9:
-            self._state_polynomials += [
-                hermite(t, state_vectors[:, idx + 3], state_vectors[:, idx + 6])
-                for idx in range(3)
-            ]
-            self._state_polynomials += [
-                entry.deriv() for entry in self._state_polynomials[3:]
-            ]
-
+        self._has_accel = state_vectors.shape[1] == 9
+        if self._has_accel:
+            values = state_vectors[:, :6]
+            derivatives = state_vectors[:, 3:]
         else:
-            self._state_polynomials += [
-                entry.deriv() for entry in self._state_polynomials
-            ]
+            values = state_vectors[:, :3]
+            derivatives = state_vectors[:, 3:]
+        self._interpolator = HermitePolynomial(times, values, derivatives)
+
+    def __call__(
+        self, epoch: Time
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+        t = (epoch - self.reference_epoch).sec
+        values, derivatives = self._interpolator(t)
+        position = values[:3]
+
+        if self._has_accel:
+            velocity = values[3:]
+            acceleration = derivatives[3:]
+        else:
+            velocity = derivatives
+            acceleration = None
+
+        return position, velocity, acceleration
 
 
 class EphemerisInterpolator(object):

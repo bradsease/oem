@@ -9,6 +9,7 @@ from astropy.time import Time, TimeDelta
 from oem import OrbitEphemerisMessage
 from oem.interp import (
     EphemerisInterpolator,
+    HermitePolynomial,
     HermiteStateInterpolator,
     LagrangeStateInterpolator,
 )
@@ -45,6 +46,84 @@ def _make_test_states(poly, t_step, count, accel=True):
         return (epochs, *zip(*positions), *zip(*velocities), *zip(*accelerations))
     else:
         return (epochs, *zip(*positions), *zip(*velocities))
+
+
+def test_hermite_spice_reference():
+    times = np.array([-1.0, 0.0, 3.0, 5.0])
+    values = np.array([6.0, 5.0, 2210.0, 78180.0])
+    derivatives = np.array([3.0, 0.0, 5115.0, 109395.0])
+
+    value, derivative = HermitePolynomial(times, values, derivatives)(2.0)
+
+    assert value == 141.0
+    assert derivative == 456.0
+
+
+def test_hermite_anise_regression():
+    # Regression data from ANISE commit 47220637, validated against SPICE HRMINT.
+    epoch = 773064069.1841084
+    epochs = np.array(
+        [
+            773063753.0320327,
+            773063842.6860328,
+            773063932.1790327,
+            773064021.5950327,
+            773064111.0160326,
+            773064200.4970326,
+            773064290.0490326,
+            773064379.5660326,
+            773064467.8020325,
+        ]
+    )
+    positions = np.array(
+        [
+            1264.0276092333008,
+            1169.380111723055,
+            1067.501355281949,
+            958.9770086109238,
+            844.4072328473662,
+            724.4430188794065,
+            599.8186349004518,
+            471.46623936222625,
+            342.04349989730264,
+        ]
+    )
+    velocities = np.array(
+        [
+            -1.0119972729331588,
+            -1.0982621220038147,
+            -1.1773202325269372,
+            -1.248793644639029,
+            -1.3123304769876323,
+            -1.3675873394086253,
+            -1.414230273831576,
+            -1.4519274117465721,
+            -1.4801351852184736,
+        ]
+    )
+
+    position, velocity = HermitePolynomial(epochs, positions, velocities)(epoch)
+
+    assert position == pytest.approx(898.710335153595, abs=1e-8)
+    assert velocity == pytest.approx(-1.2836208430532707, abs=1e-10)
+
+
+def test_newton_hermite_spice_boundary_regression():
+    samples = 12
+    step = 900.0
+    times = np.arange(samples) * step
+    angular_rate = 2 * np.pi / 5400.0
+    sample_indices = np.arange(samples)
+    positions = 7000 * np.cos(angular_rate * times)
+    positions += 1e-3 * np.sin(1.7 * sample_indices)
+    velocities = -7000 * angular_rate * np.sin(angular_rate * times)
+    velocities += 1e-6 * np.cos(2.3 * sample_indices)
+    epoch = 256.5
+
+    position, velocity = HermitePolynomial(times, positions, velocities)(epoch)
+
+    assert position == pytest.approx(6690.275044353001, abs=1e-9)
+    assert velocity == pytest.approx(-2.3948915947403475, abs=1e-11)
 
 
 @pytest.mark.parametrize("has_accel", (True, False))
