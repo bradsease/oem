@@ -223,13 +223,14 @@ class EphemerisSegment(object):
         )
 
     def steps(self, step_size: float) -> Iterator[State]:
-        """Sample Segment at equal time intervals.
+        """Sample Segment at the requested time interval.
 
-        This method returns a generator producing states at equal time
-        intervals spanning the useable duration of the parent EphemerisSegment.
+        Samples are spaced from the useable start time by ``step_size``. The
+        useable stop time is always included, so the final interval may be
+        shorter when the span is not evenly divisible by ``step_size``.
 
         Args:
-            step_size (float): Sample step size in seconds.
+            step_size (float): Requested sample interval in seconds.
 
         Yields:
             State: Sampled state.
@@ -251,9 +252,11 @@ class EphemerisSegment(object):
 
         Replaces the existing ephemeris state data in this EphemerisSegment
         with a new list of states sampled at the desired sampling interval.
+        The useable stop time is always included, so the final interval may be
+        shorter when the span is not evenly divisible by ``step_size``.
 
         Args:
-            step_size (float): Sample step size in seconds.
+            step_size (float): Requested sample interval in seconds.
             in_place (bool, optional): Toggle in-place resampling. Default
                 is False.
 

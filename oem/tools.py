@@ -19,7 +19,6 @@ from typing import (
     overload,
 )
 
-import numpy as np
 from astropy.time import Time, TimeDelta
 
 if TYPE_CHECKING:
@@ -242,15 +241,30 @@ def time_range(start_time: Time, stop_time: Time, step_sec: float) -> Iterator[T
 
     Args:
         start_time (Time): Initial time in sample span.
-        stop_time (Time): Final time in sample span.
+        stop_time (Time): Final time in sample span, included in the output.
         step_sec (float): Step size in seconds.
 
     Returns:
         times (generator): Generator of sample astropy Times.
     """
+    if step_sec <= 0:
+        raise ValueError("step_sec must be positive")
+
     delta = (stop_time - start_time).sec
-    for elapsed in np.arange(0, delta, step_sec):
-        yield start_time + TimeDelta(elapsed, format="sec")
+    if delta < 0:
+        return
+
+    yield start_time
+    if delta == 0:
+        return
+
+    step_count = int(delta // step_sec)
+    for index in range(1, step_count + 1):
+        epoch = start_time + TimeDelta(index * step_sec, format="sec")
+        if epoch >= stop_time:
+            break
+        yield epoch
+    yield stop_time
 
 
 def epoch_span_contains(span: Tuple[Time, Time], epoch: Time) -> bool:

@@ -98,7 +98,9 @@ def tle_to_oem(
         tle (list of str): List of two or three line element strings.
         start_epoch (Time): Output OEM start time.
         stop_epoch (Time): Output OEM stop time.
-        step (float): Output OEM step time in seconds.
+        step (float): Requested sample interval in seconds. The stop epoch is
+            always included, so the final interval may be shorter when the
+            span is not evenly divisible by ``step``.
         frame (str, optional): Desired output frame. Currently supported
             options are "ICRF" and "TEME". Default is "ICRF".
 
@@ -125,7 +127,9 @@ def satrec_to_oem(
         satrec (Satrec): Satrec instance containing desired TLE.
         start_epoch (Time): Output OEM start time.
         stop_epoch (Time): Output OEM stop time.
-        step (float): Output OEM step time in seconds.
+        step (float): Requested sample interval in seconds. The stop epoch is
+            always included, so the final interval may be shorter when the
+            span is not evenly divisible by ``step``.
         frame (str, optional): Desired output frame. Currently supported
             options are "ICRF" and "TEME". Default is "ICRF".
 

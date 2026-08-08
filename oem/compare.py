@@ -96,13 +96,15 @@ class EphemerisCompare(object):
         return f"EphemerisCompare(segments: {len(self.segments)})"
 
     def steps(self, step_size: float) -> Iterator["StateCompare"]:
-        """Sample EphemerisCompare at equal time intervals.
+        """Sample EphemerisCompare at the requested time interval.
 
-        This method returns a generator producing state compares at equal time
-        intervals spanning the useable duration of the parent EphemerisCompare.
+        Within each segment, samples are spaced from the overlap start time by
+        ``step_size``. The overlap stop time is always included, so the final
+        interval may be shorter when the span is not evenly divisible by
+        ``step_size``.
 
         Args:
-            step_size (float): Sample step size in seconds.
+            step_size (float): Requested sample interval in seconds.
 
         Yields:
             state_compare: Sampled StateCompare.
@@ -168,13 +170,14 @@ class SegmentCompare(object):
         return f"SegmentCompare({str(span[0])}, {str(span[1])})"
 
     def steps(self, step_size: float) -> Iterator["StateCompare"]:
-        """Sample SegmentCompare at equal time intervals.
+        """Sample SegmentCompare at the requested time interval.
 
-        This method returns a generator producing state compares at equal time
-        intervals spanning the useable duration of the parent SegmentCompare.
+        Samples are spaced from the overlap start time by ``step_size``. The
+        overlap stop time is always included, so the final interval may be
+        shorter when the span is not evenly divisible by ``step_size``.
 
         Args:
-            step_size (float): Sample step size in seconds.
+            step_size (float): Requested sample interval in seconds.
 
         Yields:
             state_compare: Sampled StateCompare.

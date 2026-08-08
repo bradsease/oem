@@ -242,7 +242,8 @@ def test_to_oem_requires_sgp4_mean_element_theory(omm):
 @pytest.mark.parametrize("frame", ("TEME", "ICRF"))
 def test_to_oem_matches_at(omm, frame):
     start_epoch = omm.epoch + 600 * u.s
-    oem = omm.to_oem(start_epoch, start_epoch + 600 * u.s, 600, frame=frame)
+    stop_epoch = start_epoch + 650 * u.s
+    oem = omm.to_oem(start_epoch, stop_epoch, 600, frame=frame)
 
     state = omm.at(start_epoch, frame=frame)
     oem_state = oem.states[0]
@@ -251,6 +252,11 @@ def test_to_oem_matches_at(omm, frame):
     assert oem_state.frame == state.frame
     np.testing.assert_allclose(oem_state.position, state.position)
     np.testing.assert_allclose(oem_state.velocity, state.velocity)
+    final_state = oem.states[-1]
+    assert final_state.epoch == stop_epoch
+    assert format_epoch(final_state.epoch) == format_epoch(
+        oem.segments[0].metadata["STOP_TIME"]
+    )
 
 
 @pytest.mark.parametrize(
