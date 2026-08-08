@@ -174,7 +174,7 @@ class EphemerisInterpolator(object):
         return interpolator(epoch)
 
     def _populate_interpolator_nodes(self, epochs: Sequence[Time], order: int) -> None:
-        samples = self.base_interpolator._samples_required(order)
+        samples = self._samples_required(order)
         elapsed_times = np.array(
             [(entry - self.reference_epoch).sec for entry in epochs]
         )
@@ -190,13 +190,19 @@ class EphemerisInterpolator(object):
         best_idx = int(np.argmin(np.abs(self._nodes - elapsed_time)))
         cached = self._cached_interpolator
         if cached is None or best_idx != cached[0]:
-            samples = self.base_interpolator._samples_required(self.order)
+            samples = self._samples_required(self.order)
             interpolator = self.base_interpolator(
                 tuple(entry[best_idx : best_idx + samples] for entry in self._states)
             )
             self._cached_interpolator = (best_idx, interpolator)
             return interpolator
         return cached[1]
+
+    def _samples_required(self, order: int) -> int:
+        """Return the requested window size, limited by available states."""
+        return min(
+            self.base_interpolator._samples_required(order), len(self._states[0])
+        )
 
     @property
     def reference_epoch(self) -> Time:

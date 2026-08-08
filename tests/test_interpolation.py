@@ -187,6 +187,56 @@ def test_ephemeris_interpolator_caches_local_window(method, order):
     assert first_again is not last
 
 
+@pytest.mark.parametrize("method, order", (("LAGRANGE", 7), ("HERMITE", 7)))
+def test_ephemeris_interpolator_uses_available_short_segment_states(method, order):
+    position = np.poly1d([0.1, 0.1, 0.1])
+    velocity = position.deriv()
+    states = _make_test_states(position, 60, 3, accel=False)
+    interpolator = EphemerisInterpolator(states, method, order)
+
+    for epoch, expected_position, expected_velocity in zip(
+        states[0], zip(*states[1:4]), zip(*states[4:])
+    ):
+        predicted_position, predicted_velocity, _ = interpolator(epoch)
+        np.testing.assert_allclose(predicted_position, expected_position)
+        np.testing.assert_allclose(predicted_velocity, expected_velocity)
+
+    epoch = states[0][0] + TimeDelta(30, format="sec")
+    predicted_position, predicted_velocity, _ = interpolator(epoch)
+    np.testing.assert_allclose(predicted_position, position(30))
+    np.testing.assert_allclose(predicted_velocity, velocity(30))
+
+
+def test_short_segment_uses_default_lagrange_interpolation():
+    oem = OrbitEphemerisMessage.open(SAMPLE_DIR / "v2_0" / "valid" / "sample01.oem")
+    segment = oem.segments[0]
+    del segment.metadata._fields["INTERPOLATION"]
+    del segment.metadata._fields["INTERPOLATION_DEGREE"]
+    stored_state = next(segment.states)
+
+    sampled_state = segment(stored_state.epoch)
+    np.testing.assert_allclose(sampled_state.position, stored_state.position)
+    np.testing.assert_allclose(sampled_state.velocity, stored_state.velocity)
+
+    interior_epoch = stored_state.epoch + TimeDelta(30, format="sec")
+    interior_state = segment(interior_epoch)
+    assert np.all(np.isfinite(interior_state.position))
+    assert np.all(np.isfinite(interior_state.velocity))
+
+
+@pytest.mark.parametrize("method, order", (("LAGRANGE", 3), ("HERMITE", 3)))
+def test_ephemeris_interpolator_retains_declared_degree_when_sufficient(method, order):
+    position = np.poly1d([0.001, 0.1, 0.1, 0.1])
+    velocity = position.deriv()
+    states = _make_test_states(position, 60, 4, accel=False)
+    interpolator = EphemerisInterpolator(states, method, order)
+
+    epoch = states[0][0] + TimeDelta(30, format="sec")
+    predicted_position, predicted_velocity, _ = interpolator(epoch)
+    np.testing.assert_allclose(predicted_position, position(30))
+    np.testing.assert_allclose(predicted_velocity, velocity(30))
+
+
 @pytest.mark.parametrize(
     "coarse_file, fine_file",
     (
