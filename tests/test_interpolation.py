@@ -238,3 +238,20 @@ def test_ephemeris_resample(input_file):
         assert np.isclose(
             (new_oem.states[idx].epoch - new_oem.states[idx - 1].epoch).sec, step_size
         )
+
+
+@pytest.mark.parametrize("in_place", (True, False))
+def test_segment_resample_sampling_uses_resampled_states(in_place, tmp_path):
+    sample_file = SAMPLE_DIR / "real" / "LEO_10s.oem"
+    oem = OrbitEphemerisMessage.open(sample_file)
+    segment = oem.segments[0].resample(400, in_place=in_place)
+    epoch = segment.useable_start_time + TimeDelta(1800, format="sec")
+
+    sampled_state = segment(epoch)
+    resampled_oem = OrbitEphemerisMessage(oem.header.copy(), [segment])
+    output_file = tmp_path / "resampled.oem"
+    resampled_oem.save_as(output_file)
+    reconstructed_state = OrbitEphemerisMessage.open(output_file)(epoch)
+
+    np.testing.assert_allclose(sampled_state.position, reconstructed_state.position)
+    np.testing.assert_allclose(sampled_state.velocity, reconstructed_state.velocity)
