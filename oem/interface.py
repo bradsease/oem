@@ -275,14 +275,15 @@ class OrbitEphemerisMessage(object):
         )
 
     def steps(self, step_size: float) -> Iterator["components.State"]:
-        """Sample Ephemeris at equal time intervals.
+        """Sample Ephemeris at the requested time interval.
 
-        This method returns a generator producing states at equal time
-        intervals spanning the useable duration of all segments in the
-        parent OEM.
+        Within each segment, samples are spaced from the useable start time by
+        ``step_size``. The useable stop time is always included, so the final
+        interval may be shorter when the span is not evenly divisible by
+        ``step_size``.
 
         Args:
-            step_size (float): Sample step size in seconds.
+            step_size (float): Requested sample interval in seconds.
 
         Yields:
             State: Sample state.
@@ -293,10 +294,9 @@ class OrbitEphemerisMessage(object):
             >>> for state in oem.steps(60):
             ...     pass
 
-            Note that spacing between steps will only be constant within
-            segments; when crossing from one segment to another the spacing
-            will vary. To avoid this behavior with multi-segment OEMs, use the
-            segment interface directly:
+            Note that spacing between segments may also vary. To avoid this
+            behavior with multi-segment OEMs, use the segment interface
+            directly:
 
             >>> for segment in oem:
             ...    for state in segment.steps(60):
@@ -313,10 +313,12 @@ class OrbitEphemerisMessage(object):
 
         Replaces the existing ephemeris state data in this OEM with new states
         sampled at the desired sampling interval. The new sampling applies to
-        all segments contained in this OEM.
+        all segments contained in this OEM. Each segment's useable stop time is
+        always included, so its final interval may be shorter when its span is
+        not evenly divisible by ``step_size``.
 
         Args:
-            step_size (float): Sample step size in seconds.
+            step_size (float): Requested sample interval in seconds.
             in_place (bool, optional): Toggle in-place resampling. Default
                 is False.
 
