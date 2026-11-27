@@ -53,6 +53,8 @@ or a lowercase, snake-case equivalent. For example, `object_name` and
 `OBJECT_NAME` both set the `OBJECT_NAME` metadata field. Keyword names must map
 directly to CCSDS fields, so the standard `useable_start_time` and
 `useable_stop_time` spellings are required.
+Keywords may be supplied in any order; constructor-generated header and metadata
+fields are written in CCSDS order.
 
 `Covariance` requires an exactly symmetric 6x6 matrix. Covariances can be supplied
 with the states:

@@ -1,4 +1,5 @@
 import datetime as dt
+from xml.etree import ElementTree
 
 import numpy as np
 import pytest
@@ -78,6 +79,75 @@ def test_from_states_round_trip_with_covariance(tmp_path, file_format):
 
     assert written == oem
     assert written.covariances == [covariance]
+
+
+@pytest.mark.parametrize("include_optional", [False, True])
+def test_from_states_orders_xml_fields(tmp_path, include_optional):
+    states = _states()
+    fields = {}
+    header_order = ["CREATION_DATE", "ORIGINATOR"]
+    metadata_order = [
+        "OBJECT_NAME",
+        "OBJECT_ID",
+        "CENTER_NAME",
+        "REF_FRAME",
+        "TIME_SYSTEM",
+        "START_TIME",
+        "STOP_TIME",
+    ]
+    if include_optional:
+        fields = {
+            "message_id": "OEM-TEST",
+            "creation_date": states[0].epoch,
+            "classification": "UNCLASSIFIED",
+            "interpolation_degree": 1,
+            "interpolation": "LAGRANGE",
+            "useable_stop_time": states[-1].epoch,
+            "useable_start_time": states[0].epoch,
+            "stop_time": states[-1].epoch,
+            "start_time": states[0].epoch,
+            "time_system": "UTC",
+            "ref_frame_epoch": states[0].epoch,
+            "ref_frame": "EME2000",
+            "center_name": "Earth",
+        }
+        header_order = ["CLASSIFICATION", *header_order, "MESSAGE_ID"]
+        metadata_order.insert(4, "REF_FRAME_EPOCH")
+        metadata_order[-1:-1] = ["USEABLE_START_TIME", "USEABLE_STOP_TIME"]
+        metadata_order.extend(["INTERPOLATION", "INTERPOLATION_DEGREE"])
+    oem = _from_states(states, **fields)
+    output = tmp_path / "ordered.xml"
+
+    oem.save_as(output, file_format="xml")
+    tree = ElementTree.parse(output)
+
+    assert [element.tag for element in tree.find("header")] == header_order
+    assert [
+        element.tag for element in tree.find("body/segment/metadata")
+    ] == metadata_order
+    assert OrbitEphemerisMessage.open(output) == oem
+
+
+@pytest.mark.parametrize("include_optional", [False, True])
+def test_from_segments_orders_xml_header(tmp_path, include_optional):
+    segment = _from_states(_states()).segments[0]
+    fields = {}
+    header_order = ["CREATION_DATE", "ORIGINATOR"]
+    if include_optional:
+        fields = {
+            "message_id": "OEM-TEST",
+            "creation_date": Time("2026-01-01"),
+            "classification": "UNCLASSIFIED",
+        }
+        header_order = ["CLASSIFICATION", *header_order, "MESSAGE_ID"]
+    oem = OrbitEphemerisMessage.from_segments([segment], originator="EXAMPLE", **fields)
+    output = tmp_path / "ordered.xml"
+
+    oem.save_as(output, file_format="xml")
+    tree = ElementTree.parse(output)
+
+    assert [element.tag for element in tree.find("header")] == header_order
+    assert OrbitEphemerisMessage.open(output) == oem
 
 
 @pytest.mark.parametrize("file_format", ("kvn", "xml"))

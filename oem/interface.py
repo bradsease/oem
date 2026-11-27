@@ -41,9 +41,15 @@ def _normalize_fields(fields: Dict[str, Any]) -> Dict[str, Any]:
 def _format_fields(
     fields: Dict[str, Any], field_spec: Dict[str, HeaderField]
 ) -> Dict[str, str]:
+    """Format constructor fields in CCSDS specification order."""
     return {
-        key: value if isinstance(value, str) else field_spec[key].formatter(value)
-        for key, value in fields.items()
+        key: (
+            fields[key]
+            if isinstance(fields[key], str)
+            else specification.formatter(fields[key])
+        )
+        for key, specification in field_spec.items()
+        if key in fields
     }
 
 
