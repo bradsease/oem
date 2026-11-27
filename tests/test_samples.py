@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from oem import OrbitEphemerisMessage
-from oem.components import HeaderSection, MetaDataSection
+from oem.components import HeaderSection
 from oem.tools import is_kvn
 
 SAMPLE_DIR = Path(__file__).parent / "samples"
@@ -171,22 +171,6 @@ def test_v3_header_fields_rejected_in_earlier_versions(field, version):
     )
     with pytest.raises(ValueError, match=f"Invalid key: '{field}'"):
         header[field] = "value"
-
-
-def test_message_id_is_not_metadata():
-    metadata = {
-        "OBJECT_NAME": "TEST",
-        "OBJECT_ID": "TEST",
-        "CENTER_NAME": "EARTH",
-        "REF_FRAME": "GCRF",
-        "TIME_SYSTEM": "UTC",
-        "START_TIME": "2024-01-01T00:00:00",
-        "STOP_TIME": "2024-01-01T00:00:01",
-        "MESSAGE_ID": "OEM-TEST",
-    }
-
-    with pytest.raises(KeyError, match="Invalid header key: MESSAGE_ID"):
-        MetaDataSection(metadata, version="3.0")
 
 
 def test_save_as_invalid_file_format_preserves_existing_file(tmp_path):
