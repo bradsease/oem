@@ -46,9 +46,9 @@ class HeaderSection(KeyValueSection):
 
     _field_spec = {
         "CCSDS_OEM_VERS": HeaderField(parse_str, str, required=True),
+        "CLASSIFICATION": HeaderField(parse_str, str),
         "CREATION_DATE": HeaderField(parse_utc, format_epoch, required=True),
         "ORIGINATOR": HeaderField(parse_str, str, required=True),
-        "CLASSIFICATION": HeaderField(parse_str, str),
         "MESSAGE_ID": HeaderField(parse_str, str),
     }
     _constraint_spec = ConstraintSpecification(ConstrainHeaderVersion)

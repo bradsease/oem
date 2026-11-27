@@ -146,14 +146,27 @@ class State(object):
         return vec
 
 
+class ConstrainCovarianceMatrix(Constraint):
+    versions = ["*"]
+
+    def func(self, covariance: "Covariance") -> None:
+        require(covariance.matrix.shape == (6, 6), "Covariance matrix must be 6x6")
+        require(
+            np.array_equal(covariance.matrix, covariance.matrix.T),
+            "Covariance matrix must be symmetric",
+        )
+
+
 class Covariance(object):
     """Basic 6x6 covariance.
 
     Attributes:
         epoch (Time): Epoch date and time.
         frame (str): Reference from of this covariance.
-        matrix (ndarray): 6x6 covariance matrix.
+        matrix (ndarray): Symmetric 6x6 covariance matrix.
     """
+
+    _constraint_spec = ConstraintSpecification(ConstrainCovarianceMatrix)
 
     def __init__(
         self,
@@ -166,6 +179,7 @@ class Covariance(object):
         self.epoch = epoch
         self.frame = frame
         self.matrix = np.array(matrix)
+        self._constraint_spec.apply(self)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Covariance) and (
