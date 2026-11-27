@@ -4,6 +4,7 @@ import glob
 import gzip
 import tempfile
 from pathlib import Path
+from xml.etree import ElementTree
 
 import pytest
 
@@ -110,6 +111,37 @@ def test_open_declaration_free_xml(prefix, tmp_path):
     xml_path.write_text(prefix + xml_path.read_text().split("\n", 1)[1])
 
     assert OrbitEphemerisMessage.open(xml_path) == OrbitEphemerisMessage.open(source)
+
+
+@pytest.mark.parametrize(
+    ("source", "add_acceleration"),
+    (
+        (SAMPLE_DIR / "real" / "LEO_10s.oem", True),
+        (SAMPLE_DIR / "v2_0" / "valid" / "sample02.oem", False),
+    ),
+)
+def test_open_namespace_qualified_xml(source, add_acceleration, tmp_path):
+    xml_path = tmp_path / "qualified.xml"
+    oem = OrbitEphemerisMessage.open(source)
+    oem.save_as(xml_path, file_format="xml")
+
+    tree = ElementTree.parse(xml_path)
+    if add_acceleration:
+        for state_vector in tree.iter("stateVector"):
+            for field in ("X_DDOT", "Y_DDOT", "Z_DDOT"):
+                ElementTree.SubElement(state_vector, field).text = "0.0"
+
+    tree.write(xml_path, encoding="UTF-8", xml_declaration=True)
+    expected = OrbitEphemerisMessage.open(xml_path)
+    for element in tree.iter():
+        element.tag = f"{{urn:ccsds:schema:ndmxml}}{element.tag}"
+    tree.write(xml_path, encoding="UTF-8", xml_declaration=True)
+
+    actual = OrbitEphemerisMessage.open(xml_path)
+    segment = next(iter(actual))
+    assert actual == expected
+    assert segment.has_accel is add_acceleration
+    assert segment.has_covariance is bool(oem.covariances)
 
 
 def test_open_declaration_free_compressed_xml(tmp_path):

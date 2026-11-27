@@ -174,6 +174,9 @@ def parse_kvn_oem(
 def parse_xml_oem(ephem_file: TextIO) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
     parts = parse(ephem_file).getroot()
 
+    for element in parts.iter():
+        element.tag = element.tag.rpartition("}")[-1]
+
     header = {
         entry.tag.rpartition("}")[-1]: entry.text
         for entry in parts[0]
