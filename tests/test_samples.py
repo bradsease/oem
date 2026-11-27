@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from oem import OrbitEphemerisMessage
+from oem.components import HeaderSection
 from oem.tools import is_kvn
 
 SAMPLE_DIR = Path(__file__).parent / "samples"
@@ -131,6 +132,37 @@ def test_save_as(file_format, tmp_path):
     output_path = tmp_path / f"output.{file_format}"
     oem.save_as(output_path, file_format=file_format)
     assert OrbitEphemerisMessage.open(output_path) == oem
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    (("CLASSIFICATION", "UNCLASSIFIED"), ("MESSAGE_ID", "OEM-TEST")),
+)
+@pytest.mark.parametrize("file_format", ("kvn", "xml"))
+def test_v3_header_fields_round_trip(field, value, file_format, tmp_path):
+    oem = OrbitEphemerisMessage.open(_get_test_files("v3_0", "valid")[0])
+    oem.header[field] = value
+    output_path = tmp_path / f"output.{file_format}"
+
+    oem.save_as(output_path, file_format=file_format)
+
+    assert OrbitEphemerisMessage.open(output_path).header[field] == value
+
+
+@pytest.mark.parametrize("field", ("CLASSIFICATION", "MESSAGE_ID"))
+@pytest.mark.parametrize("version", ("1.0", "2.0"))
+def test_v3_header_fields_rejected_in_earlier_versions(field, version):
+    with pytest.raises(
+        ValueError, match=f"Header keyword '{field}' not supported in OEM v{version}"
+    ):
+        HeaderSection(
+            {
+                "CCSDS_OEM_VERS": version,
+                "CREATION_DATE": "2024-01-01T00:00:00",
+                "ORIGINATOR": "TEST",
+                field: "value",
+            }
+        )
 
 
 def test_save_as_invalid_file_format_preserves_existing_file(tmp_path):

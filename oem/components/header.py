@@ -2,8 +2,26 @@ from typing import Any, Dict
 
 from lxml.etree import SubElement
 
-from oem.base import HeaderField, KeyValueSection
-from oem.tools import format_epoch, parse_str, parse_utc
+from oem.base import (
+    Constraint,
+    ConstraintSpecification,
+    HeaderField,
+    KeyValueSection,
+)
+from oem.tools import format_epoch, parse_str, parse_utc, require
+
+
+class ConstrainHeaderVersion(Constraint):
+    """Apply version-specific constraints to OEM headers."""
+
+    versions = ["1.0", "2.0"]
+
+    def func(self, header: "HeaderSection") -> None:
+        for key in ("CLASSIFICATION", "MESSAGE_ID"):
+            require(
+                key not in header,
+                f"Header keyword '{key}' not supported in OEM v{header.version}",
+            )
 
 
 class HeaderSection(KeyValueSection):
@@ -30,10 +48,14 @@ class HeaderSection(KeyValueSection):
         "CCSDS_OEM_VERS": HeaderField(parse_str, str, required=True),
         "CREATION_DATE": HeaderField(parse_utc, format_epoch, required=True),
         "ORIGINATOR": HeaderField(parse_str, str, required=True),
+        "CLASSIFICATION": HeaderField(parse_str, str),
+        "MESSAGE_ID": HeaderField(parse_str, str),
     }
+    _constraint_spec = ConstraintSpecification(ConstrainHeaderVersion)
 
     def __init__(self, fields: Dict[str, str]) -> None:
         self._parse_fields(fields)
+        self._constraint_spec.apply(self)
 
     def __eq__(self, other: object) -> bool:
         return (

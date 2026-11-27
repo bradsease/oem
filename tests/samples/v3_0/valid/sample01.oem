@@ -3,6 +3,7 @@ COMMENT Valid example of a 3.0 header
 COMMENT This is a test comment
 CREATION_DATE = 1996-11-04T17:22:31
 ORIGINATOR = NASA/JPL
+MESSAGE_ID = ABC-12_34
 
 META_START
 COMMENT This is a test comment
@@ -16,7 +17,6 @@ START_TIME          = 1996-12-18T12:00:00.331
 STOP_TIME           = 1996-12-28T21:28:00.331
 INTERPOLATION       = HERMITE
 INTERPOLATION_DEGREE = 7
-MESSAGE_ID          = ABC-12_34
 META_STOP
 
 COMMENT This is a test comment
