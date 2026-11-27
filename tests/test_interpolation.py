@@ -168,6 +168,32 @@ def test_ephemeris_interpolator(method, order, has_accel):
             np.testing.assert_almost_equal(predict_accel, acceleration(elapsed), 6)
 
 
+def test_linear_interpolation_sampling_interfaces():
+    oem = OrbitEphemerisMessage.open(SAMPLE_DIR / "real" / "LEO_10s.oem")
+    segment = oem.segments[0]
+    segment.metadata["INTERPOLATION"] = "LINEAR"
+    segment.metadata["INTERPOLATION_DEGREE"] = "1"
+
+    epoch = segment.useable_start_time + TimeDelta(15, format="sec")
+    states = list(segment.states)
+    first, second = states[1:3]
+    expected_position = (first.position + second.position) / 2
+    expected_velocity = (first.velocity + second.velocity) / 2
+
+    sampled = oem(epoch)
+    np.testing.assert_allclose(sampled.position, expected_position)
+    np.testing.assert_allclose(sampled.velocity, expected_velocity)
+
+    stepped = next(state for state in oem.steps(15) if state.epoch == epoch)
+    np.testing.assert_allclose(stepped.position, expected_position)
+    np.testing.assert_allclose(stepped.velocity, expected_velocity)
+
+    resampled = oem.resample(15)
+    resampled_state = next(state for state in resampled.states if state.epoch == epoch)
+    np.testing.assert_allclose(resampled_state.position, expected_position)
+    np.testing.assert_allclose(resampled_state.velocity, expected_velocity)
+
+
 @pytest.mark.parametrize("method, order", (("HERMITE", 9), ("LAGRANGE", 5)))
 def test_ephemeris_interpolator_caches_local_window(method, order):
     states = _make_test_states(np.poly1d([0.1, 0.1, 0.1]), 30, 10, accel=False)
