@@ -1,8 +1,9 @@
+import numpy as np
 import pytest
 from astropy.time import Time
 
 from oem import OrbitEphemerisMessage
-from oem.components import State
+from oem.components import Covariance, State
 
 from .test_samples import _get_test_files
 
@@ -73,3 +74,27 @@ def test_covariance(filename):
         covariance = oem.covariances[0]
         assert covariance == covariance.copy()
         str(covariance)
+
+
+@pytest.mark.parametrize("version", ["1.0", "2.0", "3.0"])
+@pytest.mark.parametrize("shape", [(5, 5), (7, 7), (6, 7), (36,), (6, 6, 1)])
+def test_covariance_rejects_invalid_dimensions(version, shape):
+    with pytest.raises(ValueError, match="6x6"):
+        Covariance(Time("2026-01-01"), "EME2000", np.zeros(shape), version=version)
+
+
+@pytest.mark.parametrize("version", ["1.0", "2.0", "3.0"])
+def test_covariance_rejects_asymmetric_matrix(version):
+    matrix = np.eye(6)
+    matrix[0, 1] = 42
+
+    with pytest.raises(ValueError, match="symmetric"):
+        Covariance(Time("2026-01-01"), "EME2000", matrix, version=version)
+
+
+def test_covariance_accepts_symmetric_matrix():
+    values = np.arange(36).reshape(6, 6)
+    matrix = values + values.T
+    covariance = Covariance(Time("2026-01-01"), "RTN", matrix)
+
+    np.testing.assert_array_equal(covariance.matrix, matrix)

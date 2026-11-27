@@ -1,3 +1,5 @@
+import datetime as dt
+
 from astropy.time import Time
 from lxml.etree import Element, ElementTree, SubElement
 from pathlib import Path
@@ -290,15 +292,28 @@ class OrbitEphemerisMessage(object):
         metadata_fields.setdefault("TIME_SYSTEM", state_time_system)
 
         time_system = str(metadata_fields["TIME_SYSTEM"]).lower()
-        state_epochs = tuple(state.epoch for state in states)
-        covariance_epochs = tuple(covariance.epoch for covariance in covariances)
+        require(
+            time_system in Time.SCALES,
+            f"Unsupported TIME_SYSTEM: {metadata_fields['TIME_SYSTEM']!r}",
+        )
+        state_epochs = tuple(getattr(state.epoch, time_system) for state in states)
+        covariance_epochs = tuple(
+            getattr(covariance.epoch, time_system) for covariance in covariances
+        )
 
         data_epochs = list(state_epochs)
         data_epochs.extend(covariance_epochs)
         start_time = min(data_epochs)
         stop_time = max(data_epochs)
-        metadata_fields.setdefault("CENTER_NAME", first.center)
-        metadata_fields.setdefault("REF_FRAME", first.frame)
+        for key, attribute in (("CENTER_NAME", "center"), ("REF_FRAME", "frame")):
+            metadata_fields.setdefault(key, getattr(first, attribute))
+            require(
+                all(
+                    getattr(state, attribute) == metadata_fields[key]
+                    for state in states
+                ),
+                f"State {attribute} must match {key} for all states",
+            )
         metadata_fields.setdefault("START_TIME", format_epoch(start_time))
         metadata_fields.setdefault("STOP_TIME", format_epoch(stop_time))
         if start_time < state_epochs[0] or stop_time > state_epochs[-1]:
@@ -309,16 +324,15 @@ class OrbitEphemerisMessage(object):
                 "USEABLE_STOP_TIME", format_epoch(state_epochs[-1])
             )
 
-        if time_system in Time.SCALES:
-            for key in (
-                "START_TIME",
-                "STOP_TIME",
-                "USEABLE_START_TIME",
-                "USEABLE_STOP_TIME",
-                "REF_FRAME_EPOCH",
-            ):
-                if key in metadata_fields and isinstance(metadata_fields[key], Time):
-                    metadata_fields[key] = getattr(metadata_fields[key], time_system)
+        for key in (
+            "START_TIME",
+            "STOP_TIME",
+            "USEABLE_START_TIME",
+            "USEABLE_STOP_TIME",
+            "REF_FRAME_EPOCH",
+        ):
+            if key in metadata_fields and isinstance(metadata_fields[key], Time):
+                metadata_fields[key] = getattr(metadata_fields[key], time_system)
         metadata_fields = _format_fields(
             metadata_fields, components.MetaDataSection._field_spec
         )
@@ -387,9 +401,16 @@ class OrbitEphemerisMessage(object):
         else:
             header_fields["CCSDS_OEM_VERS"] = version
 
+        for segment in segments:
+            epochs = segment._state_data[0]
+            require(
+                all(epochs[idx] < epochs[idx + 1] for idx in range(len(epochs) - 1)),
+                "States in data section are not ordered by epoch",
+            )
+
         header_fields.setdefault("CREATION_DATE", Time.now())
-        if isinstance(header_fields["CREATION_DATE"], Time):
-            header_fields["CREATION_DATE"] = header_fields["CREATION_DATE"].utc
+        if isinstance(header_fields["CREATION_DATE"], (Time, dt.datetime)):
+            header_fields["CREATION_DATE"] = Time(header_fields["CREATION_DATE"]).utc
         header_fields = _format_fields(
             header_fields, components.HeaderSection._field_spec
         )

@@ -7,6 +7,11 @@ an ordered iterable of `State` objects. The constructor infers the segment's
 center, reference frame, time system, and data bounds. When covariance data
 extends beyond the state data, the usable bounds are set to the state span.
 State and covariance epochs must be Astropy `Time` objects.
+Epochs and inferred bounds are converted to the selected Astropy-supported
+`time_system` (defaulting to the first state's scale), preserving physical
+instants. State epochs must be strictly increasing. All states must share a
+center and reference frame, and any `center_name` or `ref_frame` override must
+match the states; no coordinate transformations are performed.
 
 ```python
 from astropy.time import Time
@@ -49,7 +54,8 @@ or a lowercase, snake-case equivalent. For example, `object_name` and
 directly to CCSDS fields, so the standard `useable_start_time` and
 `useable_stop_time` spellings are required.
 
-Covariances can be supplied with the states:
+`Covariance` requires an exactly symmetric 6x6 matrix. Covariances can be supplied
+with the states:
 
 ```python
 import numpy as np
@@ -74,7 +80,8 @@ ephemeris = OrbitEphemerisMessage.from_states(
 Use `OrbitEphemerisMessage.from_segments` to combine existing
 `EphemerisSegment` objects. All segments must describe the same object and use
 the same OEM version and time system. The constructor infers the version and
-uses the current time as the creation date.
+uses the current time as the creation date. State epochs within each segment
+must be strictly increasing.
 
 ```python
 ephemeris = OrbitEphemerisMessage.from_segments(
@@ -93,6 +100,9 @@ ephemeris = OrbitEphemerisMessage.from_segments(
     ccsds_oem_vers="2.0",
 )
 ```
+
+Astropy `Time` and timezone-aware `datetime` creation dates are converted to
+UTC. Naive `datetime` values and OEM timestamp strings are interpreted as UTC.
 
 Unknown fields and values that violate the existing OEM component constraints
 raise an exception.
