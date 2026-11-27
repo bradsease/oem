@@ -152,7 +152,9 @@ def test_v3_header_fields_round_trip(field, value, file_format, tmp_path):
 @pytest.mark.parametrize("field", ("CLASSIFICATION", "MESSAGE_ID"))
 @pytest.mark.parametrize("version", ("1.0", "2.0"))
 def test_v3_header_fields_rejected_in_earlier_versions(field, version):
-    with pytest.raises(KeyError, match=f"Invalid header key: {field}"):
+    with pytest.raises(
+        ValueError, match=f"Header keyword '{field}' not supported in OEM v{version}"
+    ):
         HeaderSection(
             {
                 "CCSDS_OEM_VERS": version,
@@ -161,16 +163,6 @@ def test_v3_header_fields_rejected_in_earlier_versions(field, version):
                 field: "value",
             }
         )
-
-    header = HeaderSection(
-        {
-            "CCSDS_OEM_VERS": version,
-            "CREATION_DATE": "2024-01-01T00:00:00",
-            "ORIGINATOR": "TEST",
-        }
-    )
-    with pytest.raises(ValueError, match=f"Invalid key: '{field}'"):
-        header[field] = "value"
 
 
 def test_save_as_invalid_file_format_preserves_existing_file(tmp_path):

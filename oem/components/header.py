@@ -2,8 +2,26 @@ from typing import Any, Dict
 
 from lxml.etree import SubElement
 
-from oem.base import HeaderField, KeyValueSection
-from oem.tools import format_epoch, parse_str, parse_utc
+from oem.base import (
+    Constraint,
+    ConstraintSpecification,
+    HeaderField,
+    KeyValueSection,
+)
+from oem.tools import format_epoch, parse_str, parse_utc, require
+
+
+class ConstrainHeaderVersion(Constraint):
+    """Apply version-specific constraints to OEM headers."""
+
+    versions = ["1.0", "2.0"]
+
+    def func(self, header: "HeaderSection") -> None:
+        for key in ("CLASSIFICATION", "MESSAGE_ID"):
+            require(
+                key not in header,
+                f"Header keyword '{key}' not supported in OEM v{header.version}",
+            )
 
 
 class HeaderSection(KeyValueSection):
@@ -33,21 +51,11 @@ class HeaderSection(KeyValueSection):
         "CLASSIFICATION": HeaderField(parse_str, str),
         "MESSAGE_ID": HeaderField(parse_str, str),
     }
+    _constraint_spec = ConstraintSpecification(ConstrainHeaderVersion)
 
     def __init__(self, fields: Dict[str, str]) -> None:
         self._parse_fields(fields)
-
-    def _validate_fields(self, fields: Dict[str, str]) -> None:
-        super()._validate_fields(fields)
-        if fields["CCSDS_OEM_VERS"] != "3.0":
-            for key in ("CLASSIFICATION", "MESSAGE_ID"):
-                if key in fields:
-                    raise KeyError(f"Invalid header key: {key}")
-
-    def __setitem__(self, key: str, value: str) -> None:
-        if key in ("CLASSIFICATION", "MESSAGE_ID") and self.version != "3.0":
-            raise ValueError(f"Invalid key: '{key}'")
-        super().__setitem__(key, value)
+        self._constraint_spec.apply(self)
 
     def __eq__(self, other: object) -> bool:
         return (
