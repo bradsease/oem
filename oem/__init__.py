@@ -1,4 +1,4 @@
-CURRENT_VERSION = "2.0"
+CURRENT_VERSION = "3.0"
 
 from .interface import OrbitEphemerisMessage  # noqa
 
