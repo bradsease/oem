@@ -1,12 +1,12 @@
 import datetime as dt
+from pathlib import Path
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from astropy.time import Time
 from lxml.etree import Element, ElementTree, SubElement
-from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from oem import CURRENT_VERSION, components
-from oem.base import Constraint, ConstraintSpecification
+from oem.base import Constraint, ConstraintSpecification, HeaderField
 from oem.compare import EphemerisCompare
 from oem.parsers import parse_kvn_oem, parse_xml_oem
 from oem.tools import (
@@ -28,7 +28,7 @@ EPOCH_FORMATERS: Dict[str, Callable[[Time], str]] = {
 }
 
 
-def _normalize_fields(fields):
+def _normalize_fields(fields: Dict[str, Any]) -> Dict[str, Any]:
     normalized = {}
     for key, value in fields.items():
         field = key.upper()
@@ -38,14 +38,16 @@ def _normalize_fields(fields):
     return normalized
 
 
-def _format_fields(fields, field_spec):
+def _format_fields(
+    fields: Dict[str, Any], field_spec: Dict[str, HeaderField]
+) -> Dict[str, str]:
     return {
         key: value if isinstance(value, str) else field_spec[key].formatter(value)
         for key, value in fields.items()
     }
 
 
-def _split_fields(fields):
+def _split_fields(fields: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     header = {}
     metadata = {}
     for key, value in _normalize_fields(fields).items():
@@ -257,7 +259,13 @@ class OrbitEphemerisMessage(object):
         return cls(header, segments)
 
     @classmethod
-    def from_states(cls, states, *, covariances=None, **fields):
+    def from_states(
+        cls,
+        states: Iterable[components.State],
+        *,
+        covariances: Optional[Iterable[components.Covariance]] = None,
+        **fields: Any,
+    ) -> "OrbitEphemerisMessage":
         """Create a single-segment OEM from state and covariance objects.
 
         Header and metadata fields may be supplied as case-insensitive keyword
@@ -365,7 +373,9 @@ class OrbitEphemerisMessage(object):
         return cls.from_segments([segment], **header_fields)
 
     @classmethod
-    def from_segments(cls, segments, **fields):
+    def from_segments(
+        cls, segments: Iterable[components.EphemerisSegment], **fields: Any
+    ) -> "OrbitEphemerisMessage":
         """Create an OEM from existing ephemeris segments.
 
         Header fields may be supplied as case-insensitive keyword arguments

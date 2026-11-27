@@ -5,7 +5,7 @@ import pytest
 from astropy import units as u
 from astropy.time import Time
 
-from oem import OrbitEphemerisMessage
+from oem import CURRENT_VERSION, OrbitEphemerisMessage
 from oem.components import Covariance, EphemerisSegment, State
 
 
@@ -51,7 +51,7 @@ def test_from_states_infers_segment_fields():
         useable_stop_time=states[-1].epoch,
     )
 
-    assert oem.version == "2.0"
+    assert oem.version == CURRENT_VERSION
     assert oem.header["ORIGINATOR"] == "EXAMPLE"
     assert len(oem.segments) == 1
     assert oem.states == states
@@ -186,7 +186,7 @@ def test_from_segments_infers_version_and_creation_date():
         (segment for segment in (first, second)), originator="EXAMPLE"
     )
 
-    assert oem.version == "2.0"
+    assert oem.version == CURRENT_VERSION
     assert oem.header["ORIGINATOR"] == "EXAMPLE"
     assert isinstance(oem.header["CREATION_DATE"], Time)
     assert oem.segments == [first, second]
