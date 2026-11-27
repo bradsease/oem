@@ -84,18 +84,6 @@ class ConstrainMetaDataRefFrameEpoch(Constraint):
         )
 
 
-class ConstrainMetaDataMessageId(Constraint):
-    """Apply constraints to metadata MESSAGE_ID"""
-
-    versions = ["1.0", "2.0"]
-
-    def func(self, metadata: "MetaDataSection") -> None:
-        require(
-            "MESSAGE_ID" not in metadata,
-            "Metadata keyword 'MESSAGE_ID' not supported in OEM v1.0 and v2.0",
-        )
-
-
 class MetaDataSection(KeyValueSection):
     """OEM metadata section.
 
@@ -129,14 +117,12 @@ class MetaDataSection(KeyValueSection):
         "USEABLE_STOP_TIME": HeaderField(parse_epoch, format_epoch),
         "INTERPOLATION": HeaderField(parse_str, str),
         "INTERPOLATION_DEGREE": HeaderField(parse_integer, str),
-        "MESSAGE_ID": HeaderField(parse_str, str),
     }
     _constraint_spec = ConstraintSpecification(
         ConstrainMetaDataTime,
         ConstrainMetadataUseableTime,
         ConstrainMetaDataInterpolation,
         ConstrainMetaDataRefFrameEpoch,
-        ConstrainMetaDataMessageId,
     )
 
     def __init__(

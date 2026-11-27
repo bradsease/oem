@@ -30,10 +30,24 @@ class HeaderSection(KeyValueSection):
         "CCSDS_OEM_VERS": HeaderField(parse_str, str, required=True),
         "CREATION_DATE": HeaderField(parse_utc, format_epoch, required=True),
         "ORIGINATOR": HeaderField(parse_str, str, required=True),
+        "CLASSIFICATION": HeaderField(parse_str, str),
+        "MESSAGE_ID": HeaderField(parse_str, str),
     }
 
     def __init__(self, fields: Dict[str, str]) -> None:
         self._parse_fields(fields)
+
+    def _validate_fields(self, fields: Dict[str, str]) -> None:
+        super()._validate_fields(fields)
+        if fields["CCSDS_OEM_VERS"] != "3.0":
+            for key in ("CLASSIFICATION", "MESSAGE_ID"):
+                if key in fields:
+                    raise KeyError(f"Invalid header key: {key}")
+
+    def __setitem__(self, key: str, value: str) -> None:
+        if key in ("CLASSIFICATION", "MESSAGE_ID") and self.version != "3.0":
+            raise ValueError(f"Invalid key: '{key}'")
+        super().__setitem__(key, value)
 
     def __eq__(self, other: object) -> bool:
         return (
