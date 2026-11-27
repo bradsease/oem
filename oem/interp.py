@@ -154,6 +154,7 @@ class HermiteStateInterpolator(Interpolator):
 
 class EphemerisInterpolator(object):
     method_map: Dict[str, Type[Interpolator]] = {
+        "linear": LagrangeStateInterpolator,
         "lagrange": LagrangeStateInterpolator,
         "hermite": HermiteStateInterpolator,
     }
