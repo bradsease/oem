@@ -179,6 +179,8 @@ class EphemerisInterpolator(object):
         elapsed_times = np.array(
             [(entry - self.reference_epoch).sec for entry in epochs]
         )
+        self._window_starts = elapsed_times[: len(epochs) - samples + 1]
+        self._window_stops = elapsed_times[samples - 1 :]
         self._nodes = np.array(
             [
                 np.mean(elapsed_times[idx : (idx + samples)])
@@ -196,6 +198,19 @@ class EphemerisInterpolator(object):
             <= self._nodes[best_idx] - elapsed_time
         ):
             best_idx -= 1
+
+        # The nearest mean can lie in a window that does not contain the epoch.
+        # Keep single-sample windows unchanged: they cannot bracket an epoch.
+        if self._window_starts[best_idx] < self._window_stops[best_idx]:
+            if elapsed_time < self._window_starts[best_idx]:
+                best_idx = max(
+                    0, int(np.searchsorted(self._window_starts, elapsed_time)) - 1
+                )
+            elif elapsed_time > self._window_stops[best_idx]:
+                best_idx = min(
+                    len(self._nodes) - 1,
+                    int(np.searchsorted(self._window_stops, elapsed_time)),
+                )
 
         cached = self._cached_interpolator
         if cached is None or best_idx != cached[0]:
