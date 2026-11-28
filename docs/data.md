@@ -28,8 +28,6 @@ for state in segment:
 
 Both the ephemeris and segment objects support interpolation of states. If a segment has fewer state vectors than its declared interpolation degree requires, sampling uses all available states at the highest supported degree. If the requested epoch is not within the usable date range specified in the OEM file headers, this action will raise an exception.
 
-For unevenly spaced states, linear interpolation uses the two states that bracket the requested epoch. Higher-degree interpolation also uses a window that contains the requested epoch when the window has at least two states.
-
 ```python
 from astropy.time import Time
 
