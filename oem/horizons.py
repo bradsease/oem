@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import re
+from math import isfinite
 from typing import Dict, Tuple, cast
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -35,7 +36,7 @@ def _quoted(value: str) -> str:
 
 
 def _body_details(result: str, label: str, fallback: str) -> Tuple[str, str]:
-    match = re.search(rf"^{label}:\s*(.+?)\s+\{{", result, re.MULTILINE)
+    match = re.search(rf"^{label}:[ \t]*([^\r\n]+?)[ \t]+\{{", result, re.MULTILINE)
     if not match:
         return fallback, fallback
 
@@ -44,6 +45,38 @@ def _body_details(result: str, label: str, fallback: str) -> Tuple[str, str]:
     if match:
         return match.group(1), match.group(2)
     return description, fallback
+
+
+def _center_name(result: str) -> str:
+    """Identify the actual vector origin using Horizons response metadata."""
+    body_name, _ = _body_details(result, "Center body name", "")
+    site = re.search(r"^Center-site name:[ \t]*([^\r\n]*)", result, re.MULTILINE)
+    if not body_name or not site or not site.group(1).strip():
+        raise ValueError("Horizons response does not identify the coordinate origin.")
+
+    site_name = " ".join(site.group(1).split())
+    if site_name.upper() in ("BODY CENTER", "GEOCENTRIC"):
+        return body_name
+
+    coordinates = re.search(
+        r"^Center cylindric:[ \t]*([^{}\r\n]*)", result, re.MULTILINE
+    )
+    try:
+        if not coordinates:
+            raise ValueError
+        values = tuple(float(value) for value in coordinates.group(1).split(","))
+        if len(values) != 3 or not all(isfinite(value) for value in values):
+            raise ValueError
+    except ValueError:
+        raise ValueError("Horizons response has missing or malformed site coordinates.")
+
+    # Include the coordinates so distinct USER DEFINED sites cannot share an origin.
+    # Normalize equivalent number spellings, including negative zero.
+    longitude, radius, height = (str(value + 0.0) for value in values)
+    return (
+        f"{body_name}: {site_name} "
+        f"(cylindrical: {longitude} deg, {radius} km, {height} km)"
+    )
 
 
 def _parse_vectors(result: str, time_scale: str) -> VectorData:
@@ -83,11 +116,6 @@ def _request_vectors(
 ) -> str:
     if "@" not in center:
         center = f"500@{center}"
-    elif center.split("@", 1)[0].strip().lower() not in ("", "500", "g", "geo"):
-        raise ValueError(
-            "center must be body-centered (for example '399' or '500@399'); "
-            "topocentric sites are not supported."
-        )
 
     parameters = {
         "format": "json",
@@ -136,8 +164,8 @@ def horizons_to_oem(
             for Ceres.
         center (str): Horizons central-body ID, such as ``"399"`` for Earth.
             Body-center specifications such as ``"500@399"``, ``"@399"``,
-            ``"g@399"``, or ``"geo@399"`` are also accepted. Topocentric
-            sites are not supported.
+            ``"g@399"``, or ``"geo@399"`` and site specifications such as
+            ``"568@399"`` for Mauna Kea are also accepted.
         start_epoch (Time): Start of the requested ephemeris.
         stop_epoch (Time): End of the requested ephemeris.
         step_size (str, optional): Horizons output step size, such as ``"1h"``
@@ -147,13 +175,17 @@ def horizons_to_oem(
         timeout (float, optional): HTTP request timeout in seconds. Default is 30.
 
     Returns:
-        OrbitEphemerisMessage: An ICRF, UTC OEM with position in kilometers and
-        velocity in kilometers per second.
+        OrbitEphemerisMessage: An ICRF OEM with position in kilometers and
+        velocity in kilometers per second, using the selected time system.
+        Body-centered vectors use the body name as CENTER_NAME. Site-relative
+        vectors use ``body: site (cylindrical: longitude deg, radius km, height km)``
+        from the response, with east longitude and body-fixed cylindrical
+        coordinates. Vectors are not translated or rotated.
 
     Raises:
         TypeError: Start or stop epoch is not an astropy Time instance.
-        ValueError: The center is topocentric, or Horizons rejects the request
-            or returns malformed data.
+        ValueError: Horizons rejects the request, returns malformed data, or
+            does not identify the coordinate origin and required site coordinates.
     """
     if not isinstance(start_epoch, Time) or not isinstance(stop_epoch, Time):
         raise TypeError("start_epoch and stop_epoch must be astropy Time instances.")
@@ -175,7 +207,7 @@ def horizons_to_oem(
     )
     state_data = _parse_vectors(result, time_system_data[1])
     object_name, object_id = _body_details(result, "Target body name", str(target))
-    center_name, _ = _body_details(result, "Center body name", str(center))
+    center_name = _center_name(result)
     start_time, stop_time = state_data[0][0], state_data[0][-1]
 
     metadata = MetaDataSection(
