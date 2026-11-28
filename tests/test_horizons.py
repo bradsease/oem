@@ -9,6 +9,7 @@ from oem.horizons import horizons_to_oem
 RESULT = """
 Target body name: Mars (499)                      {source: mar099}
 Center body name: Earth (399)                     {source: DE441}
+Center-site name: BODY CENTER
 $$SOE
 2460676.500000000, A.D. 2025-Jan-01 00:00:00.0000, -5.131243251395218E+07,  7.395563972951464E+07,  3.936954332707308E+07,  7.779268790844085E+00, -3.973484497151238E-01,  2.839990146499576E-01,
 2460676.541666667, A.D. 2025-Jan-01 01:00:00.0000, -5.128442968203197E+07,  7.395423264390281E+07,  3.937057542487966E+07,  7.777857596610779E+00, -3.843660900671573E-01,  2.893885105354175E-01,
@@ -30,7 +31,19 @@ class Response:
         return json.dumps(self.payload).encode("utf-8")
 
 
-def test_horizons_to_oem(monkeypatch):
+@pytest.mark.parametrize(
+    "center, requested_center",
+    [
+        ("399", "500@399"),
+        ("500@399", "500@399"),
+        ("@399", "@399"),
+        ("g@399", "g@399"),
+        ("geo@399", "geo@399"),
+        (" 500 @ 399 ", " 500 @ 399 "),
+        (" GEO @399", " GEO @399"),
+    ],
+)
+def test_horizons_to_oem(monkeypatch, center, requested_center):
     requested = {}
 
     def urlopen(url, timeout):
@@ -41,7 +54,7 @@ def test_horizons_to_oem(monkeypatch):
     monkeypatch.setattr("oem.horizons.urlopen", urlopen)
     oem = horizons_to_oem(
         "499",
-        "399",
+        center,
         Time("2025-01-01T00:00:00", scale="utc"),
         Time("2025-01-01T01:00:00", scale="utc"),
         step_size="1h",
@@ -49,7 +62,7 @@ def test_horizons_to_oem(monkeypatch):
     )
 
     assert requested["COMMAND"] == ["'499'"]
-    assert requested["CENTER"] == ["'500@399'"]
+    assert requested["CENTER"] == [f"'{requested_center}'"]
     assert requested["EPHEM_TYPE"] == ["VECTORS"]
     assert requested["TIME_TYPE"] == ["UT"]
     assert requested["OUT_UNITS"] == ["KM-S"]
@@ -62,6 +75,33 @@ def test_horizons_to_oem(monkeypatch):
     assert oem.states[0].position.tolist() == pytest.approx(
         [-51312432.51395218, 73955639.72951464, 39369543.32707308]
     )
+
+
+@pytest.mark.parametrize(
+    "center",
+    [
+        "568@399",
+        " 568 @ 399 ",
+        "Mauna Kea@399",
+        "675@",
+        "1@301",
+        "Viking-1@499",
+        "coord@399",
+        "g: 155.5, 19.8, 4.2@399",
+    ],
+)
+def test_horizons_rejects_topocentric_centers(monkeypatch, center):
+    def urlopen(*args, **kwargs):
+        pytest.fail("Unsupported centers must be rejected before an API request.")
+
+    monkeypatch.setattr("oem.horizons.urlopen", urlopen)
+    with pytest.raises(ValueError, match="body-centered.*topocentric"):
+        horizons_to_oem(
+            "301",
+            center,
+            Time("2025-01-01", scale="utc"),
+            Time("2025-01-02", scale="utc"),
+        )
 
 
 def test_horizons_api_error(monkeypatch):

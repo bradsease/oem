@@ -24,6 +24,10 @@ oem = horizons_to_oem(
 
 `target` uses [Horizons target-selection syntax](https://ssd.jpl.nasa.gov/horizons/manual.html#select).
 For example, use `"1;"` for the small body Ceres. `center` accepts a central
-body ID such as `"399"`, or a complete Horizons center specification such as
-`"500@399"`. `step_size` is a Horizons output step-size string such as `"1h"`
-or `"1d"`.
+body ID such as `"399"`, or a body-center specification such as `"500@399"`,
+`"@399"`, `"g@399"`, or `"geo@399"`. These forms all select Earth's center.
+Topocentric sites such as `"568@399"` (Mauna Kea) are not supported and raise
+`ValueError` before an API request. Their vectors have a station origin and
+cannot be labeled with a body-centered OEM `CENTER_NAME`.
+
+`step_size` is a Horizons output step-size string such as `"1h"` or `"1d"`.

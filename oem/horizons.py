@@ -83,6 +83,11 @@ def _request_vectors(
 ) -> str:
     if "@" not in center:
         center = f"500@{center}"
+    elif center.split("@", 1)[0].strip().lower() not in ("", "500", "g", "geo"):
+        raise ValueError(
+            "center must be body-centered (for example '399' or '500@399'); "
+            "topocentric sites are not supported."
+        )
 
     parameters = {
         "format": "json",
@@ -130,8 +135,9 @@ def horizons_to_oem(
             Use Horizons selection syntax for small bodies, for example ``"1;"``
             for Ceres.
         center (str): Horizons central-body ID, such as ``"399"`` for Earth.
-            A complete Horizons center specification (for example ``"500@399"``)
-            may also be supplied.
+            Body-center specifications such as ``"500@399"``, ``"@399"``,
+            ``"g@399"``, or ``"geo@399"`` are also accepted. Topocentric
+            sites are not supported.
         start_epoch (Time): Start of the requested ephemeris.
         stop_epoch (Time): End of the requested ephemeris.
         step_size (str, optional): Horizons output step size, such as ``"1h"``
@@ -146,7 +152,8 @@ def horizons_to_oem(
 
     Raises:
         TypeError: Start or stop epoch is not an astropy Time instance.
-        ValueError: Horizons rejects the request or returns malformed data.
+        ValueError: The center is topocentric, or Horizons rejects the request
+            or returns malformed data.
     """
     if not isinstance(start_epoch, Time) or not isinstance(stop_epoch, Time):
         raise TypeError("start_epoch and stop_epoch must be astropy Time instances.")
