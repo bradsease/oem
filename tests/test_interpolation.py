@@ -6,6 +6,7 @@ from astropy import units
 from astropy.time import Time, TimeDelta
 
 from oem import OrbitEphemerisMessage
+from oem.components import State
 from oem.interp import (
     EphemerisInterpolator,
     HermitePolynomial,
@@ -192,6 +193,98 @@ def test_linear_interpolation_sampling_interfaces():
     resampled_state = next(state for state in resampled.states if state.epoch == epoch)
     np.testing.assert_allclose(resampled_state.position, expected_position)
     np.testing.assert_allclose(resampled_state.velocity, expected_velocity)
+
+
+@pytest.mark.parametrize("has_accel", (True, False))
+@pytest.mark.parametrize(
+    "method, order",
+    (("LINEAR", 1), ("LAGRANGE", 3), ("HERMITE", 3), ("HERMITE", 7)),
+)
+@pytest.mark.parametrize(
+    "seconds, elapsed, first_window",
+    (
+        ((0, 60, 61, 62, 63, 64), 59, True),
+        ((0, 1, 2, 3, 4, 64), 5, False),
+    ),
+)
+def test_irregular_interpolation_uses_bracketing_window(
+    method, order, seconds, elapsed, first_window, has_accel
+):
+    start = Time("2025-01-01T00:00:00", scale="utc")
+    epochs = tuple(start + TimeDelta(t, format="sec") for t in seconds)
+    values = np.array(seconds, dtype=float)
+    states = (
+        epochs,
+        *(tuple(values**power) for power in (2, 3, 4)),
+        *(tuple(power * values ** (power - 1)) for power in (2, 3, 4)),
+        *(tuple(power * (power - 1) * values ** (power - 2)) for power in (2, 3, 4)),
+    )
+    if not has_accel:
+        states = states[:7]
+    interpolator = EphemerisInterpolator(states, method, order)
+    samples = interpolator._samples_required(order)
+    window_start = 0 if first_window else len(seconds) - samples
+    expected = interpolator.base_interpolator(
+        tuple(column[window_start : window_start + samples] for column in states)
+    )
+    epoch = start + TimeDelta(elapsed, format="sec")
+
+    for actual, reference in zip(interpolator(epoch), expected(epoch)):
+        if reference is None:
+            assert actual is None
+        else:
+            np.testing.assert_allclose(actual, reference, rtol=1e-12, atol=1e-8)
+    assert interpolator._cached_interpolator[0] == window_start
+
+    for index, epoch in enumerate(epochs):
+        position, velocity, acceleration = interpolator(epoch)
+        np.testing.assert_allclose(position, [column[index] for column in states[1:4]])
+        np.testing.assert_allclose(velocity, [column[index] for column in states[4:7]])
+        if has_accel:
+            np.testing.assert_allclose(
+                acceleration, [column[index] for column in states[7:]]
+            )
+        else:
+            assert acceleration is None
+
+    for elapsed in np.linspace(seconds[0], seconds[-1], 33):
+        epoch = start + TimeDelta(elapsed, format="sec")
+        interpolator(epoch)
+        index = interpolator._cached_interpolator[0]
+        assert epochs[index] <= epoch <= epochs[index + samples - 1]
+
+
+@pytest.mark.parametrize("in_place", (True, False))
+def test_irregular_linear_interpolation_sampling_interfaces(in_place):
+    start = Time("2025-01-01T00:00:00", scale="utc", precision=6)
+    oem = OrbitEphemerisMessage.from_states(
+        [
+            State(
+                start + TimeDelta(t, format="sec"),
+                "ICRF",
+                "EARTH",
+                [7000 + 0.001 * t**2, 0, 0],
+                [0.002 * t, 0, 0],
+            )
+            for t in (0, 60, 61)
+        ],
+        object_name="TEST",
+        object_id="2025-001A",
+        originator="TEST",
+        interpolation="LINEAR",
+        interpolation_degree=1,
+    )
+    epoch = start + TimeDelta(50, format="sec")
+    expected_position = [7003, 0, 0]
+    expected_velocity = [0.1, 0, 0]
+
+    for sampled in (oem(epoch), oem.segments[0](epoch), list(oem.steps(50))[1]):
+        np.testing.assert_allclose(sampled.position, expected_position)
+        np.testing.assert_allclose(sampled.velocity, expected_velocity)
+
+    resampled = oem.resample(50, in_place=in_place)
+    np.testing.assert_allclose(resampled.states[1].position, expected_position)
+    np.testing.assert_allclose(resampled.states[1].velocity, expected_velocity)
 
 
 @pytest.mark.parametrize("method, order", (("HERMITE", 9), ("LAGRANGE", 5)))
