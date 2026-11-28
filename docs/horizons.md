@@ -2,7 +2,8 @@
 
 `oem.horizons.horizons_to_oem` requests Cartesian state vectors from the
 [JPL Horizons API](https://ssd-api.jpl.nasa.gov/doc/horizons.html) and returns
-an OEM.
+an OEM 3.0. Saved KVN files declare `CCSDS_OEM_VERS = 3.0`; saved XML files
+declare `version="3.0"`.
 
 The returned ephemeris uses ICRF, UTC by default, kilometers, and kilometers
 per second. Set `time_system="TT"` or `time_system="TDB"` to request TT or TDB
@@ -53,10 +54,14 @@ Complete `@` specifications are passed through to Horizons; its validation
 still applies. This helper does not add separate `SITE_COORD` or `COORD_TYPE`
 parameters.
 
-OEM 2.0 (CCSDS 502.0-B-2, Table 5-3) places no CCSDS-based restriction on
-`CENTER_NAME` values. The site naming above is this converter's documented
+OEM 3.0 (CCSDS 502.0-B-3, Table 5-3) permits reference frame centers other
+than natural bodies. The site naming above is this converter's documented
 convention, not a standardized CCSDS station identifier. Downstream consumers
 must understand this convention to interpret or transform a site origin.
+As required by annex B2, communicate to recipients that a site origin is not
+a gravitational center: conventional orbit propagation or extrapolation is
+not advisable, and interpolation must not use classical orbit-propagation
+forces such as gravitational constants or drag.
 The vectors remain geometric, site-relative Cartesian states aligned with
 ICRF; they are not translated to the body center or rotated into local
 horizon axes. The site origin is preserved when saving and reopening KVN or

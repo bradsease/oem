@@ -11,7 +11,7 @@ from urllib.request import urlopen
 
 from astropy.time import Time
 
-from oem import OrbitEphemerisMessage
+from oem import CURRENT_VERSION, OrbitEphemerisMessage
 from oem.components import EphemerisSegment, HeaderSection, MetaDataSection
 
 HORIZONS_URL = "https://ssd.jpl.nasa.gov/api/horizons.api"
@@ -156,7 +156,7 @@ def horizons_to_oem(
     time_system: str = "UT",
     timeout: float = 30,
 ) -> OrbitEphemerisMessage:
-    """Create an OEM from a JPL Horizons vector ephemeris.
+    """Create an OEM 3.0 from a JPL Horizons vector ephemeris.
 
     Args:
         target (str): Horizons target selection, such as ``"499"`` for Mars.
@@ -175,7 +175,7 @@ def horizons_to_oem(
         timeout (float, optional): HTTP request timeout in seconds. Default is 30.
 
     Returns:
-        OrbitEphemerisMessage: An ICRF OEM with position in kilometers and
+        OrbitEphemerisMessage: An ICRF OEM 3.0 with position in kilometers and
         velocity in kilometers per second, using the selected time system.
         Body-centered vectors use the body name as CENTER_NAME. Site-relative
         vectors use ``body: site (cylindrical: longitude deg, radius km, height km)``
@@ -223,7 +223,7 @@ def horizons_to_oem(
     )
     header = HeaderSection(
         {
-            "CCSDS_OEM_VERS": "2.0",
+            "CCSDS_OEM_VERS": CURRENT_VERSION,
             "CREATION_DATE": Time.now().isot,
             "ORIGINATOR": "NASA/JPL Horizons",
         }
