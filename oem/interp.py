@@ -188,7 +188,15 @@ class EphemerisInterpolator(object):
 
     def _get_best_interpolator(self, epoch: Time) -> Interpolator:
         elapsed_time = (epoch - self.reference_epoch).sec
-        best_idx = int(np.argmin(np.abs(self._nodes - elapsed_time)))
+        best_idx = int(np.searchsorted(self._nodes, elapsed_time))
+        if best_idx == len(self._nodes):
+            best_idx -= 1
+        elif best_idx and (
+            elapsed_time - self._nodes[best_idx - 1]
+            <= self._nodes[best_idx] - elapsed_time
+        ):
+            best_idx -= 1
+
         cached = self._cached_interpolator
         if cached is None or best_idx != cached[0]:
             samples = self._samples_required(self.order)
