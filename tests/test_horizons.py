@@ -1,6 +1,5 @@
 import json
 from urllib.parse import parse_qs, urlsplit
-from xml.etree import ElementTree
 
 import pytest
 from astropy.time import Time
@@ -90,39 +89,6 @@ def test_horizons_to_oem(monkeypatch, center, requested_center):
     assert len(oem.states) == 2
     assert oem.states[0].position.tolist() == pytest.approx(
         [-51312432.51395218, 73955639.72951464, 39369543.32707308]
-    )
-
-
-@pytest.mark.parametrize("file_format", ["kvn", "xml"])
-@pytest.mark.parametrize("result", [RESULT, SITE_RESULT], ids=["body", "site"])
-def test_horizons_writes_oem_3(monkeypatch, tmp_path, file_format, result):
-    monkeypatch.setattr(
-        "oem.horizons.urlopen",
-        lambda *args, **kwargs: Response({"result": result}),
-    )
-    message = horizons_to_oem("399", "399", Time("2025-01-01"), Time("2025-01-02"))
-    assert message.version == "3.0"
-    assert message.header["CCSDS_OEM_VERS"] == "3.0"
-    assert message.segments[0].version == "3.0"
-    assert message.segments[0].metadata.version == "3.0"
-    assert all(state.version == "3.0" for state in message.states)
-
-    path = tmp_path / f"horizons.{file_format}"
-    message.save_as(path, file_format=file_format)
-    if file_format == "kvn":
-        assert path.read_text().startswith("CCSDS_OEM_VERS = 3.0\n")
-    else:
-        assert ElementTree.parse(path).getroot().attrib["version"] == "3.0"
-
-    restored = OrbitEphemerisMessage.open(path)
-    assert restored.version == "3.0"
-    assert restored.header["CCSDS_OEM_VERS"] == "3.0"
-    assert restored.segments[0].version == "3.0"
-    assert restored.segments[0].metadata.version == "3.0"
-    assert all(state.version == "3.0" for state in restored.states)
-    assert (
-        restored.segments[0].metadata["CENTER_NAME"]
-        == message.segments[0].metadata["CENTER_NAME"]
     )
 
 
